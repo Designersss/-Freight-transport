@@ -6,7 +6,15 @@ import { Empty, EmptyDescription, EmptyTitle } from "./empty";
 import { Field, FieldDescription, FieldError, FieldLabel } from "./field";
 import { Input } from "./input";
 import { Skeleton } from "./skeleton";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "./table";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "./table";
 import { Textarea } from "./textarea";
 
 describe("shared UI primitives", () => {
@@ -14,9 +22,18 @@ describe("shared UI primitives", () => {
     const markup = renderToStaticMarkup(
       <Field data-invalid={true}>
         <FieldLabel htmlFor="example">Example</FieldLabel>
-        <Input id="example" name="example" required aria-invalid={true} aria-describedby="hint error" />
+        <Input
+          id="example"
+          name="example"
+          required
+          aria-invalid={true}
+          aria-describedby="hint error"
+        />
         <FieldDescription id="hint">Hint</FieldDescription>
-        <FieldError id="error" errors={[{ message: "Required" }, { message: "Required" }]} />
+        <FieldError
+          id="error"
+          errors={[{ message: "Required" }, { message: "Required" }]}
+        />
         <Textarea aria-label="Notes" name="notes" disabled />
       </Field>,
     );
@@ -33,7 +50,9 @@ describe("shared UI primitives", () => {
   it("renders distinct error messages and omits the error slot when empty", () => {
     expect(renderToStaticMarkup(<FieldError errors={[]} />)).toBe("");
     const markup = renderToStaticMarkup(
-      <FieldError errors={[undefined, { message: "First" }, { message: "Second" }]} />,
+      <FieldError
+        errors={[undefined, { message: "First" }, { message: "Second" }]}
+      />,
     );
     expect(markup).toContain("<ul");
     expect(markup).toContain("First");
@@ -45,10 +64,14 @@ describe("shared UI primitives", () => {
       <Table>
         <TableCaption>Example table</TableCaption>
         <TableHeader>
-          <TableRow><TableHead scope="col">Name</TableHead></TableRow>
+          <TableRow>
+            <TableHead scope="col">Name</TableHead>
+          </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow><TableCell>Example</TableCell></TableRow>
+          <TableRow>
+            <TableCell>Example</TableCell>
+          </TableRow>
         </TableBody>
       </Table>,
     );
@@ -67,7 +90,10 @@ describe("shared UI primitives", () => {
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>Try again</AlertDescription>
         </Alert>
-        <Empty><EmptyTitle>No records</EmptyTitle><EmptyDescription>Nothing here</EmptyDescription></Empty>
+        <Empty>
+          <EmptyTitle>No records</EmptyTitle>
+          <EmptyDescription>Nothing here</EmptyDescription>
+        </Empty>
         <Skeleton className="h-4 w-full" />
         <Badge variant="outline">Status</Badge>
       </section>,
