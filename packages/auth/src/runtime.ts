@@ -1,47 +1,11 @@
 import { Pool } from "pg";
-import { z } from "zod";
 import { AUTH_BASE_PATH, createEmailAuth } from "./auth.js";
 import { type AuthConfig, parseAuthConfig } from "./config.js";
+import { authBodies as bodies, publicSession } from "./contracts.js";
 import { isDeliverableEmail } from "./email.js";
 import { createSmtpMailer } from "./smtp-mailer.js";
 
 export { type AuthConfig, parseAuthConfig } from "./config.js";
-
-const email = z
-  .email()
-  .transform((value) => value.toLowerCase())
-  .refine(isDeliverableEmail);
-const password = z.string().min(12).max(128);
-const locale = z.enum(["ru", "en"]).default("ru");
-const bodies = {
-  "/sign-up/email": z.strictObject({
-    email,
-    password,
-    name: z.string().trim().min(1).max(200),
-    locale,
-  }),
-  "/sign-in/email": z.strictObject({
-    email,
-    password: z.string().min(1).max(128),
-  }),
-  "/sign-out": z.strictObject({}),
-  "/send-verification-email": z.strictObject({ email, locale }),
-  "/request-password-reset": z.strictObject({ email, locale }),
-  "/reset-password": z.strictObject({
-    token: z.string().min(1).max(512),
-    newPassword: password,
-  }),
-};
-
-const publicSession = z.object({
-  user: z.object({
-    id: z.string(),
-    name: z.string(),
-    email: z.string(),
-    emailVerified: z.boolean(),
-  }),
-  session: z.object({ expiresAt: z.string() }),
-});
 
 export interface AuthHttpRuntime {
   handle(request: Request): Promise<Response>;
@@ -105,7 +69,7 @@ export function createAuthHttpRuntime(
         };
         const payload: Record<string, unknown> = fields;
         if (path === "/sign-up/email" || path === "/send-verification-email") {
-          payload.callbackURL = destination(language, "/");
+          payload.callbackURL = destination(language, "/email-confirmation");
         }
         if (path === "/request-password-reset") {
           payload.redirectTo = destination(language, "/reset-password");
@@ -121,7 +85,7 @@ export function createAuthHttpRuntime(
         ) {
           const callback = url.searchParams.get("callbackURL");
           const allowed = destinations(
-            path === "/verify-email" ? "/" : "/reset-password",
+            path === "/verify-email" ? "/email-confirmation" : "/reset-password",
           );
           const keys = [...url.searchParams.keys()];
           if (
