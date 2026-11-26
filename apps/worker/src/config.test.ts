@@ -8,11 +8,21 @@ describe("Worker configuration", () => {
     expect(parseWorkerConfig(env).OUTBOX_BATCH_SIZE).toBe(100);
   });
 
-  it.each([0, 1001, 1.5, "invalid"])("rejects invalid batch size %s", (size) => {
-    expect(() => parseWorkerConfig({ ...env, OUTBOX_BATCH_SIZE: size })).toThrow("OUTBOX_BATCH_SIZE");
-  });
+  it.each([0, 1001, 1.5, "invalid"])(
+    "rejects invalid batch size %s",
+    (size) => {
+      expect(() =>
+        parseWorkerConfig({ ...env, OUTBOX_BATCH_SIZE: size }),
+      ).toThrow("OUTBOX_BATCH_SIZE");
+    },
+  );
 
-  it.each(["", "invalid", "https://example.com"])("rejects invalid database URL %s", (url) => {
-    expect(() => parseWorkerConfig({ ...env, DATABASE_URL: url })).toThrow("DATABASE_URL");
-  });
+  it.each(["", "invalid", "https://example.com"])(
+    "rejects invalid database URL %s",
+    (url) => {
+      expect(() => parseWorkerConfig({ ...env, DATABASE_URL: url })).toThrow(
+        "DATABASE_URL",
+      );
+    },
+  );
 });

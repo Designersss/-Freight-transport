@@ -14,6 +14,8 @@ async function main(): Promise<void> {
 }
 
 main().catch(() => {
-  console.error("Worker startup failed; check configuration, database and migrations");
+  console.error(
+    "Worker startup failed; check configuration, database and migrations",
+  );
   process.exitCode = 1;
 });

@@ -1,4 +1,8 @@
-import type { DatabaseClient, DatabaseTransaction, OutboxPayload } from "./index.js";
+import type {
+  DatabaseClient,
+  DatabaseTransaction,
+  OutboxPayload,
+} from "./index.js";
 
 export async function appendOutboxEvent(
   transaction: DatabaseTransaction,

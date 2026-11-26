@@ -6,7 +6,9 @@ import type { WorkerConfig } from "./config.js";
 export const OUTBOX_QUEUE = "outbox-relay";
 const MAX_BATCHES_PER_JOB = 10;
 
-export async function startWorker(config: WorkerConfig): Promise<{ stop(): Promise<void> }> {
+export async function startWorker(
+  config: WorkerConfig,
+): Promise<{ stop(): Promise<void> }> {
   const logger = pino({ level: config.LOG_LEVEL });
   const database = createDatabaseClient(config.DATABASE_URL);
   const boss = new PgBoss(config.DATABASE_URL);
@@ -40,7 +42,10 @@ export async function startWorker(config: WorkerConfig): Promise<{ stop(): Promi
     await boss.work(OUTBOX_QUEUE, { pollingIntervalSeconds: 1 }, async () => {
       let published = 0;
       for (let batch = 0; batch < MAX_BATCHES_PER_JOB; batch += 1) {
-        const count = await relayOutboxBatch(database, config.OUTBOX_BATCH_SIZE);
+        const count = await relayOutboxBatch(
+          database,
+          config.OUTBOX_BATCH_SIZE,
+        );
         published += count;
         if (count < config.OUTBOX_BATCH_SIZE) break;
       }

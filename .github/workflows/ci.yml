@@ -34,10 +34,6 @@ jobs:
           echo 'LOCKFILE_END'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Format candidate (temporary)
-        run: |
-          pnpm exec biome check --write . || true
-          node --input-type=module -e 'import {execFileSync} from "node:child_process"; import {readFileSync} from "node:fs"; const files=execFileSync("git",["diff","--name-only"],{encoding:"utf8"}).trim().split("\n").filter(p=>p && p!=="pnpm-lock.yaml"); console.log("FORMAT_JSON:"+JSON.stringify(Object.fromEntries(files.map(p=>[p,readFileSync(p,"utf8")]))));'
       - name: Lint
         run: pnpm lint
       - name: Typecheck
