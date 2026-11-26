@@ -12,7 +12,7 @@ describe("API HTTP foundation", () => {
         NODE_ENV: "test",
         LOG_LEVEL: "silent",
         DATABASE_URL:
-          "***127.0.0.1:1/test?connect_timeout=1&pool_timeout=1",
+          "postgresql://test:test@127.0.0.1:1/test?connect_timeout=1&pool_timeout=1",
       }),
     );
     await app.init();
