@@ -5,8 +5,8 @@ import { betterAuth } from "better-auth";
 import { getMigrations } from "better-auth/db/migration";
 import { fromNodeHeaders } from "better-auth/node";
 import pg from "pg";
-import { createApp } from "../../apps/api/dist/create-app.js";
 import { parseApiConfig } from "../../apps/api/dist/config/api-config.js";
+import { createApp } from "../../apps/api/dist/create-app.js";
 
 const origin = "http://127.0.0.1:4000";
 const basePath = "/api/v1/auth";
