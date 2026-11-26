@@ -17,7 +17,8 @@
     "dev:api": "turbo run build --filter=@freight/api && pnpm --filter @freight/api dev",
     "db:deploy": "pnpm --filter @freight/database db:deploy",
     "db:status": "pnpm --filter @freight/database db:status",
-    "test:integration": "pnpm --filter @freight/api test:integration"
+    "test:integration": "pnpm --filter @freight/api test:integration && pnpm --filter @freight/worker test:integration",
+    "dev:worker": "turbo run build --filter=@freight/worker && pnpm --filter @freight/worker dev"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.8",

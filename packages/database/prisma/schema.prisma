@@ -8,7 +8,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Transactional outbox foundation. Delivery is implemented in the worker slice.
+// Transactional outbox; processedAt denotes committed publication, not external delivery.
 model OutboxEvent {
   id          String    @id @default(uuid()) @db.Uuid
   eventType   String    @map("event_type")
@@ -17,7 +17,17 @@ model OutboxEvent {
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   processedAt DateTime? @map("processed_at") @db.Timestamptz(6)
   attempts    Int       @default(0)
+  publication EventPublication?
 
   @@index([processedAt, createdAt], map: "outbox_events_pending_idx")
   @@map("outbox_events")
+}
+
+model EventPublication {
+  eventId     String      @id @map("event_id") @db.Uuid
+  publishedAt DateTime    @default(now()) @map("published_at") @db.Timestamptz(6)
+  event       OutboxEvent @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  @@index([publishedAt, eventId], map: "event_publications_published_idx")
+  @@map("event_publications")
 }
