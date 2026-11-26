@@ -48,3 +48,108 @@ model UserEventInvalidation {
   @@id([userId, sequence])
   @@map("user_event_invalidations")
 }
+
+// Better Auth 1.7.28 core tables, managed exclusively by Prisma migrations.
+model User {
+  id            String       @id
+  name          String
+  email         String       @unique(map: "user_email_uidx")
+  emailVerified Boolean      @default(false)
+  image         String?
+  createdAt     DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+  accounts      Account[]
+  sessions      Session[]
+  profile       UserProfile?
+
+  @@map("user")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime? @db.Timestamptz(6)
+  refreshTokenExpiresAt DateTime? @db.Timestamptz(6)
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId], map: "account_providerId_accountId_uidx")
+  @@index([userId], map: "account_userId_idx")
+  @@map("account")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime @db.Timestamptz(6)
+  token     String   @unique(map: "session_token_uidx")
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "session_userId_idx")
+  @@map("session")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([identifier], map: "verification_identifier_idx")
+  @@map("verification")
+}
+
+model RateLimit {
+  id          String @id
+  key         String @unique(map: "rateLimit_key_uidx")
+  count       Int
+  lastRequest BigInt
+
+  @@map("rateLimit")
+}
+
+enum UserRole {
+  PLATFORM_ADMIN
+  COMPANY_OWNER
+  DISPATCHER
+  DRIVER
+
+  @@map("user_role")
+}
+
+enum UserStatus {
+  ACTIVE
+  DEACTIVATED
+
+  @@map("user_status")
+}
+
+// Absence of a profile means onboarding is incomplete, not an authorized role.
+model UserProfile {
+  userId       String     @id @map("user_id")
+  firstName    String     @map("first_name")
+  lastName     String     @map("last_name")
+  role         UserRole
+  status       UserStatus @default(ACTIVE)
+  driverAge    Int?       @map("driver_age")
+  photoKey     String?    @map("photo_key")
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@map("user_profiles")
+}

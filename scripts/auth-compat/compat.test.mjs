@@ -4,9 +4,9 @@ import { Readable } from "node:stream";
 import { test } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import { betterAuth } from "better-auth";
-import { getMigrations } from "better-auth/db/migration";
 import { fromNodeHeaders } from "better-auth/node";
 import pg from "pg";
+import { assertAuthSchema } from "./assert-auth-schema.mjs";
 import { parseApiConfig } from "../../apps/api/dist/config/api-config.js";
 import { createApp } from "../../apps/api/dist/create-app.js";
 import { openUserEventStream } from "../../apps/api/dist/realtime/user-event-stream.js";
@@ -37,8 +37,7 @@ test("Better Auth on the real Nest/Fastify adapter and isolated PostgreSQL", asy
       emailAndPassword: { enabled: true },
       session: { cookieCache: { enabled: false } },
     });
-    const migrations = await getMigrations(auth.options);
-    await migrations.runMigrations();
+    await assertAuthSchema(auth.options);
 
     app = await createApp(
       parseApiConfig({

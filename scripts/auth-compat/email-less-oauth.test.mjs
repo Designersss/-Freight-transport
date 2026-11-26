@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { createHash, randomBytes } from "node:crypto";
 import { test } from "node:test";
 import { betterAuth } from "better-auth";
-import { getMigrations } from "better-auth/db/migration";
 import { genericOAuth } from "better-auth/plugins";
 import pg from "pg";
+import { assertAuthSchema } from "./assert-auth-schema.mjs";
 
 const origin = "http://127.0.0.1:4000";
 const basePath = "/api/v1/auth";
@@ -120,8 +120,7 @@ test("OAuth identity without email: mapped internal identifier and stable accoun
     return result.json();
   }
   try {
-    const migrations = await getMigrations(auth.options);
-    await migrations.runMigrations();
+    await assertAuthSchema(auth.options);
 
     const unmapped = await callback(await begin(unmappedProviderId), subject);
     assert.match(
