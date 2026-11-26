@@ -35,7 +35,10 @@ test("rejects unknown and unreviewed licenses or expressions", () => {
 
 test("limits missing-metadata exceptions to exact test dependencies", () => {
   assert.equal(isAllowedLicense("ssh2@1.17.0", "UNKNOWN", compatibility), true);
-  assert.equal(isAllowedLicense("ssh2@1.18.0", "UNKNOWN", compatibility), false);
+  assert.equal(
+    isAllowedLicense("ssh2@1.18.0", "UNKNOWN", compatibility),
+    false,
+  );
   assert.equal(isAllowedLicense("ssh2@1.17.0", "UNKNOWN", workspace), false);
   assert.equal(
     isAllowedLicense(

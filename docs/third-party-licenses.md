@@ -11,6 +11,7 @@
 Источники: https://blueoakcouncil.org/license/1.0.0, https://github.com/nodeca/argparse/blob/2.0.1/LICENSE, https://github.com/dchest/tweetnacl-js/blob/v0.14.5/LICENSE, https://github.com/sindresorhus/type-fest/blob/v5.10.0/license-mit, https://github.com/biomejs/biome.
 
 Исключения только для отсутствующего поля license у трёх точных версий в изолированных тестовых зависимостях:
+
 - buildcheck@0.0.7 — MIT: https://github.com/mscdex/buildcheck/blob/v0.0.7/LICENSE.
 - cpu-features@0.0.10 — MIT для Node.js-обёртки: https://github.com/mscdex/cpu-features/blob/v0.0.10/LICENSE; встроенная библиотека Google cpu_features — Apache-2.0, https://github.com/google/cpu_features.
 - ssh2@1.17.0 — MIT: https://github.com/mscdex/ssh2/blob/v1.17.0/LICENSE.
