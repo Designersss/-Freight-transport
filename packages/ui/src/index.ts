@@ -6,4 +6,5 @@ export { Header } from "./header";
 export { PageLayout } from "./page-layout";
 export { UiProvider } from "./provider";
 export { type NavigationItem, Sidebar } from "./sidebar";
+export { SkipLink } from "./skip-link";
 export { parseTheme, type Theme, themeCookie } from "./theme";

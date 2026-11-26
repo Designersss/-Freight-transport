@@ -1,10 +1,12 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { Link, usePathname } from "./navigation";
 
 export interface NavigationItem {
   href: string;
   label: string;
   icon: ReactNode;
-  active?: boolean;
 }
 
 interface SidebarProps {
@@ -14,22 +16,24 @@ interface SidebarProps {
 }
 
 export function Sidebar({ brandHref, navigationLabel, items }: SidebarProps) {
+  const pathname = usePathname();
+
   return (
     <aside className="movaro-sidebar">
-      <a className="movaro-wordmark movaro-sidebar-brand" href={brandHref}>
+      <Link className="movaro-wordmark movaro-sidebar-brand" href={brandHref}>
         MOVARO
-      </a>
+      </Link>
       <nav aria-label={navigationLabel} className="movaro-sidebar-nav">
         {items.map((item) => (
-          <a
-            aria-current={item.active ? "page" : undefined}
+          <Link
+            aria-current={pathname === item.href ? "page" : undefined}
             className="movaro-sidebar-link"
             href={item.href}
             key={item.href}
           >
             {item.icon}
             <span>{item.label}</span>
-          </a>
+          </Link>
         ))}
       </nav>
     </aside>
