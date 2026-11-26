@@ -11,6 +11,7 @@ const ru = {
   common: {
     theme: "Светлая тема",
     language: "Язык",
+    navigation: "Основная навигация",
     skip: "Перейти к содержимому",
   },
   web: {
@@ -20,6 +21,7 @@ const ru = {
   },
   admin: {
     title: "Администрирование",
+    description: "Доступ к управлению платформой будет предоставляться только авторизованным администраторам.",
   },
 };
 
@@ -27,6 +29,7 @@ const en: typeof ru = {
   common: {
     theme: "Light theme",
     language: "Language",
+    navigation: "Main navigation",
     skip: "Skip to content",
   },
   web: {
@@ -36,6 +39,7 @@ const en: typeof ru = {
   },
   admin: {
     title: "Administration",
+    description: "Platform administration will be available only to authorized administrators.",
   },
 };
 

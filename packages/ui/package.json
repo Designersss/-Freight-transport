@@ -14,7 +14,11 @@
   "dependencies": {
     "@freight/i18n": "workspace:*",
     "lucide-react": "1.81.0",
-    "next-intl": "4.16.2"
+    "next-intl": "4.16.2",
+    "@radix-ui/react-slot": "1.2.3",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "tailwind-merge": "3.7.0"
   },
   "peerDependencies": {
     "react": "19.3.1",

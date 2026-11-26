@@ -1,7 +1,8 @@
 import "../globals.css";
 
 import { isLocale, messages } from "@freight/i18n";
-import { Header, parseTheme, themeCookie, UiProvider } from "@freight/ui";
+import { AppShell, Header, parseTheme, Sidebar, themeCookie, UiProvider } from "@freight/ui";
+import { LayoutDashboard } from "lucide-react";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
@@ -18,6 +19,7 @@ interface LayoutProps {
 }
 
 export default async function RootLayout({ children, params }: LayoutProps) {
+  if (process.env.NODE_ENV === "production") notFound();
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const theme = parseTheme((await cookies()).get(themeCookie)?.value);
@@ -29,8 +31,23 @@ export default async function RootLayout({ children, params }: LayoutProps) {
           <a className="movaro-skip" href="#main-content">
             {messages[locale].common.skip}
           </a>
-          <Header initialTheme={theme} locale={locale} />
-          {children}
+          <AppShell
+            header={<Header initialTheme={theme} locale={locale} showBrand={false} />}
+            sidebar={
+              <Sidebar
+                brandHref={`/${locale}`}
+                navigationLabel={messages[locale].common.navigation}
+                items={[{
+                  href: `/${locale}`,
+                  label: messages[locale].admin.title,
+                  icon: <LayoutDashboard aria-hidden="true" size={16} />,
+                  active: true,
+                }]}
+              />
+            }
+          >
+            {children}
+          </AppShell>
         </UiProvider>
       </body>
     </html>

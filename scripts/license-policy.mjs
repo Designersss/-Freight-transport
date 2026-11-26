@@ -23,6 +23,12 @@ const reviewedUnknown = new Set([
 
 export function isAllowedLicense(name, license, sources) {
   if (allowedLicenses.has(license)) return true;
+  if (
+    name === "@fontsource-variable/manrope@5.3.0" &&
+    license === "OFL-1.1" &&
+    sources.size === 1 &&
+    sources.has("workspace")
+  ) return true;
   return (
     license === "UNKNOWN" &&
     reviewedUnknown.has(name) &&

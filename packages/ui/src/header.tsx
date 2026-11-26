@@ -4,14 +4,16 @@ import type { Locale } from "@freight/i18n";
 import { Moon, Sun } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { Button } from "./components/button";
 import { type Theme, themeCookie, toggleTheme } from "./theme";
 
 interface HeaderProps {
   locale: Locale;
   initialTheme: Theme;
+  showBrand?: boolean;
 }
 
-export function Header({ locale, initialTheme }: HeaderProps) {
+export function Header({ locale, initialTheme, showBrand = true }: HeaderProps) {
   const t = useTranslations("common");
   const [theme, setTheme] = useState(initialTheme);
 
@@ -19,15 +21,18 @@ export function Header({ locale, initialTheme }: HeaderProps) {
     const next = toggleTheme(theme);
     document.documentElement.dataset.theme = next;
     const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    // biome-ignore lint/suspicious/noDocumentCookie: one non-sensitive preference, compatible with browsers without Cookie Store API.
     document.cookie = `${themeCookie}=${next}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
     setTheme(next);
   }
 
   return (
     <header className="movaro-header">
-      <a className="movaro-wordmark" href={`/${locale}`}>
-        MOVARO
-      </a>
+      {showBrand ? (
+        <a className="movaro-wordmark" href={`/${locale}`}>
+          MOVARO
+        </a>
+      ) : <span aria-hidden="true" />}
       <div className="movaro-controls">
         <nav aria-label={t("language")} className="movaro-language">
           <a
@@ -45,10 +50,11 @@ export function Header({ locale, initialTheme }: HeaderProps) {
             EN
           </a>
         </nav>
-        <button
+        <Button
           aria-label={t("theme")}
           aria-pressed={theme === "light"}
-          className="movaro-icon-button"
+          variant="outline"
+          size="icon"
           onClick={changeTheme}
           type="button"
         >
@@ -57,7 +63,7 @@ export function Header({ locale, initialTheme }: HeaderProps) {
           ) : (
             <Sun aria-hidden="true" size={16} />
           )}
-        </button>
+        </Button>
       </div>
     </header>
   );
