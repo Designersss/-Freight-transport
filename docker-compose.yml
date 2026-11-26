@@ -34,9 +34,9 @@ services:
         - CMD-SHELL
         - >-
           curl --fail --silent --show-error --max-time 5 --head
-          --aws-sigv4 "aws:amz:$AWS_REGION:s3"
-          --user "$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY"
-          --output /dev/null "http://127.0.0.1:8333/$S3_BUCKET"
+          --aws-sigv4 "aws:amz:$$AWS_REGION:s3"
+          --user "$$AWS_ACCESS_KEY_ID:$$AWS_SECRET_ACCESS_KEY"
+          --output /dev/null "http://127.0.0.1:8333/$$S3_BUCKET"
       interval: 3s
       timeout: 6s
       start_period: 30s
