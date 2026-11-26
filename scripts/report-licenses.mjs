@@ -1,15 +1,9 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const commonLicenses = new Set([
-  "0BSD",
-  "Apache-2.0",
-  "BSD-2-Clause",
-  "BSD-3-Clause",
-  "ISC",
-  "MIT",
-  "PostgreSQL",
-]);
+import { isAllowedLicense } from "./license-policy.mjs";
+
+const enforce = process.argv.includes("--check");
 
 function directories(path) {
   return readdirSync(path, { withFileTypes: true })
@@ -75,6 +69,7 @@ if (
 }
 
 const groups = new Map();
+const violations = [];
 for (const [name, item] of [...inventory.entries()].sort()) {
   const group = groups.get(item.license) ?? [];
   group.push(name);
@@ -82,9 +77,17 @@ for (const [name, item] of [...inventory.entries()].sort()) {
 }
 for (const [license, packages] of [...groups.entries()].sort()) {
   console.log(`LICENSE ${license}: ${packages.length}`);
-  if (!commonLicenses.has(license)) {
-    for (const name of packages) console.log(`REVIEW ${license}: ${name}`);
+  for (const name of packages) {
+    const item = inventory.get(name);
+    if (!isAllowedLicense(name, license, item.sources)) {
+      violations.push(name);
+      console.log(`REVIEW ${license}: ${name}`);
+    } else if (license === "UNKNOWN") {
+      console.log(`REVIEWED EXCEPTION ${license}: ${name}`);
+    }
   }
 }
 console.log(`Unique installed packages: ${inventory.size}`);
 console.log(`Workspace packages: ${workspaceCount}`);
+console.log(`Unreviewed packages: ${violations.length}`);
+if (enforce && violations.length > 0) process.exitCode = 1;

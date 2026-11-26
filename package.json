@@ -21,7 +21,8 @@
     "dev:worker": "turbo run build --filter=@freight/worker && pnpm --filter @freight/worker dev",
     "api:generate": "turbo run build --filter=@freight/api && pnpm --filter @freight/api openapi:generate && pnpm --filter @freight/client-api generate",
     "api:check": "pnpm api:generate && node scripts/check-api-contract.mjs",
-    "licenses:report": "node scripts/report-licenses.mjs"
+    "licenses:report": "node scripts/report-licenses.mjs",
+    "licenses:check": "node --test scripts/license-policy.test.mjs && node scripts/report-licenses.mjs --check"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.8",
