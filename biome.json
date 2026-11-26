@@ -32,7 +32,8 @@
   "files": {
     "includes": [
       "**",
-      "!packages/client-api/src/generated/**"
+      "!packages/client-api/src/generated",
+      "!packages/client-api/openapi.json"
     ]
   }
 }
