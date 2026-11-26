@@ -14,7 +14,14 @@ export default async function Page({ params }: PageProps) {
   return (
     <PageLayout title={messages[locale].web.title}>
       <p className="movaro-description">{messages[locale].web.description}</p>
-      <div className="mt-5 flex flex-wrap gap-2"><Button asChild><Link href={`/${locale}/login`}>{messages[locale].auth.login}</Link></Button><Button asChild variant="outline"><Link href={`/${locale}/signup`}>{messages[locale].auth.signup}</Link></Button></div>
+      <div className="mt-5 flex flex-wrap gap-2">
+        <Button asChild>
+          <Link href={`/${locale}/login`}>{messages[locale].auth.login}</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href={`/${locale}/signup`}>{messages[locale].auth.signup}</Link>
+        </Button>
+      </div>
     </PageLayout>
   );
 }

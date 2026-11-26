@@ -85,7 +85,9 @@ export function createAuthHttpRuntime(
         ) {
           const callback = url.searchParams.get("callbackURL");
           const allowed = destinations(
-            path === "/verify-email" ? "/email-confirmation" : "/reset-password",
+            path === "/verify-email"
+              ? "/email-confirmation"
+              : "/reset-password",
           );
           const keys = [...url.searchParams.keys()];
           if (

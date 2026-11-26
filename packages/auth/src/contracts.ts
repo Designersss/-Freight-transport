@@ -36,4 +36,3 @@ export const publicSession = z.object({
   }),
   session: z.object({ expiresAt: z.string() }),
 });
-

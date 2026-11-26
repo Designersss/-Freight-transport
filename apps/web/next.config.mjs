@@ -7,7 +7,12 @@ const config = {
   transpilePackages: ["@freight/ui", "@freight/i18n"],
   poweredByHeader: false,
   async headers() {
-    return [{ source: "/:path*", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] }];
+    return [
+      {
+        source: "/:path*",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
+    ];
   },
 };
 
