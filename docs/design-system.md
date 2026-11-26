@@ -50,3 +50,7 @@ RU/EN. Не копируем чужие логотипы или данные. Ф
 Источники: https://github.com/shadcn-ui/ui/tree/main/apps/v4/registry/new-york-v4/ui ; https://ui.shadcn.com/docs/components/radix/field ; https://ui.shadcn.com/docs/forms/react-hook-form ; https://ui.shadcn.com/docs/components/radix/data-table ; https://www.radix-ui.com/primitives/docs/components/label ; https://www.radix-ui.com/primitives/docs/components/separator .
 
 Новые зависимости @radix-ui/react-label 2.1.8 и @radix-ui/react-separator 1.1.8 требуют реального pnpm install, lockfile, lint/typecheck/test/build и license check. Проверки после среза ещё не выполнялись. Следующий срез: Storybook с тестовыми историями, обе темы/локали, Playwright на реальных маршрутах, интеграция form/data-table и ручная приёмка. Не публиковать Storybook в production Web/Admin.
+
+## Четвёртый и пятый срезы — Storybook и браузерные тесты
+
+Локально владелец подтвердил запуск Storybook, frozen install, lint (149 файлов), typecheck 20/20, test 16/16, build 9/9, license policy 8/8 (720 установленных пакетов, 0 непроверенных, 7 требуют release review). Коммит 918b221 содержит локальные исправления и lockfile. Предупреждения Vite о client directives, sourcemap и размере chunk не подавлялись; сборка успешна. Field не использует избыточный role=group, FieldSet сохраняет нативную группировку. См. docs/storybook.md и docs/e2e.md. Новый браузерный срез ещё не проверен. Не закрывать RD-03 без фактических E2E/CI и ручной приёмки.
