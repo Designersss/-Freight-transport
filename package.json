@@ -1,0 +1,23 @@
+{
+  "name": "freight-transport",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.34.8",
+  "engines": {
+    "node": ">=24.22.3 <25",
+    "pnpm": "10.34.8"
+  },
+  "scripts": {
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "build": "turbo run build",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.8",
+    "turbo": "2.11.5",
+    "typescript": "5.9.3"
+  }
+}
