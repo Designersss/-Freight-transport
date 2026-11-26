@@ -3,9 +3,9 @@ import { randomBytes } from "node:crypto";
 import { test } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import pg from "pg";
-import { parseAuthConfig } from "../../packages/auth/dist/runtime.js";
 import { parseApiConfig } from "../../apps/api/dist/config/api-config.js";
 import { createApp } from "../../apps/api/dist/create-app.js";
+import { parseAuthConfig } from "../../packages/auth/dist/runtime.js";
 
 const origin = "http://127.0.0.1:4000";
 const base = "/api/v1/auth";
@@ -26,12 +26,19 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
   let app;
   async function mailLink(fragment) {
     for (let i = 0; i < 50; i++) {
-      const list = await fetch(`${mailOrigin}/api/v1/messages`, { signal: AbortSignal.timeout(3000) });
+      const list = await fetch(`${mailOrigin}/api/v1/messages`, {
+        signal: AbortSignal.timeout(3000),
+      });
       assert.equal(list.status, 200);
       const { messages } = await list.json();
-      const entry = messages.find((message) => message.To.some((to) => to.Address === email));
+      const entry = messages.find((message) =>
+        message.To.some((to) => to.Address === email),
+      );
       if (entry) {
-        const message = await fetch(`${mailOrigin}/api/v1/message/${entry.ID}`, { signal: AbortSignal.timeout(3000) });
+        const message = await fetch(
+          `${mailOrigin}/api/v1/message/${entry.ID}`,
+          { signal: AbortSignal.timeout(3000) },
+        );
         assert.equal(message.status, 200);
         const { Text } = await message.json();
         const link = Text.match(/https?:\/\/[^\s]+/)?.[0];
@@ -42,59 +49,148 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     assert.fail("Expected SMTP message not received");
   }
   try {
-    app = await createApp(parseApiConfig({ NODE_ENV: "test", DATABASE_URL: databaseUrl, LOG_LEVEL: "silent" }), parseAuthConfig({
-      NODE_ENV: "test",
-      AUTH_BASE_URL: origin,
-      AUTH_WEB_ORIGIN: origin,
-      AUTH_SECRET: randomBytes(32).toString("hex"),
-      SMTP_HOST: "127.0.0.1",
-      SMTP_PORT: process.env.AUTH_COMPAT_SMTP_PORT,
-      SMTP_SECURITY: "local",
-      SMTP_FROM: "auth@movaro.test",
-    }));
+    app = await createApp(
+      parseApiConfig({
+        NODE_ENV: "test",
+        DATABASE_URL: databaseUrl,
+        LOG_LEVEL: "silent",
+      }),
+      parseAuthConfig({
+        NODE_ENV: "test",
+        AUTH_BASE_URL: origin,
+        AUTH_WEB_ORIGIN: origin,
+        AUTH_SECRET: randomBytes(32).toString("hex"),
+        SMTP_HOST: "127.0.0.1",
+        SMTP_PORT: process.env.AUTH_COMPAT_SMTP_PORT,
+        SMTP_SECURITY: "local",
+        SMTP_FROM: "auth@movaro.test",
+      }),
+    );
     await app.init();
     const fastify = app.getHttpAdapter().getInstance();
-    const post = (path, payload, headers = {}) => fastify.inject({
-      method: "POST", url: `${base}${path}`, payload,
-      headers: { origin, "content-type": "application/json", ...headers },
-    });
-    const get = (url, cookie) => fastify.inject({ method: "GET", url, headers: cookie ? { cookie } : {} });
+    const post = (path, payload, headers = {}) =>
+      fastify.inject({
+        method: "POST",
+        url: `${base}${path}`,
+        payload,
+        headers: { origin, "content-type": "application/json", ...headers },
+      });
+    const get = (url, cookie) =>
+      fastify.inject({ method: "GET", url, headers: cookie ? { cookie } : {} });
     const creds = { email, password };
-    assert.equal((await post("/sign-up/email", { ...creds, name: "Test", role: "PLATFORM_ADMIN" })).statusCode, 400);
-    assert.equal((await post("/sign-up/email", { ...creds, email: "someone@telegram.invalid", name: "Test" })).statusCode, 400);
-    assert.equal((await post("/sign-up/email", { ...creds, name: "Test" }, { origin: "https://untrusted.invalid" })).statusCode, 403);
-    assert.equal((await post("/update-user", { role: "PLATFORM_ADMIN" })).statusCode, 404);
-    assert.equal((await post("/sign-up/email", { ...creds, name: "Test" })).statusCode, 200);
+    assert.equal(
+      (
+        await post("/sign-up/email", {
+          ...creds,
+          name: "Test",
+          role: "PLATFORM_ADMIN",
+        })
+      ).statusCode,
+      400,
+    );
+    assert.equal(
+      (
+        await post("/sign-up/email", {
+          ...creds,
+          email: "someone@telegram.invalid",
+          name: "Test",
+        })
+      ).statusCode,
+      400,
+    );
+    assert.equal(
+      (
+        await post(
+          "/sign-up/email",
+          { ...creds, name: "Test" },
+          { origin: "https://untrusted.invalid" },
+        )
+      ).statusCode,
+      403,
+    );
+    assert.equal(
+      (await post("/update-user", { role: "PLATFORM_ADMIN" })).statusCode,
+      404,
+    );
+    assert.equal(
+      (await post("/sign-up/email", { ...creds, name: "Test" })).statusCode,
+      200,
+    );
     assert.equal((await post("/sign-in/email", creds)).statusCode, 403);
     const verification = await mailLink("/verify-email?");
-    assert.equal((await get(verification.pathname + verification.search)).statusCode, 302);
+    assert.equal(
+      (await get(verification.pathname + verification.search)).statusCode,
+      302,
+    );
     const login = await post("/sign-in/email", creds);
     assert.equal(login.statusCode, 200);
     assert.deepEqual(login.json(), { success: true });
     const cookies = login.headers["set-cookie"];
     assert.ok(cookies);
-    const cookie = (Array.isArray(cookies) ? cookies : [cookies]).map((value) => value.split(";")[0]).join("; ");
+    const cookie = (Array.isArray(cookies) ? cookies : [cookies])
+      .map((value) => value.split(";")[0])
+      .join("; ");
     assert.match(cookie, /session_token=/);
     const session = await get(`${base}/get-session`, cookie);
     assert.equal(session.statusCode, 200);
     assert.equal(session.json().user.emailVerified, true);
     assert.equal(session.json().session.token, undefined);
-    assert.equal((await post("/request-password-reset", { email })).statusCode, 200);
+    assert.equal(
+      (await post("/request-password-reset", { email })).statusCode,
+      200,
+    );
     const reset = await mailLink("/reset-password/");
     const redirect = await get(reset.pathname + reset.search);
     assert.equal(redirect.statusCode, 302);
     const token = new URL(redirect.headers.location).searchParams.get("token");
     assert.ok(token);
-    const stored = await pool.query('SELECT "expiresAt" FROM "verification" WHERE identifier = $1', [`reset-password:${token}`]);
+    const stored = await pool.query(
+      'SELECT "expiresAt" FROM "verification" WHERE identifier = $1',
+      [`reset-password:${token}`],
+    );
     assert.equal(stored.rowCount, 1);
     const remaining = stored.rows[0].expiresAt.getTime() - Date.now();
     assert.ok(remaining > 840_000 && remaining <= 900_000);
-    assert.equal((await post("/reset-password", { token, newPassword })).statusCode, 200);
+    assert.equal(
+      (await post("/reset-password", { token, newPassword })).statusCode,
+      200,
+    );
     assert.equal((await get(`${base}/get-session`, cookie)).json(), null);
-    assert.equal((await post("/reset-password", { token, newPassword: password })).statusCode >= 400, true);
+    assert.equal(
+      (await post("/reset-password", { token, newPassword: password }))
+        .statusCode >= 400,
+      true,
+    );
     assert.equal((await post("/sign-in/email", creds)).statusCode, 401);
-    assert.equal((await post("/sign-in/email", { email, password: newPassword })).statusCode, 200);
+
+    const limited = await post("/sign-in/email", {
+      email,
+      password: newPassword,
+    });
+
+    assert.equal(limited.statusCode, 429);
+
+    const retryAfter = Number(limited.headers["retry-after"]);
+    assert.ok(
+      Number.isInteger(retryAfter) && retryAfter > 0 && retryAfter <= 10,
+    );
+
+    await delay((retryAfter + 1) * 1000);
+
+    assert.equal(
+      (
+        await post("/sign-in/email", {
+          email,
+          password: newPassword,
+        })
+      ).statusCode,
+      200,
+    );
   } finally {
-    try { await app?.close(); } finally { await pool.end(); }
+    try {
+      await app?.close();
+    } finally {
+      await pool.end();
+    }
   }
 });

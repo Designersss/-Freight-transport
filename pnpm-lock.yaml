@@ -78,6 +78,9 @@ importers:
       '@fastify/static':
         specifier: 10.1.4
         version: 10.1.4
+      '@freight/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@freight/config':
         specifier: workspace:*
         version: link:../../packages/config

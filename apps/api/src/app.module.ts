@@ -1,6 +1,6 @@
 import type { AuthConfig } from "@freight/auth/runtime";
-import { AuthModule } from "./auth/auth.module.js";
 import { type DynamicModule, Module } from "@nestjs/common";
+import { AuthModule } from "./auth/auth.module.js";
 import type { ApiConfig } from "./config/api-config.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { HealthModule } from "./health/health.module.js";
@@ -11,7 +11,10 @@ export class AppModule {
     const databaseModule = DatabaseModule.forRoot(config.DATABASE_URL);
     return {
       module: AppModule,
-      imports: [HealthModule.register(databaseModule), ...(auth ? [AuthModule.register(auth, config.DATABASE_URL)] : [])],
+      imports: [
+        HealthModule.register(databaseModule),
+        ...(auth ? [AuthModule.register(auth, config.DATABASE_URL)] : []),
+      ],
     };
   }
 }

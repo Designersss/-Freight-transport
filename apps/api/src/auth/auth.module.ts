@@ -1,5 +1,13 @@
-import { type AuthConfig, type AuthHttpRuntime, createAuthHttpRuntime } from "@freight/auth/runtime";
-import { type DynamicModule, Module, type OnModuleDestroy } from "@nestjs/common";
+import {
+  type AuthConfig,
+  type AuthHttpRuntime,
+  createAuthHttpRuntime,
+} from "@freight/auth/runtime";
+import {
+  type DynamicModule,
+  Module,
+  type OnModuleDestroy,
+} from "@nestjs/common";
 
 export class AuthService implements OnModuleDestroy {
   private readonly runtime: AuthHttpRuntime;
@@ -22,7 +30,12 @@ export class AuthModule {
   static register(config: AuthConfig, databaseUrl: string): DynamicModule {
     return {
       module: AuthModule,
-      providers: [{ provide: AuthService, useFactory: () => new AuthService(config, databaseUrl) }],
+      providers: [
+        {
+          provide: AuthService,
+          useFactory: () => new AuthService(config, databaseUrl),
+        },
+      ],
       exports: [AuthService],
     };
   }

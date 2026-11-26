@@ -17,7 +17,8 @@ try {
     .withExposedPorts(1025, 8025)
     .withWaitStrategy(Wait.forHttp("/livez", 8025))
     .start();
-  if (!["localhost", "127.0.0.1"].includes(mailpit.getHost())) throw new Error("Mailpit requires local Docker host");
+  if (!["localhost", "127.0.0.1"].includes(mailpit.getHost()))
+    throw new Error("Mailpit requires local Docker host");
   const url = new URL(container.getConnectionUri());
   if (url.hostname === "localhost") url.hostname = "127.0.0.1";
   if (url.hostname !== "127.0.0.1") {
@@ -39,11 +40,20 @@ try {
       fileURLToPath(new URL("./email-less-oauth.test.mjs", import.meta.url)),
     ],
     {
-      env: { ...process.env, AUTH_COMPAT_DATABASE_URL: url.href, AUTH_COMPAT_SMTP_PORT: String(mailpit.getMappedPort(1025)), AUTH_COMPAT_MAILPIT_PORT: String(mailpit.getMappedPort(8025)) },
+      env: {
+        ...process.env,
+        AUTH_COMPAT_DATABASE_URL: url.href,
+        AUTH_COMPAT_SMTP_PORT: String(mailpit.getMappedPort(1025)),
+        AUTH_COMPAT_MAILPIT_PORT: String(mailpit.getMappedPort(8025)),
+      },
       stdio: "inherit",
       timeout: 120_000,
     },
   );
 } finally {
-  try { await mailpit?.stop(); } finally { await container.stop(); }
+  try {
+    await mailpit?.stop();
+  } finally {
+    await container.stop();
+  }
 }
