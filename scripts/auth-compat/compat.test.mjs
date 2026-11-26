@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { Readable } from "node:stream";
 import { test } from "node:test";
+import { setTimeout as delay } from "node:timers/promises";
 import { betterAuth } from "better-auth";
 import { getMigrations } from "better-auth/db/migration";
 import { fromNodeHeaders } from "better-auth/node";
@@ -47,6 +48,7 @@ test("Better Auth on the real Nest/Fastify adapter and isolated PostgreSQL", asy
       }),
     );
     const fastify = app.getHttpAdapter().getInstance();
+    const activeStreams = new Set();
     // Test-only routes. The production application never registers these.
     fastify.route({
       method: ["GET", "POST"],
@@ -79,7 +81,10 @@ test("Better Auth on the real Nest/Fastify adapter and isolated PostgreSQL", asy
     });
     fastify.get("/api/v1/auth-compat/events", async (request, reply) => {
       const controller = new AbortController();
-      reply.raw.once("close", () => controller.abort());
+      reply.raw.once("close", () => {
+        controller.abort();
+        activeStreams.delete(controller);
+      });
       const result = await openUserEventStream(
         database,
         async () => {
@@ -92,6 +97,7 @@ test("Better Auth on the real Nest/Fastify adapter and isolated PostgreSQL", asy
         controller.signal,
       );
       if (result.status !== 200) return reply.code(result.status).send();
+      if (!controller.signal.aborted) activeStreams.add(controller);
       return reply
         .header("content-type", "text/event-stream; charset=utf-8")
         .header("cache-control", "no-store")
@@ -223,9 +229,18 @@ test("Better Auth on the real Nest/Fastify adapter and isolated PostgreSQL", asy
       await reader.cancel();
     }
 
+    for (let i = 0; activeStreams.size > 0 && i < 100; i++) {
+      await delay(20);
+    }
+    assert.equal(
+      activeStreams.size,
+      0,
+      "Disconnected HTTP stream was cleaned up",
+    );
+
     const liveResponse = await fetch(address + eventsPath, {
       headers: { cookie, "last-event-id": "3" },
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(30_000),
     });
     const liveReader = liveResponse.body.getReader();
     try {
@@ -243,6 +258,13 @@ test("Better Auth on the real Nest/Fastify adapter and isolated PostgreSQL", asy
         live += decoder.decode(chunk.value, { stream: true });
       }
       assert.equal(live, "id: 4\nevent: refresh\ndata: {}\n\n");
+      let heartbeat = "";
+      while (!heartbeat.includes(": heartbeat\n\n")) {
+        const chunk = await liveReader.read();
+        assert.equal(chunk.done, false);
+        heartbeat += decoder.decode(chunk.value, { stream: true });
+      }
+      assert.equal(heartbeat, ": heartbeat\n\n");
       const logout = await post("sign-out", {}, { cookie });
       assert.equal(logout.statusCode, 200);
       assert.equal((await liveReader.read()).done, true);

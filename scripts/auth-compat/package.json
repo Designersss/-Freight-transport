@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@testcontainers/postgresql": "12.2.1",
     "better-auth": "1.7.28",
     "pg": "8.16.3"
   }
