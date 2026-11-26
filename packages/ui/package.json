@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./styles.css": "./src/styles.css",
     "./components/*": "./src/components/*.tsx",
-    "./cn": "./src/cn.ts"
+    "./lib/*": "./src/lib/*.ts",
+    "./hooks/*": "./src/hooks/*.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -37,5 +38,10 @@
     "react-dom": "19.3.1",
     "@types/react-dom": "19.3.0",
     "next": "16.4.6"
+  },
+  "imports": {
+    "#components/*": "./src/components/*.tsx",
+    "#lib/*": "./src/lib/*.ts",
+    "#hooks/*": "./src/hooks/*.ts"
   }
 }

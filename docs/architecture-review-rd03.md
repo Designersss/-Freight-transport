@@ -15,11 +15,13 @@
 - Fastify 5.12.8: прямой pin совпадает с зависимостью NestJS 11.2.12; @fastify/static 10.1.4 соответствует peer ^10.1.2 и содержит исправление безопасности. LogController вместо deprecated disableRequestLogging. Требуется повторный Swagger HTTP test и аудит зависимостей.
 - CI для PR в любую ветку, включая этот вложенный PR, без изменения обязательных проверок.
 
+- shadcn: согласованные components.json (new-york, CSS variables, Tailwind v4) в web/admin/ui, package imports/exports, Button и Card со слотами и вариантами на основе официального MIT registry. Сохранены компактные токены и прямой Radix Slot вместо агрегатного пакета. CLI add ещё не запускался; нельзя считать настройку проверенной.
+
 ## Источники официальной документации
 
 - Next.js 16 App Router Link: https://nextjs.org/docs/app/api-reference/components/link
 - next-intl v4: https://next-intl.dev/docs/routing/navigation ; https://next-intl.dev/docs/routing/setup
-- shadcn/ui monorepo: https://ui.shadcn.com/docs/monorepo
+- shadcn/ui monorepo: https://ui.shadcn.com/docs/monorepo ; https://ui.shadcn.com/schema.json ; https://ui.shadcn.com/r/styles/new-york-v4/button.json ; https://ui.shadcn.com/r/styles/new-york-v4/card.json
 - NestJS dynamic modules: https://docs.nestjs.com/fundamentals/dynamic-modules ; https://docs.nestjs.com/exception-filters
 - Zod 4 objects: https://zod.dev/api#objects
 - Prisma transactions: https://www.prisma.io/docs/orm/prisma-client/queries/transactions (при изменениях сверять с закреплённой v6)
@@ -33,4 +35,4 @@
 
 Не выполнены локальная установка, сборка, интеграционные и браузерные тесты после новых изменений. Требуются настоящий lockfile и pnpm check, pnpm api:check, интеграции, E2E, CI. Не сливать до приёмки.
 
-Открыто: официальный shadcn registry и components.json для существующего монорепозитория (не выдавать текущие адаптации за полный импорт registry); лицензионный блокер SWC/caniuse-lite/libvips/Lightning CSS на macOS и Linux, обязательства поставки. Не добавлять общие разрешения в лицензионную политику до проверки. Ранее pnpm licenses:check не прошёл. В полном отчёте требуется учёт платформенных сборок.
+Открыто: проверка shadcn CLI в реальном монорепозитории, лицензионный блокер SWC/caniuse-lite/libvips/Lightning CSS на macOS и Linux, обязательства поставки. Не добавлять общие разрешения в лицензионную политику до проверки. Ранее pnpm licenses:check не прошёл. В полном отчёте требуется учёт платформенных сборок.

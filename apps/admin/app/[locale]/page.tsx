@@ -1,5 +1,5 @@
 import { isLocale, messages } from "@freight/i18n";
-import { Card, PageLayout } from "@freight/ui";
+import { Card, CardContent, PageLayout } from "@freight/ui";
 import { notFound } from "next/navigation";
 
 interface PageProps {
@@ -15,9 +15,9 @@ export default async function Page({ params }: PageProps) {
   return (
     <PageLayout title={messages[locale].admin.title}>
       <Card>
-        <p className="movaro-description">
-          {messages[locale].admin.description}
-        </p>
+        <CardContent>
+          <p className="movaro-description">{messages[locale].admin.description}</p>
+        </CardContent>
       </Card>
     </PageLayout>
   );

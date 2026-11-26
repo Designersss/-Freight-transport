@@ -27,5 +27,10 @@
     "typescript": "5.9.3",
     "@tailwindcss/postcss": "4.3.5",
     "tailwindcss": "4.3.5"
+  },
+  "imports": {
+    "#components/*": "./components/*.tsx",
+    "#lib/*": "./lib/*.ts",
+    "#hooks/*": "./hooks/*.ts"
   }
 }

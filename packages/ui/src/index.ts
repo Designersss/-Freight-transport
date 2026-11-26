@@ -1,7 +1,7 @@
 export { AppShell } from "./app-shell";
-export { cn } from "./cn";
-export { Button } from "./components/button";
-export { Card } from "./components/card";
+export { Button, buttonVariants } from "./components/button";
+export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./components/card";
+export { cn } from "./lib/utils";
 export { Header } from "./header";
 export { PageLayout } from "./page-layout";
 export { UiProvider } from "./provider";
