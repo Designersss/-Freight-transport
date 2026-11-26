@@ -78,6 +78,7 @@ jobs:
           AUTH_COMPAT_DATABASE_URL: postgresql://freight:ci-local-only@127.0.0.1:5432/freight_auth_compat
         run: |
           docker compose exec -T postgres createdb -U freight freight_auth_compat
+          DATABASE_URL="$AUTH_COMPAT_DATABASE_URL" pnpm db:deploy
           node --test scripts/auth-compat/compat.test.mjs
       - name: Stop isolated infrastructure
         if: always()

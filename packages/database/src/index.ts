@@ -9,3 +9,8 @@ export function createDatabaseClient(databaseUrl: string): DatabaseClient {
 }
 
 export { appendOutboxEvent, relayOutboxBatch } from "./outbox.js";
+export {
+  appendUserInvalidation,
+  getUserEventHead,
+  readUserInvalidations,
+} from "./user-events.js";

@@ -31,3 +31,20 @@ model EventPublication {
   @@index([publishedAt, eventId], map: "event_publications_published_idx")
   @@map("event_publications")
 }
+
+model UserEventStream {
+  userId       String                  @id @map("user_id")
+  lastSequence BigInt                  @default(0) @map("last_sequence")
+  invalidations UserEventInvalidation[]
+
+  @@map("user_event_streams")
+}
+
+model UserEventInvalidation {
+  userId   String          @map("user_id")
+  sequence BigInt
+  stream   UserEventStream @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@id([userId, sequence])
+  @@map("user_event_invalidations")
+}

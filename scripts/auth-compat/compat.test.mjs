@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
+import { Readable } from "node:stream";
 import { test } from "node:test";
 import { betterAuth } from "better-auth";
 import { getMigrations } from "better-auth/db/migration";
@@ -7,6 +8,11 @@ import { fromNodeHeaders } from "better-auth/node";
 import pg from "pg";
 import { parseApiConfig } from "../../apps/api/dist/config/api-config.js";
 import { createApp } from "../../apps/api/dist/create-app.js";
+import { openUserEventStream } from "../../apps/api/dist/realtime/user-event-stream.js";
+import {
+  appendUserInvalidation,
+  createDatabaseClient,
+} from "../../packages/database/dist/index.js";
 
 const origin = "http://127.0.0.1:4000";
 const basePath = "/api/v1/auth";
@@ -19,6 +25,7 @@ test("Better Auth on the real Nest/Fastify adapter and isolated PostgreSQL", asy
   assert.equal(url.pathname, "/freight_auth_compat");
   const pool = new pg.Pool({ connectionString: databaseUrl });
   let app;
+  const database = createDatabaseClient(databaseUrl);
   try {
     const auth = betterAuth({
       baseURL: origin,
@@ -70,8 +77,30 @@ test("Better Auth on the real Nest/Fastify adapter and isolated PostgreSQL", asy
       if (!session) return reply.code(401).send({ code: "UNAUTHORIZED" });
       return { userId: session.user.id };
     });
+    fastify.get("/api/v1/auth-compat/events", async (request, reply) => {
+      const controller = new AbortController();
+      reply.raw.once("close", () => controller.abort());
+      const result = await openUserEventStream(
+        database,
+        async () => {
+          const session = await auth.api.getSession({
+            headers: fromNodeHeaders(request.headers),
+          });
+          return session?.user.id ?? null;
+        },
+        request.headers["last-event-id"],
+        controller.signal,
+      );
+      if (result.status !== 200) return reply.code(result.status).send();
+      return reply
+        .header("content-type", "text/event-stream; charset=utf-8")
+        .header("cache-control", "no-store")
+        .header("x-accel-buffering", "no")
+        .send(Readable.from(result.stream));
+    });
     await app.init();
     await fastify.ready();
+    const address = await fastify.listen({ host: "127.0.0.1", port: 0 });
 
     const sessionUrl = "/api/v1/auth-compat/session";
     const anonymous = await fastify.inject({ method: "GET", url: sessionUrl });
@@ -131,8 +160,93 @@ test("Better Auth on the real Nest/Fastify adapter and isolated PostgreSQL", asy
     ]);
     assert.equal(stored.rows[0]?.id, userId);
 
-    const logout = await post("sign-out", {}, { cookie });
-    assert.equal(logout.statusCode, 200);
+    const eventsPath = "/api/v1/auth-compat/events";
+    const unauthorized = await fastify.inject({
+      method: "GET",
+      url: eventsPath,
+    });
+    assert.equal(unauthorized.statusCode, 401);
+
+    const otherSignup = await post("sign-up/email", {
+      email: `${randomBytes(12).toString("hex")}@example.invalid`,
+      password: randomBytes(24).toString("hex"),
+      name: "Other user",
+    });
+    assert.equal(otherSignup.statusCode, 200);
+    const otherUserId = otherSignup.json().user.id;
+    await database.$transaction((tx) =>
+      appendUserInvalidation(tx, otherUserId),
+    );
+    await assert.rejects(
+      database.$transaction(async (tx) => {
+        await appendUserInvalidation(tx, userId);
+        throw new Error("rollback");
+      }),
+      /rollback/,
+    );
+    const sequences = await Promise.all(
+      Array.from({ length: 3 }, () =>
+        database.$transaction((tx) => appendUserInvalidation(tx, userId)),
+      ),
+    );
+    assert.deepEqual(sequences.sort(), [1n, 2n, 3n]);
+
+    const invalid = await fastify.inject({
+      method: "GET",
+      url: eventsPath,
+      headers: { cookie, "last-event-id": "999" },
+    });
+    assert.equal(invalid.statusCode, 400);
+
+    const response = await fetch(address + eventsPath, {
+      headers: { cookie, "last-event-id": "2" },
+      signal: AbortSignal.timeout(10_000),
+    });
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type"), /text\/event-stream/);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let received = "";
+    try {
+      while (!received.includes("id: 3\nevent: refresh\ndata: {}\n\n")) {
+        const chunk = await reader.read();
+        assert.equal(chunk.done, false);
+        received += decoder.decode(chunk.value, { stream: true });
+      }
+      assert.equal(received, "retry: 3000\n\nid: 3\nevent: refresh\ndata: {}\n\n");
+    } finally {
+      await reader.cancel();
+    }
+
+    const liveResponse = await fetch(address + eventsPath, {
+      headers: { cookie, "last-event-id": "3" },
+      signal: AbortSignal.timeout(10_000),
+    });
+    const liveReader = liveResponse.body.getReader();
+    try {
+      assert.equal(liveResponse.status, 200);
+      const initial = await liveReader.read();
+      assert.equal(decoder.decode(initial.value), "retry: 3000\n\n");
+      await database.$transaction((tx) =>
+        appendUserInvalidation(tx, otherUserId),
+      );
+      await database.$transaction((tx) =>
+        appendUserInvalidation(tx, userId),
+      );
+      let live = "";
+      while (!live.includes("id: 4\nevent: refresh\ndata: {}\n\n")) {
+        const chunk = await liveReader.read();
+        assert.equal(chunk.done, false);
+        live += decoder.decode(chunk.value, { stream: true });
+      }
+      assert.equal(live, "id: 4\nevent: refresh\ndata: {}\n\n");
+      const logout = await post("sign-out", {}, { cookie });
+      assert.equal(logout.statusCode, 200);
+      assert.equal((await liveReader.read()).done, true);
+    } finally {
+      await liveReader.cancel();
+    }
+
     const revoked = await fastify.inject({
       method: "GET",
       url: sessionUrl,
@@ -143,6 +257,7 @@ test("Better Auth on the real Nest/Fastify adapter and isolated PostgreSQL", asy
     try {
       await app?.close();
     } finally {
+      await database.$disconnect();
       await pool.end();
     }
   }
