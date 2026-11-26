@@ -3,16 +3,9 @@
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": [
-      "DOM",
-      "DOM.Iterable",
-      "ES2022"
-    ],
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": [
-    "playwright.config.ts",
-    "tests/**/*.ts"
-  ]
+  "include": ["playwright.config.ts", "tests/**/*.ts"]
 }

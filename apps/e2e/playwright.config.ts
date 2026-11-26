@@ -19,32 +19,44 @@ export default defineConfig({
   },
   projects: [
     { name: "chromium-desktop", use: { ...devices["Desktop Chrome"] } },
-    { name: "chromium-mobile", use: { ...devices["Desktop Chrome"], viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true } },
+    {
+      name: "chromium-mobile",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 375, height: 812 },
+        isMobile: true,
+        hasTouch: true,
+      },
+    },
   ],
   webServer: [
     {
-      command: "pnpm --filter @freight/web exec next start --hostname 127.0.0.1 --port 3100",
+      command:
+        "pnpm --filter @freight/web exec next start --hostname 127.0.0.1 --port 3100",
       cwd: root,
       port: 3100,
       reuseExistingServer: false,
       timeout: 120_000,
     },
     {
-      command: "pnpm --filter @freight/admin exec next dev --hostname 127.0.0.1 --port 3101",
+      command:
+        "pnpm --filter @freight/admin exec next dev --hostname 127.0.0.1 --port 3101",
       cwd: root,
       port: 3101,
       reuseExistingServer: false,
       timeout: 120_000,
     },
     {
-      command: "pnpm --filter @freight/admin exec next start --hostname 127.0.0.1 --port 3102",
+      command:
+        "pnpm --filter @freight/admin exec next start --hostname 127.0.0.1 --port 3102",
       cwd: root,
       port: 3102,
       reuseExistingServer: false,
       timeout: 120_000,
     },
     {
-      command: "pnpm --filter @freight/storybook exec vite preview --outDir storybook-static --host 127.0.0.1 --port 6106 --strictPort",
+      command:
+        "pnpm --filter @freight/storybook exec vite preview --outDir storybook-static --host 127.0.0.1 --port 6106 --strictPort",
       cwd: root,
       port: 6106,
       reuseExistingServer: false,
