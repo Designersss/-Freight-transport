@@ -82,3 +82,13 @@ LICENSE-3RD-PARTY.txt и применимые уведомления.
 - https://github.com/dequelabs/axe-core/blob/v4.14.1/LICENSE
 - https://github.com/dequelabs/axe-core/blob/v4.14.1/package.json
 - https://github.com/storybookjs/storybook/blob/v10.6.9/code/addons/a11y/package.json
+
+## RD-04 — Nodemailer
+
+Nodemailer 10.6.1 — MIT-0, разрешительная лицензия,
+допускающая коммерческое использование.
+Допуск ограничен точной версией и источником workspace.
+Финальный состав production-артефактов проверяется в RD-18.
+
+Источник:
+https://github.com/nodemailer/nodemailer/blob/v10.6.1/LICENSE

@@ -5,7 +5,10 @@ const emailSchema = z.email();
 // Internal OAuth identity addresses are not real delivery destinations.
 export function isDeliverableEmail(value: string): boolean {
   const normalized = value.trim().toLowerCase();
-  return emailSchema.safeParse(normalized).success && !normalized.endsWith(".invalid");
+  return (
+    emailSchema.safeParse(normalized).success &&
+    !normalized.endsWith(".invalid")
+  );
 }
 
 export type AuthMailKind = "verify-email" | "reset-password";

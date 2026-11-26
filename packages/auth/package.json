@@ -12,7 +12,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run"
+    "test": "node --experimental-strip-types --test src/config.test.ts"
   },
   "dependencies": {
     "@freight/config": "workspace:*",
@@ -22,9 +22,9 @@
     "zod": "4.1.12"
   },
   "devDependencies": {
+    "@types/bun": "1.3.4",
     "@types/node": "24.0.0",
     "@types/pg": "8.15.6",
-    "typescript": "5.9.3",
-    "vitest": "4.0.18"
+    "typescript": "5.9.3"
   }
 }

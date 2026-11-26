@@ -1,4 +1,4 @@
-import { betterAuth, type BetterAuthOptions } from "better-auth";
+import { type BetterAuthOptions, betterAuth } from "better-auth";
 import type { Pool } from "pg";
 import type { AuthConfig } from "./config.js";
 import { type AuthMailer, isDeliverableEmail } from "./email.js";

@@ -1,6 +1,10 @@
 import { createTransport } from "nodemailer";
 import type { AuthConfig } from "./config.js";
-import { type AuthMailer, type AuthMailKind, isDeliverableEmail } from "./email.js";
+import {
+  type AuthMailer,
+  type AuthMailKind,
+  isDeliverableEmail,
+} from "./email.js";
 
 export function createSmtpMailer(config: AuthConfig): AuthMailer {
   const transport = createTransport({
@@ -26,10 +30,14 @@ export function createSmtpMailer(config: AuthConfig): AuthMailer {
         throw new Error("Invalid auth mail recipient");
       }
       const link = new URL(url);
-      if (link.origin !== config.AUTH_BASE_URL || link.username || link.password ||
+      if (
+        link.origin !== config.AUTH_BASE_URL ||
+        link.username ||
+        link.password ||
         (kind === "verify-email"
           ? link.pathname !== "/api/v1/auth/verify-email"
-          : !/^\/api\/v1\/auth\/reset-password\/[^/]+$/.test(link.pathname))) {
+          : !/^\/api\/v1\/auth\/reset-password\/[^/]+$/.test(link.pathname))
+      ) {
         throw new Error("Invalid auth mail URL");
       }
       const verification = kind === "verify-email";
@@ -37,7 +45,9 @@ export function createSmtpMailer(config: AuthConfig): AuthMailer {
         const result = await transport.sendMail({
           from: config.SMTP_FROM,
           to: email,
-          subject: verification ? "MOVARO — Confirm your email / Подтвердите email" : "MOVARO — Reset password / Сброс пароля",
+          subject: verification
+            ? "MOVARO — Confirm your email / Подтвердите email"
+            : "MOVARO — Reset password / Сброс пароля",
           text: verification
             ? `Подтвердите email / Confirm your email:\n${link.href}\n\nЕсли вы не запрашивали письмо, проигнорируйте его. / If you did not request this message, ignore it.`
             : `Установите новый пароль / Reset your password (15 min):\n${link.href}\n\nЕсли вы не запрашивали письмо, проигнорируйте его. / If you did not request this message, ignore it.`,
