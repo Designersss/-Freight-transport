@@ -1,7 +1,13 @@
 import "../globals.css";
 
 import { isLocale, messages } from "@freight/i18n";
-import { Header, parseTheme, SkipLink, themeCookie, UiProvider } from "@freight/ui";
+import {
+  Header,
+  parseTheme,
+  SkipLink,
+  themeCookie,
+  UiProvider,
+} from "@freight/ui";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";

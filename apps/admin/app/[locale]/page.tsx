@@ -16,7 +16,9 @@ export default async function Page({ params }: PageProps) {
     <PageLayout title={messages[locale].admin.title}>
       <Card>
         <CardContent>
-          <p className="movaro-description">{messages[locale].admin.description}</p>
+          <p className="movaro-description">
+            {messages[locale].admin.description}
+          </p>
         </CardContent>
       </Card>
     </PageLayout>

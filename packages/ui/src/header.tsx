@@ -25,7 +25,10 @@ export function Header({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const query = Object.fromEntries(
-    Array.from(new Set(searchParams.keys()), (key) => [key, searchParams.getAll(key)]),
+    Array.from(new Set(searchParams.keys()), (key) => [
+      key,
+      searchParams.getAll(key),
+    ]),
   );
 
   function changeTheme() {
