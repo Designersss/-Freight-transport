@@ -9,9 +9,18 @@ test("login form validates locally and supports both languages and themes", asyn
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Войдите в MOVARO",
   );
+  await expect(page.getByRole("link", { name: "Подтверждение почты", exact: true })).toHaveCount(0);
+  let requests = 0;
+  page.on("request", (request) => { if (request.method() === "POST" && request.url().includes("/api/auth/")) requests++; });
   await page.getByRole("button", { name: "Войти", exact: true }).click();
   await expect(page.getByText("Введите корректный email.")).toBeVisible();
   await expect(page.getByText("Проверьте длину пароля.")).toBeVisible();
+  await expect(page.getByLabel("Пароль")).toHaveAttribute("maxlength", "128");
+  await page.getByLabel("Электронная почта").fill("user@example.test");
+  await page.getByLabel("Пароль").fill("12345");
+  await page.getByRole("button", { name: "Войти", exact: true }).click();
+  await expect(page.getByText("Проверьте длину пароля.")).toBeVisible();
+  expect(requests).toBe(0);
   await expectNoHorizontalOverflow(page);
   await expectAccessible(page);
   await page.getByRole("button", { name: "Светлая тема" }).click();

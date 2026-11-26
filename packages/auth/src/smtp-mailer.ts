@@ -58,6 +58,8 @@ export function createSmtpMailer(config: AuthConfig): AuthMailer {
           throw new Error("SMTP recipient rejected");
         }
       } catch {
+        // Deliberately omit recipient, token, URL, credentials and provider response.
+        console.error("AUTH_SMTP_DELIVERY_FAILED");
         // Never propagate provider responses that may include address or message data.
         throw new Error("Auth mail delivery failed");
       }

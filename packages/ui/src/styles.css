@@ -75,6 +75,16 @@ body {
   outline-offset: 3px;
 }
 
+/* Inputs have a single visible focus border; retain keyboard focus on other controls. */
+[data-slot="input"]:focus-visible {
+  outline: none;
+  border-color: var(--ring);
+}
+
+[data-slot="input"][aria-invalid="true"]:focus-visible {
+  border-color: var(--destructive);
+}
+
 .movaro-skip {
   position: absolute;
   top: 8px;

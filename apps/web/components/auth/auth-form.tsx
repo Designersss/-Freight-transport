@@ -1,6 +1,6 @@
 "use client";
 
-import { authBodies } from "@freight/auth/contracts";
+import { authBodies, PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH } from "@freight/auth/contracts";
 import { type Locale, messages } from "@freight/i18n";
 import {
   Alert,
@@ -14,7 +14,7 @@ import {
 } from "@freight/ui";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AuthPanel } from "./auth-panel";
 
@@ -38,20 +38,24 @@ export function AuthForm({
   locale,
   token = "",
   invalid = false,
+  completed = false,
 }: {
   mode: AuthMode;
   locale: Locale;
   token?: string;
   invalid?: boolean;
+  completed?: boolean;
 }) {
   const t = messages[locale].auth;
   const router = useRouter();
   const [notice, setNotice] = useState("");
+  const inFlight = useRef(false);
   const [failure, setFailure] = useState("");
   const {
     register,
     handleSubmit,
     setError,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<Values>({
     defaultValues: { name: "", email: "", password: "", newPassword: "" },
@@ -114,6 +118,7 @@ export function AuthForm({
     });
 
   async function submit(values: Values) {
+    if (inFlight.current) return;
     setFailure("");
     setNotice("");
     const payload = {
@@ -154,6 +159,7 @@ export function AuthForm({
       }
       return;
     }
+    inFlight.current = true;
     try {
       const result = await fetch(`/api/auth${endpoints[mode]}`, {
         method: "POST",
@@ -162,17 +168,24 @@ export function AuthForm({
         credentials: "same-origin",
         redirect: "error",
       });
+      const data: unknown = await result.json().catch(() => null);
+      const code = data && typeof data === "object" && "code" in data ? data.code : undefined;
       if (!result.ok) {
+        if (mode === "login" && code === "EMAIL_NOT_VERIFIED") {
+          router.replace(`/${locale}/email-confirmation`);
+          return;
+        }
         setFailure(
           result.status === 429
             ? t.limited
-            : result.status >= 500
-              ? t.unavailable
-              : t.error,
+            : code === "INVALID_CREDENTIALS"
+              ? t.invalidCredentials
+              : result.status >= 500
+                ? t.unavailable
+                : t.error,
         );
         return;
       }
-      const data: unknown = await result.json();
       if (
         !data ||
         typeof data !== "object" ||
@@ -197,11 +210,15 @@ export function AuthForm({
       setNotice(mode === "forgot" ? t.resetSent : t.sent);
     } catch {
       setFailure(t.unavailable);
+    } finally {
+      reset();
+      inFlight.current = false;
     }
   }
 
   return (
     <AuthPanel title={title} description={description}>
+      {completed && mode === "login" && <p role="status" className="mb-4 text-primary">{t.verifiedDone}</p>}
       {unavailable ? (
         <p role="alert" className="text-destructive">
           {t.invalidLink}
@@ -228,6 +245,8 @@ export function AuthForm({
                   id={field.name}
                   type={field.type}
                   autoComplete={field.autoComplete}
+                  maxLength={field.type === "password" ? PASSWORD_MAX_LENGTH : field.name === "name" ? 200 : 254}
+                  minLength={field.type === "password" ? PASSWORD_MIN_LENGTH : undefined}
                   aria-invalid={Boolean(errors[field.name])}
                   aria-describedby={
                     errors[field.name] ? `${field.name}-error` : undefined
@@ -290,12 +309,6 @@ export function AuthForm({
                 {t.signup}
               </Link>
             </p>
-            <Link
-              className="text-primary hover:underline"
-              href={`/${locale}/email-confirmation`}
-            >
-              {t.verificationTitle}
-            </Link>
           </>
         ) : (
           <Link

@@ -3,6 +3,7 @@ import { AUTH_BASE_PATH, createEmailAuth } from "./auth.js";
 import { type AuthConfig, parseAuthConfig } from "./config.js";
 import { authBodies as bodies, publicSession } from "./contracts.js";
 import { isDeliverableEmail } from "./email.js";
+import { reserveMailRequest } from "./mail-rate-limit.js";
 import { createSmtpMailer } from "./smtp-mailer.js";
 
 export { type AuthConfig, parseAuthConfig } from "./config.js";
@@ -74,6 +75,14 @@ export function createAuthHttpRuntime(
         if (path === "/request-password-reset") {
           payload.redirectTo = destination(language, "/reset-password");
         }
+        if (typeof payload.email === "string" && ["/sign-up/email", "/send-verification-email", "/request-password-reset"].includes(path)) {
+          try {
+            const retry = await reserveMailRequest(pool, config.AUTH_SECRET, path === "/request-password-reset" ? "password-reset" : "verification", payload.email);
+            if (retry !== null) return Response.json({ code: "RATE_LIMITED" }, { status: 429, headers: { "cache-control": "no-store", "retry-after": String(retry) } });
+          } catch {
+            return failure(503, "AUTH_REQUEST_FAILED");
+          }
+        }
         body = JSON.stringify(payload);
         headers.delete("content-length");
       } else if (request.method === "GET") {
@@ -130,22 +139,30 @@ export function createAuthHttpRuntime(
           const target = new URL(location, config.AUTH_BASE_URL);
           if (target.origin !== config.AUTH_WEB_ORIGIN)
             return failure(400, "INVALID_REDIRECT");
+          if (path === "/verify-email" && !target.searchParams.has("error") && destinations("/email-confirmation").includes(target.href)) {
+            target.pathname = target.pathname.replace(/\/email-confirmation$/, "/login");
+            target.searchParams.set("verified", "done");
+          }
           outputHeaders.set("location", target.href);
           return new Response(null, {
             status: response.status,
             headers: outputHeaders,
           });
         }
-        if (!response.ok)
+        if (!response.ok) {
+          let code = response.status === 429 ? "RATE_LIMITED" : "AUTH_REQUEST_FAILED";
+          if (path === "/sign-in/email" && response.status === 403) {
+            const error: unknown = await response.json().catch(() => null);
+            if (error && typeof error === "object" && "code" in error && error.code === "EMAIL_NOT_VERIFIED") code = "EMAIL_NOT_VERIFIED";
+          }
+          if (path === "/sign-in/email" && response.status === 401) code = "INVALID_CREDENTIALS";
           return Response.json(
             {
-              code:
-                response.status === 429
-                  ? "RATE_LIMITED"
-                  : "AUTH_REQUEST_FAILED",
+              code,
             },
             { status: response.status, headers: outputHeaders },
           );
+        }
         if (path === "/get-session") {
           const result = await response.json();
           if (result === null)

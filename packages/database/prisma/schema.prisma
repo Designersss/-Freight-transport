@@ -153,3 +153,13 @@ model UserProfile {
 
   @@map("user_profiles")
 }
+
+// Application-level limits independent of Better Auth's per-IP buckets.
+model AuthMailRateLimit {
+  key       String   @id
+  count     Int
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+
+  @@index([expiresAt], map: "auth_mail_rate_limits_expiry_idx")
+  @@map("auth_mail_rate_limits")
+}

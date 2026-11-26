@@ -1,6 +1,7 @@
 import { type BetterAuthOptions, betterAuth } from "better-auth";
 import type { Pool } from "pg";
 import type { AuthConfig } from "./config.js";
+import { PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH } from "./contracts.js";
 import { type AuthMailer, isDeliverableEmail } from "./email.js";
 
 export const AUTH_BASE_PATH = "/api/v1/auth";
@@ -30,8 +31,8 @@ export function createAuthOptions(
     account: { accountLinking: { disableImplicitLinking: true } },
     emailAndPassword: {
       enabled: true,
-      minPasswordLength: 12,
-      maxPasswordLength: 128,
+      minPasswordLength: PASSWORD_MIN_LENGTH,
+      maxPasswordLength: PASSWORD_MAX_LENGTH,
       requireEmailVerification: true,
       resetPasswordTokenExpiresIn: RESET_PASSWORD_TTL_SECONDS,
       revokeSessionsOnPasswordReset: true,
@@ -42,6 +43,7 @@ export function createAuthOptions(
     },
     emailVerification: {
       sendOnSignUp: true,
+      sendOnSignIn: false,
       autoSignInAfterVerification: false,
       async sendVerificationEmail({ user, url }) {
         if (!isDeliverableEmail(user.email)) return;

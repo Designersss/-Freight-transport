@@ -13,6 +13,6 @@ export default async function Page({
   if (!isLocale(locale)) notFound();
   const query = await searchParams;
   return (
-    <AuthForm mode="login" locale={locale} invalid={Boolean(query.error)} />
+    <AuthForm mode="login" locale={locale} invalid={Boolean(query.error)} completed={query.verified === "done"} />
   );
 }

@@ -5,7 +5,9 @@ const email = z
   .email()
   .transform((value) => value.toLowerCase())
   .refine(isDeliverableEmail);
-const password = z.string().min(12).max(128);
+export const PASSWORD_MIN_LENGTH = 6;
+export const PASSWORD_MAX_LENGTH = 128;
+const password = z.string().min(PASSWORD_MIN_LENGTH).max(PASSWORD_MAX_LENGTH);
 const locale = z.enum(["ru", "en"]).default("ru");
 export const authBodies = {
   "/sign-up/email": z.strictObject({
@@ -16,7 +18,7 @@ export const authBodies = {
   }),
   "/sign-in/email": z.strictObject({
     email,
-    password: z.string().min(1).max(128),
+    password,
   }),
   "/sign-out": z.strictObject({}),
   "/send-verification-email": z.strictObject({ email, locale }),
