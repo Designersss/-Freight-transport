@@ -122,3 +122,8 @@ test("rejects unreviewed packages, versions and architectures", () => {
     assert.equal(isAllowedLicense(name, license, workspace), false);
   }
 });
+
+test("allows reviewed argparse version only", () => {
+  assert.equal(isAllowedLicense("argparse@3.0.4", "PSF-2.0", workspace), true);
+  assert.equal(isAllowedLicense("argparse@3.0.5", "PSF-2.0", workspace), false);
+});

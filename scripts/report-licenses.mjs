@@ -88,7 +88,9 @@ for (const [license, packages] of [...groups.entries()].sort()) {
       console.log(`REVIEW ${license}: ${name}`);
     } else if (isReviewedWorkspaceLicense(name, license, item.sources)) {
       releaseReview.push(name);
-      console.log(`REVIEWED FOR DEVELOPMENT; RELEASE REVIEW ${license}: ${name}`);
+      console.log(
+        `REVIEWED FOR DEVELOPMENT; RELEASE REVIEW ${license}: ${name}`,
+      );
     } else if (license === "UNKNOWN") {
       console.log(`REVIEWED EXCEPTION ${license}: ${name}`);
     }
@@ -97,5 +99,7 @@ for (const [license, packages] of [...groups.entries()].sort()) {
 console.log(`Unique installed packages: ${inventory.size}`);
 console.log(`Workspace packages: ${workspaceCount}`);
 console.log(`Unreviewed packages: ${violations.length}`);
-console.log(`Development-reviewed packages requiring release review: ${releaseReview.length}`);
+console.log(
+  `Development-reviewed packages requiring release review: ${releaseReview.length}`,
+);
 if (enforce && violations.length > 0) process.exitCode = 1;

@@ -24,6 +24,7 @@ const reviewedUnknown = new Set([
 // Exact workspace versions reviewed for development and CI, not for redistribution.
 // See docs/third-party-licenses.md for outstanding release obligations.
 const reviewedWorkspace = new Map([
+  ["argparse@3.0.4", "PSF-2.0"],
   ["@swc/core-darwin-arm64@1.16.22", "Apache-2.0 AND MIT"],
   ["@swc/core-linux-x64-gnu@1.16.22", "Apache-2.0 AND MIT"],
   ["@swc/core-linux-arm64-gnu@1.16.22", "Apache-2.0 AND MIT"],
