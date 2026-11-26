@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build": "tsc -p tsconfig.build.json",
     "test": "vitest run --exclude '**/*.integration.test.ts'",
-    "test:integration": "vitest run src/health/readiness.integration.test.ts"
+    "test:integration": "vitest run src/health/readiness.integration.test.ts",
+    "openapi:generate": "node dist/openapi/export.js"
   },
   "dependencies": {
     "@nestjs/common": "11.2.12",
@@ -18,7 +19,9 @@
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
     "zod": "4.1.12",
-    "@freight/database": "workspace:*"
+    "@freight/database": "workspace:*",
+    "@nestjs/swagger": "11.2.0",
+    "@fastify/static": "8.3.0"
   },
   "devDependencies": {
     "@freight/config": "workspace:*",

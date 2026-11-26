@@ -28,5 +28,11 @@
     "formatter": {
       "trailingCommas": "none"
     }
+  },
+  "files": {
+    "includes": [
+      "**",
+      "!packages/client-api/src/generated/**"
+    ]
   }
 }

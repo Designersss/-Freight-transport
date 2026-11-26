@@ -7,6 +7,7 @@ import {
 import { createAppModule } from "./app.module.js";
 import { HttpExceptionFilter } from "./common/http-exception.filter.js";
 import type { ApiConfig } from "./config/api-config.js";
+import { registerDevelopmentDocs } from "./openapi/document.js";
 
 export async function createApp(
   config: ApiConfig,
@@ -28,5 +29,8 @@ export async function createApp(
   );
   app.setGlobalPrefix("api/v1");
   app.useGlobalFilters(new HttpExceptionFilter(app.get(HttpAdapterHost)));
+  if (config.NODE_ENV === "development") {
+    registerDevelopmentDocs(app);
+  }
   return app;
 }
