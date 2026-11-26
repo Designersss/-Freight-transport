@@ -69,17 +69,22 @@ test("OAuth identity without email: mapped internal identifier and stable accoun
     ],
   });
   const cookie = (response) =>
-    response.headers.getSetCookie().map((value) => value.split(";")[0]).join("; ");
+    response.headers
+      .getSetCookie()
+      .map((value) => value.split(";")[0])
+      .join("; ");
   const post = (path, body) =>
-    auth.handler(new Request(origin + basePath + path, {
-      method: "POST",
-      headers: { origin, "content-type": "application/json" },
-      body: JSON.stringify(body),
-    }));
+    auth.handler(
+      new Request(origin + basePath + path, {
+        method: "POST",
+        headers: { origin, "content-type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+    );
   async function begin(provider) {
     const response = await post("/sign-in/social", {
       provider,
-      callbackURL: origin + "/dashboard",
+      callbackURL: `${origin}/dashboard`,
       requestSignUp: true,
     });
     assert.equal(response.status, 200);
@@ -88,21 +93,29 @@ test("OAuth identity without email: mapped internal identifier and stable accoun
     assert.ok(redirect.searchParams.get("code_challenge"));
     return { redirect, cookies: cookie(response) };
   }
-  async function callback(flow, code, state = flow.redirect.searchParams.get("state")) {
+  async function callback(
+    flow,
+    code,
+    state = flow.redirect.searchParams.get("state"),
+  ) {
     const target = new URL(flow.redirect.searchParams.get("redirect_uri"));
     assert.equal(target.origin, origin);
     target.searchParams.set("code", code);
     target.searchParams.set("state", state);
-    const response = await auth.handler(new Request(target, {
-      headers: { cookie: flow.cookies },
-    }));
+    const response = await auth.handler(
+      new Request(target, {
+        headers: { cookie: flow.cookies },
+      }),
+    );
     assert.equal(response.status, 302);
     return response;
   }
   async function session(response) {
-    const result = await auth.handler(new Request(origin + basePath + "/get-session", {
-      headers: { cookie: cookie(response) },
-    }));
+    const result = await auth.handler(
+      new Request(`${origin + basePath}/get-session`, {
+        headers: { cookie: cookie(response) },
+      }),
+    );
     assert.equal(result.status, 200);
     return result.json();
   }
@@ -111,14 +124,17 @@ test("OAuth identity without email: mapped internal identifier and stable accoun
     await migrations.runMigrations();
 
     const unmapped = await callback(await begin(unmappedProviderId), subject);
-    assert.match(unmapped.headers.get("location") ?? "", /error=email_not_found/);
+    assert.match(
+      unmapped.headers.get("location") ?? "",
+      /error=email_not_found/,
+    );
 
     const flow = await begin(providerId);
     const tampered = await callback(flow, subject, "tampered-state");
     assert.match(tampered.headers.get("location") ?? "", /error=/);
 
     const first = await callback(await begin(providerId), subject);
-    assert.equal(first.headers.get("location"), origin + "/dashboard");
+    assert.equal(first.headers.get("location"), `${origin}/dashboard`);
     const firstSession = await session(first);
     assert.ok(firstSession?.user.id);
     assert.equal(firstSession.user.email, internalEmail(subject));
@@ -139,7 +155,10 @@ test("OAuth identity without email: mapped internal identifier and stable accoun
     assert.equal(accounts.rowCount, 2);
     assert.deepEqual(
       new Map(accounts.rows.map((row) => [row.accountId, row.userId])),
-      new Map([[subject, firstSession.user.id], [secondSubject, otherSession.user.id]]),
+      new Map([
+        [subject, firstSession.user.id],
+        [secondSubject, otherSession.user.id],
+      ]),
     );
 
     const passwordAttempt = await post("/sign-in/email", {
