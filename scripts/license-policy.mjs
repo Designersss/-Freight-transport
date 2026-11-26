@@ -28,7 +28,8 @@ export function isAllowedLicense(name, license, sources) {
     license === "OFL-1.1" &&
     sources.size === 1 &&
     sources.has("workspace")
-  ) return true;
+  )
+    return true;
   return (
     license === "UNKNOWN" &&
     reviewedUnknown.has(name) &&

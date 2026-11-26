@@ -35,5 +35,10 @@
       "!packages/client-api/src/generated",
       "!packages/client-api/openapi.json"
     ]
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
   }
 }

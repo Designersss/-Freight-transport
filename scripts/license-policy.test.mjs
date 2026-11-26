@@ -55,7 +55,21 @@ test("limits missing-metadata exceptions to exact test dependencies", () => {
 });
 
 test("allows OFL only for reviewed Manrope package", () => {
-  assert.equal(isAllowedLicense("@fontsource-variable/manrope@5.3.0", "OFL-1.1", workspace), true);
-  assert.equal(isAllowedLicense("@fontsource-variable/manrope@5.3.1", "OFL-1.1", workspace), false);
+  assert.equal(
+    isAllowedLicense(
+      "@fontsource-variable/manrope@5.3.0",
+      "OFL-1.1",
+      workspace,
+    ),
+    true,
+  );
+  assert.equal(
+    isAllowedLicense(
+      "@fontsource-variable/manrope@5.3.1",
+      "OFL-1.1",
+      workspace,
+    ),
+    false,
+  );
   assert.equal(isAllowedLicense("example@1.0.0", "OFL-1.1", workspace), false);
 });

@@ -13,7 +13,11 @@ interface HeaderProps {
   showBrand?: boolean;
 }
 
-export function Header({ locale, initialTheme, showBrand = true }: HeaderProps) {
+export function Header({
+  locale,
+  initialTheme,
+  showBrand = true,
+}: HeaderProps) {
   const t = useTranslations("common");
   const [theme, setTheme] = useState(initialTheme);
 
@@ -32,7 +36,9 @@ export function Header({ locale, initialTheme, showBrand = true }: HeaderProps) 
         <a className="movaro-wordmark" href={`/${locale}`}>
           MOVARO
         </a>
-      ) : <span aria-hidden="true" />}
+      ) : (
+        <span aria-hidden="true" />
+      )}
       <div className="movaro-controls">
         <nav aria-label={t("language")} className="movaro-language">
           <a

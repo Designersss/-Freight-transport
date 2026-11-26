@@ -21,7 +21,8 @@ const ru = {
   },
   admin: {
     title: "Администрирование",
-    description: "Доступ к управлению платформой будет предоставляться только авторизованным администраторам.",
+    description:
+      "Доступ к управлению платформой будет предоставляться только авторизованным администраторам.",
   },
 };
 
@@ -39,7 +40,8 @@ const en: typeof ru = {
   },
   admin: {
     title: "Administration",
-    description: "Platform administration will be available only to authorized administrators.",
+    description:
+      "Platform administration will be available only to authorized administrators.",
   },
 };
 

@@ -14,7 +14,11 @@ export default async function Page({ params }: PageProps) {
 
   return (
     <PageLayout title={messages[locale].admin.title}>
-      <Card><p className="movaro-description">{messages[locale].admin.description}</p></Card>
+      <Card>
+        <p className="movaro-description">
+          {messages[locale].admin.description}
+        </p>
+      </Card>
     </PageLayout>
   );
 }

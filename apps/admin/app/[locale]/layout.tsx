@@ -1,7 +1,14 @@
 import "../globals.css";
 
 import { isLocale, messages } from "@freight/i18n";
-import { AppShell, Header, parseTheme, Sidebar, themeCookie, UiProvider } from "@freight/ui";
+import {
+  AppShell,
+  Header,
+  parseTheme,
+  Sidebar,
+  themeCookie,
+  UiProvider,
+} from "@freight/ui";
 import { LayoutDashboard } from "lucide-react";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
@@ -32,17 +39,21 @@ export default async function RootLayout({ children, params }: LayoutProps) {
             {messages[locale].common.skip}
           </a>
           <AppShell
-            header={<Header initialTheme={theme} locale={locale} showBrand={false} />}
+            header={
+              <Header initialTheme={theme} locale={locale} showBrand={false} />
+            }
             sidebar={
               <Sidebar
                 brandHref={`/${locale}`}
                 navigationLabel={messages[locale].common.navigation}
-                items={[{
-                  href: `/${locale}`,
-                  label: messages[locale].admin.title,
-                  icon: <LayoutDashboard aria-hidden="true" size={16} />,
-                  active: true,
-                }]}
+                items={[
+                  {
+                    href: `/${locale}`,
+                    label: messages[locale].admin.title,
+                    icon: <LayoutDashboard aria-hidden="true" size={16} />,
+                    active: true,
+                  },
+                ]}
               />
             }
           >
