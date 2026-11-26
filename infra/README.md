@@ -1,3 +1,12 @@
 # Инфраструктура
 
-Docker Compose, PostgreSQL, pg-boss, SeaweedFS и локальное окружение добавляются в RD-02. Конфигурация production, резервирование и HTTPS — RD-18. Секреты и реальные данные не хранятся в Git.
+RD-02: начальная инфраструктура локальной разработки. Скопируйте .env.example в .env, задайте непустой уникальный POSTGRES_PASSWORD и выполните:
+
+```bash
+docker compose up -d postgres
+docker compose ps
+```
+
+PostgreSQL 17 доступен только через loopback. Том сохраняет данные между перезапусками. Не используйте docker compose down -v без осознанного удаления данных. Образ dev закреплён по major, production закрепление по digest и резервирование — отдельная задача.
+
+API: pnpm dev:api, GET http://127.0.0.1:4000/api/v1/health. Это liveness, а не readiness: подключение Prisma, проверка реальной базы, миграции и остальные зависимости добавляются в следующих изменениях RD-02. Бизнес-эндпоинтов пока нет.
