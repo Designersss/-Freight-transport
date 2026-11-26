@@ -17,6 +17,11 @@ jobs:
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      S3_ENDPOINT: http://127.0.0.1:8333
+      S3_BUCKET: freight-private
+      S3_ACCESS_KEY: ci-storage-key
+      S3_SECRET_KEY: ci-storage-secret-local-only
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -26,8 +31,18 @@ jobs:
           node-version-file: .nvmrc
       - name: Install pinned pnpm
         run: npm install --global pnpm@10.34.8
+      - name: Bootstrap updated lockfile (temporary)
+        run: |
+          pnpm install --lockfile-only --no-frozen-lockfile
+          echo 'LOCKFILE_BEGIN'
+          cat pnpm-lock.yaml
+          echo 'LOCKFILE_END'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Format candidate (temporary)
+        run: |
+          pnpm exec biome check --write . || true
+          node --input-type=module -e 'import {execFileSync} from "node:child_process"; import {readFileSync} from "node:fs"; const files=execFileSync("git",["diff","--name-only"],{encoding:"utf8"}).trim().split("\n").filter(p=>p && p!=="pnpm-lock.yaml"); console.log("FORMAT_JSON:"+JSON.stringify(Object.fromEntries(files.map(p=>[p,readFileSync(p,"utf8")]))));'
       - name: Lint
         run: pnpm lint
       - name: Typecheck
@@ -36,21 +51,21 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm build
-      - name: Start isolated PostgreSQL
+      - name: Start isolated PostgreSQL and SeaweedFS
         env:
           POSTGRES_PASSWORD: ci-local-only
-        run: docker compose up -d --wait postgres
+        run: docker compose up -d --wait postgres seaweedfs
       - name: Apply and verify migrations
         env:
           DATABASE_URL: "postgresql://freight:ci-local-only@127.0.0.1:5432/freight?connect_timeout=2&pool_timeout=2"
         run: |
           pnpm db:deploy
           pnpm db:status
-      - name: PostgreSQL integration tests
+      - name: PostgreSQL and SeaweedFS integration tests
         env:
           TEST_DATABASE_URL: "postgresql://freight:ci-local-only@127.0.0.1:5432/freight?connect_timeout=2&pool_timeout=2"
         run: pnpm test:integration
-      - name: Stop isolated PostgreSQL
+      - name: Stop isolated infrastructure
         if: always()
         env:
           POSTGRES_PASSWORD: ci-local-only

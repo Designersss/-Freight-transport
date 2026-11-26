@@ -5,7 +5,7 @@ RD-02: локальный PostgreSQL 17 и API. Скопируйте .env.exampl
 Пример структуры URL: postgresql://freight:YOUR_ENCODED_PASSWORD@127.0.0.1:5432/freight?connect_timeout=2&pool_timeout=2
 
 ```bash
-docker compose up -d --wait postgres
+docker compose up -d --wait postgres seaweedfs
 pnpm install --frozen-lockfile
 pnpm db:deploy
 pnpm db:status
@@ -28,3 +28,15 @@ PostgreSQL доступен только через loopback. Том сохра�
 pg-boss и его схема управляются worker при запуске; production-миграции служебной схемы и разделение прав требуют проверки перед развёртыванием.
 
 Документация pg-boss: https://pgboss.io/introduction и https://pgboss.io/api/scheduling.
+
+## Приватное файловое хранилище
+
+SeaweedFS 4.51 (weed mini) и S3 SDK. Перед запуском заполните S3_ACCESS_KEY и S3_SECRET_KEY уникальными локальными значениями. S3_BUCKET создаётся при первом запуске, данные сохраняются в seaweed-data. Только S3-порт привязан к loopback; filer, volume, admin и WebDAV наружу не публикуются, сервис в отдельной сети Compose. При изменении ключей существующего тома требуется штатная ротация учётных данных SeaweedFS, а не простая замена .env.
+
+Пакет @freight/storage предоставляет серверные put/get/delete/checkReadiness и проверку размера, MIME и начальной сигнатуры. Стартовая техническая политика: JPEG, PNG, PDF до 10 MiB, случайные UUID-ключи. Это предварительные ограничения, не окончательный продуктовый список. Сигнатура не заменяет проверку полного формата, антивирус или безопасную обработку изображений. Не публикуем URL объектов и не выдаём S3-ключи браузеру.
+
+Публичных файловых HTTP-endpoint пока нет: авторизация пользователя, проверка companyId/владения, метаданные в БД, политика удаления/сирот, потоковая загрузка и финальная проверка форматов будут реализованы с соответствующими бизнес-модулями. Перед вызовом get/delete сервер обязан проверить доступ к объекту по метаданным; случайный ключ сам по себе не является разрешением. Проверка S3 пока отдельная от readiness API, так как API ещё не использует файлы.
+
+Для тестов на одноразовом хранилище с установленными S3_*: pnpm --filter @freight/storage test:integration. CI проверяет реальные put/get/delete, запрет анонимного чтения и неправильных ключей. Перед production требуется ограниченная сервисная учётная запись, TLS/сетевая изоляция, резервирование и проверка восстановления. Не используйте production bucket для тестов.
+
+Официальная документация: https://github.com/seaweedfs/seaweedfs/wiki/Quick-Start-with-weed-mini.
