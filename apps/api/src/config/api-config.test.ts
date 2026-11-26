@@ -12,12 +12,19 @@ describe("API environment", () => {
   });
 
   it("parses explicit ports", () => {
-    expect(parseApiConfig({ NODE_ENV: "production", API_PORT: "8080" }).API_PORT).toBe(8080);
+    expect(
+      parseApiConfig({ NODE_ENV: "production", API_PORT: "8080" }).API_PORT,
+    ).toBe(8080);
   });
 
-  it.each(["0", "65536", "not-a-port", "1.5"])("rejects invalid port %s", (port) => {
-    expect(() => parseApiConfig({ NODE_ENV: "development", API_PORT: port })).toThrow("API_PORT");
-  });
+  it.each(["0", "65536", "not-a-port", "1.5"])(
+    "rejects invalid port %s",
+    (port) => {
+      expect(() =>
+        parseApiConfig({ NODE_ENV: "development", API_PORT: port }),
+      ).toThrow("API_PORT");
+    },
+  );
 
   it("requires a valid runtime mode", () => {
     expect(() => parseApiConfig({ NODE_ENV: "staging" })).toThrow("NODE_ENV");

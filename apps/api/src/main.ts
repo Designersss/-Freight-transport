@@ -7,7 +7,10 @@ async function bootstrap(): Promise<void> {
   const app = await createApp(config);
   app.enableShutdownHooks();
   await app.listen(config.API_PORT, config.API_HOST);
-  app.getHttpAdapter().getInstance().log.info({ port: config.API_PORT }, "API started");
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .log.info({ port: config.API_PORT }, "API started");
 }
 
 bootstrap().catch((error: unknown) => {
