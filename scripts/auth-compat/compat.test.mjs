@@ -6,7 +6,6 @@ import { setTimeout as delay } from "node:timers/promises";
 import { betterAuth } from "better-auth";
 import { fromNodeHeaders } from "better-auth/node";
 import pg from "pg";
-import { assertAuthSchema } from "./assert-auth-schema.mjs";
 import { parseApiConfig } from "../../apps/api/dist/config/api-config.js";
 import { createApp } from "../../apps/api/dist/create-app.js";
 import { openUserEventStream } from "../../apps/api/dist/realtime/user-event-stream.js";
@@ -14,6 +13,7 @@ import {
   appendUserInvalidation,
   createDatabaseClient,
 } from "../../packages/database/dist/index.js";
+import { assertAuthSchema } from "./assert-auth-schema.mjs";
 
 const origin = "http://127.0.0.1:4000";
 const basePath = "/api/v1/auth";

@@ -10,13 +10,13 @@ datasource db {
 
 // Transactional outbox; processedAt denotes committed publication, not external delivery.
 model OutboxEvent {
-  id          String    @id @default(uuid()) @db.Uuid
-  eventType   String    @map("event_type")
-  aggregateId String    @map("aggregate_id")
+  id          String            @id @default(uuid()) @db.Uuid
+  eventType   String            @map("event_type")
+  aggregateId String            @map("aggregate_id")
   payload     Json
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  processedAt DateTime? @map("processed_at") @db.Timestamptz(6)
-  attempts    Int       @default(0)
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  processedAt DateTime?         @map("processed_at") @db.Timestamptz(6)
+  attempts    Int               @default(0)
   publication EventPublication?
 
   @@index([processedAt, createdAt], map: "outbox_events_pending_idx")
@@ -33,8 +33,8 @@ model EventPublication {
 }
 
 model UserEventStream {
-  userId       String                  @id @map("user_id")
-  lastSequence BigInt                  @default(0) @map("last_sequence")
+  userId        String                  @id @map("user_id")
+  lastSequence  BigInt                  @default(0) @map("last_sequence")
   invalidations UserEventInvalidation[]
 
   @@map("user_event_streams")
@@ -140,16 +140,16 @@ enum UserStatus {
 
 // Absence of a profile means onboarding is incomplete, not an authorized role.
 model UserProfile {
-  userId       String     @id @map("user_id")
-  firstName    String     @map("first_name")
-  lastName     String     @map("last_name")
-  role         UserRole
-  status       UserStatus @default(ACTIVE)
-  driverAge    Int?       @map("driver_age")
-  photoKey     String?    @map("photo_key")
-  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  user         User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  userId    String     @id @map("user_id")
+  firstName String     @map("first_name")
+  lastName  String     @map("last_name")
+  role      UserRole
+  status    UserStatus @default(ACTIVE)
+  driverAge Int?       @map("driver_age")
+  photoKey  String?    @map("photo_key")
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@map("user_profiles")
 }
