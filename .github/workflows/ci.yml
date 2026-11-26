@@ -89,6 +89,8 @@ jobs:
       - name: Install isolated auth compatibility dependencies
         run: |
           npm --prefix scripts/auth-compat ci --ignore-scripts --no-audit --no-fund
+      - name: Audit isolated auth compatibility dependencies
+        run: npm --prefix scripts/auth-compat audit --audit-level=moderate
       - name: Enforce dependency license policy
         run: pnpm licenses:check
       - name: Better Auth and SSE integration with PostgreSQL Testcontainers
