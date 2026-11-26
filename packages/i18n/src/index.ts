@@ -15,7 +15,8 @@ const ru = {
   },
   web: {
     title: "Управление арендой техники",
-    description: "MOVARO — платформа для управления бизнесом по сдаче техники в аренду.",
+    description:
+      "MOVARO — платформа для управления бизнесом по сдаче техники в аренду.",
   },
   admin: {
     title: "Администрирование",
@@ -30,7 +31,8 @@ const en: typeof ru = {
   },
   web: {
     title: "Equipment rental management",
-    description: "MOVARO is a platform for managing an equipment rental business.",
+    description:
+      "MOVARO is a platform for managing an equipment rental business.",
   },
   admin: {
     title: "Administration",

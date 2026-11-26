@@ -11,7 +11,11 @@ interface UiProviderProps {
 
 export function UiProvider({ children, locale }: UiProviderProps) {
   return (
-    <NextIntlClientProvider locale={locale} messages={messages[locale]} timeZone="UTC">
+    <NextIntlClientProvider
+      locale={locale}
+      messages={messages[locale]}
+      timeZone="UTC"
+    >
       {children}
     </NextIntlClientProvider>
   );

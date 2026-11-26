@@ -11,8 +11,12 @@ describe("locales", () => {
 
   it("provides the same message keys in both locales", () => {
     expect(Object.keys(messages.ru)).toEqual(Object.keys(messages.en));
-    expect(Object.keys(messages.ru.common)).toEqual(Object.keys(messages.en.common));
+    expect(Object.keys(messages.ru.common)).toEqual(
+      Object.keys(messages.en.common),
+    );
     expect(Object.keys(messages.ru.web)).toEqual(Object.keys(messages.en.web));
-    expect(Object.keys(messages.ru.admin)).toEqual(Object.keys(messages.en.admin));
+    expect(Object.keys(messages.ru.admin)).toEqual(
+      Object.keys(messages.en.admin),
+    );
   });
 });

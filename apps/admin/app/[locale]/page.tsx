@@ -12,9 +12,5 @@ export default async function Page({ params }: PageProps) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  return (
-    <PageLayout title={messages[locale].admin.title}>
-      {null}
-    </PageLayout>
-  );
+  return <PageLayout title={messages[locale].admin.title}>{null}</PageLayout>;
 }

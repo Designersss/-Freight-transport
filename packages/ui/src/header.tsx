@@ -30,10 +30,18 @@ export function Header({ locale, initialTheme }: HeaderProps) {
       </a>
       <div className="movaro-controls">
         <nav aria-label={t("language")} className="movaro-language">
-          <a aria-current={locale === "ru" ? "page" : undefined} href="/ru" lang="ru">
+          <a
+            aria-current={locale === "ru" ? "page" : undefined}
+            href="/ru"
+            lang="ru"
+          >
             RU
           </a>
-          <a aria-current={locale === "en" ? "page" : undefined} href="/en" lang="en">
+          <a
+            aria-current={locale === "en" ? "page" : undefined}
+            href="/en"
+            lang="en"
+          >
             EN
           </a>
         </nav>
@@ -44,7 +52,11 @@ export function Header({ locale, initialTheme }: HeaderProps) {
           onClick={changeTheme}
           type="button"
         >
-          {theme === "dark" ? <Moon aria-hidden="true" size={16} /> : <Sun aria-hidden="true" size={16} />}
+          {theme === "dark" ? (
+            <Moon aria-hidden="true" size={16} />
+          ) : (
+            <Sun aria-hidden="true" size={16} />
+          )}
         </button>
       </div>
     </header>
