@@ -23,7 +23,11 @@
     "api:check": "pnpm api:generate && node scripts/check-api-contract.mjs",
     "licenses:report": "node scripts/report-licenses.mjs",
     "licenses:check": "node --test scripts/license-policy.test.mjs && node scripts/report-licenses.mjs --check",
-    "test:stack": "node --test scripts/stack-smoke.test.mjs"
+    "test:stack": "node --test scripts/stack-smoke.test.mjs",
+    "storybook": "pnpm --filter @freight/storybook dev",
+    "storybook:build": "pnpm --filter @freight/storybook build",
+    "test:e2e": "pnpm --filter @freight/e2e test:e2e",
+    "e2e:install": "pnpm --filter @freight/e2e browsers:install"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.8",

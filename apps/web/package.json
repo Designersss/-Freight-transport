@@ -1,0 +1,35 @@
+{
+  "name": "@freight/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "start": "next start --port 3000",
+    "build": "next build",
+    "typecheck": "next typegen && tsc --noEmit"
+  },
+  "dependencies": {
+    "@freight/i18n": "workspace:*",
+    "@freight/ui": "workspace:*",
+    "next": "16.4.6",
+    "next-intl": "4.16.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "@fontsource-variable/manrope": "5.3.0"
+  },
+  "devDependencies": {
+    "@freight/config": "workspace:*",
+    "@types/node": "24.0.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "typescript": "5.9.3",
+    "@tailwindcss/postcss": "4.3.5",
+    "tailwindcss": "4.3.5"
+  },
+  "imports": {
+    "#components/*": "./components/*.tsx",
+    "#lib/*": "./lib/*.ts",
+    "#hooks/*": "./hooks/*.ts"
+  }
+}

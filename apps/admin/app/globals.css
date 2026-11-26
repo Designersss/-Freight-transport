@@ -1,0 +1,4 @@
+@import "tailwindcss";
+@import "@fontsource-variable/manrope";
+@import "@freight/ui/styles.css";
+@source "../../../packages/ui/src";

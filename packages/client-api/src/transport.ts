@@ -25,6 +25,6 @@ export function createApiFetch(
     ) {
       throw new Error("API path escapes the configured origin or prefix");
     }
-    return fetcher(target, options);
+    return fetcher(target, { ...options, redirect: "error" });
   };
 }

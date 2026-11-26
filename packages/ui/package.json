@@ -1,0 +1,49 @@
+{
+  "name": "@freight/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles.css",
+    "./components/*": "./src/components/*.tsx",
+    "./lib/*": "./src/lib/*.ts",
+    "./hooks/*": "./src/hooks/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@freight/i18n": "workspace:*",
+    "lucide-react": "1.81.0",
+    "next-intl": "4.16.2",
+    "@radix-ui/react-slot": "1.2.3",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "tailwind-merge": "3.7.0",
+    "@radix-ui/react-label": "2.1.8",
+    "@radix-ui/react-separator": "1.1.8"
+  },
+  "peerDependencies": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "next": "16.4.6"
+  },
+  "devDependencies": {
+    "@freight/config": "workspace:*",
+    "@types/node": "24.0.0",
+    "typescript": "5.9.3",
+    "vitest": "4.0.18",
+    "@types/react": "19.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "@types/react-dom": "19.3.0",
+    "next": "16.4.6"
+  },
+  "imports": {
+    "#components/*": "./src/components/*.tsx",
+    "#lib/*": "./src/lib/*.ts",
+    "#hooks/*": "./src/hooks/*.ts"
+  }
+}

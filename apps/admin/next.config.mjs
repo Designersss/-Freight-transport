@@ -1,0 +1,11 @@
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
+
+/** @type {import("next").NextConfig} */
+const config = {
+  transpilePackages: ["@freight/ui", "@freight/i18n"],
+  poweredByHeader: false,
+};
+
+export default withNextIntl(config);

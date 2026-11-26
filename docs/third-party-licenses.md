@@ -36,3 +36,49 @@ CI запускает `python3 scripts/report-images.py` после загруз
 В CI после воспроизводимой установки npm ci выполняется `npm --prefix scripts/auth-compat audit --audit-level=moderate`. Наличие известных уязвимостей уровня moderate, high или critical блокирует quality; ошибки registry также не игнорируются. Это контроль отдельного npm lockfile, не полный security audit workspace, образов или приложения.
 
 На 26.11.2026 локальный аудит обнаружил 7 moderate по цепочке testcontainers → archiver → archiver-utils → glob/minimatch. В scripts/auth-compat/package.json добавлен точечный override archiver-utils → glob@14.0.2 (GHSA-3g3m-2fjr-6pw4); обновлён настоящий npm lockfile, minimatch разрешён в 11.0.9 (GHSA-g3hv-75wg-m249), отдельная ветка readdir-glob использует 5.1.9. Транзитивный testcontainers обновился до 12.2.2 при неизменном @testcontainers/postgresql@12.2.1. npm ci, npm audit (0 vulnerabilities), реальный PostgreSQL Testcontainers / Better Auth / SSE и licenses:check локально прошли; 518 установленных уникальных пакетов, 0 непроверенных лицензий. Override выходит за заявленный major-диапазон archiver-utils; при обновлении родительской зависимости пересмотреть необходимость override и повторить интеграционные проверки. Не применять npm audit fix --force без review.
+
+## RD-03 — Manrope и UI
+
+- @fontsource-variable/manrope@5.3.0 — OFL-1.1, разрешён только точный пакет с этой лицензией. https://fontsource.org/fonts/manrope/about ; https://openfontlicense.org/ofl-faq/ . Не продаём шрифт отдельно и сохраняем исходную лицензию и copyright. Перед приёмкой скопировать оригинальный LICENSE из установленного пакета в public/licenses/manrope.txt обоих приложений; проверить наличие в поставке. Полный review production-артефактов остаётся открытым.
+- Компоненты адаптированы по подходу shadcn/ui (MIT), https://github.com/shadcn-ui/ui ; оригинальная MIT-лицензия сохранена в docs/licenses/shadcn.txt. Radix Slot, CVA, clsx, tailwind-merge — проверяются общим отчётом лицензий.
+
+## RD-03 — лицензии инструментов frontend (26.11.2026)
+
+Локальный прогон на macOS ARM64 для e8aec5c: 597 установленных пакетов, 453 workspace, 5 REVIEW. Это не ошибка исполнения приложения. Проверены upstream-условия и, где доступны, manifest и LICENSE соответствующих версий; полное исследование содержимого npm tarball и бинарных компонентов не выполнено. Следующие записи допускаются **только для разработки и CI** по точным name@version, заявленной лицензии и источнику workspace. Новые версии и другие платформы требуют отдельного review. Linux x64/arm64 glibc включены как зафиксированные в lockfile целевые варианты; их фактическая установка ещё не подтверждена.
+
+| Компонент                                                                                                 | Лицензия           | Условия и проверка до распространения                                                                                                                                                                                                                                                                                                           |
+| --------------------------------------------------------------------------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| @swc/core-darwin-arm64, @swc/core-linux-x64-gnu, @swc/core-linux-arm64-gnu 1.16.22                        | Apache-2.0 AND MIT | Соблюдать обе лицензии, сохранить copyright, применимые NOTICE и уведомления о модификациях; проверить лицензии всех встроенных Rust-компонентов конкретного бинарника.                                                                                                                                                                         |
+| caniuse-lite 1.0.30001828                                                                                 | CC-BY-4.0          | При распространении данных сохранить атрибуцию caniuse.com, предоставленные copyright, ссылку на лицензию и указать изменения, если были. Проверить, попадают ли данные в клиентский bundle.                                                                                                                                                    |
+| lightningcss и lightningcss-darwin-arm64, lightningcss-linux-x64-gnu, lightningcss-linux-arm64-gnu 1.33.0 | MPL-2.0            | Компилятор CSS. При распространении покрытых MPL файлов/бинарника сохранить notices и предоставить соответствующий исходный код покрытых файлов, включая изменения. MPL не требует автоматически лицензировать весь отдельный код приложения под MPL. Проверить фактический состав поставки.                                                    |
+| @img/sharp-libvips-darwin-arm64, @img/sharp-libvips-linux-x64, @img/sharp-libvips-linux-arm64 1.3.4       | LGPL-3.0-or-later  | Нативная библиотека обработки изображений; upstream перечисляет дополнительные библиотеки, включая LGPLv3, MPL 1.1 и патентные условия AOM. При распространении проверить точные исходники, тексты GPL/LGPL и notices, условия замены/перелинковки библиотеки и условия всех встроенных компонентов. Не считать один manifest полной проверкой. |
+
+Источники:
+
+- SWC v1.16.22: https://github.com/swc-project/swc/blob/v1.16.22/LICENSE ; https://github.com/swc-project/swc/blob/v1.16.22/packages/core/scripts/npm/darwin-arm64/package.json ; https://github.com/swc-project/swc/blob/v1.16.22/packages/core/scripts/npm/linux-x64-gnu/package.json ; https://github.com/swc-project/swc/blob/v1.16.22/packages/core/scripts/npm/linux-arm64-gnu/package.json .
+- caniuse-lite: https://github.com/browserslist/caniuse-lite#license ; https://creativecommons.org/licenses/by/4.0/legalcode.en .
+- Lightning CSS v1.33.0: https://github.com/parcel-bundler/lightningcss/blob/v1.33.0/LICENSE ; https://www.mozilla.org/en-US/MPL/2.0/FAQ/ .
+- sharp-libvips v1.3.4: https://github.com/lovell/sharp-libvips/blob/v1.3.4/THIRD-PARTY-NOTICES.md ; https://www.gnu.org/licenses/lgpl-3.0.html .
+
+Отчёт печатает REVIEWED FOR DEVELOPMENT; RELEASE REVIEW для этих пакетов. Нулевое число REVIEW не означает разрешения распространять бинарники. До RD-18 необходимы SBOM фактических артефактов, сбор LICENSE/NOTICE, проверка LGPL/MPL и атрибуции данных, а также юридическая оценка при необходимости. Пока не публикуем готовые дистрибутивы и образы MOVARO. Не разрешаем GPL/MPL/LGPL/CC-BY глобально; не отключаем блокирующую проверку неизвестных записей.
+
+- argparse@3.0.4 — PSF-2.0. Сохранять лицензию и copyright, документировать изменения при распространении производной версии. https://github.com/nodeca/argparse/blob/3.0.4/LICENSE
+
+- Третий срез RD-03: дополнительные примитивы импортированы и адаптированы из MIT-реестра shadcn https://github.com/shadcn-ui/ui/tree/main/apps/v4/registry/new-york-v4/ui ; оригинальная лицензия в docs/licenses/shadcn.txt. Отдельные пакеты Radix Label и Separator проверяются общей политикой при установке. Lockfile и состав зависимостей требуется подтвердить.
+
+## RD-03 — axe-core
+
+axe-core@4.14.1 (MPL-2.0) используется для проверки
+доступности в Storybook через @storybook/addon-a11y.
+
+Допуск только для разработки и CI по точной версии.
+Storybook не включается в production Web/Admin.
+Перед распространением проверить фактический состав
+артефактов, исходный код покрытых файлов, LICENSE,
+LICENSE-3RD-PARTY.txt и применимые уведомления.
+
+Источники:
+
+- https://github.com/dequelabs/axe-core/blob/v4.14.1/LICENSE
+- https://github.com/dequelabs/axe-core/blob/v4.14.1/package.json
+- https://github.com/storybookjs/storybook/blob/v10.6.9/code/addons/a11y/package.json
