@@ -8,8 +8,8 @@ import {
   createDatabaseClient,
 } from "../packages/database/dist/index.js";
 import {
-  parseStorageConfig,
   PrivateStorage,
+  parseStorageConfig,
 } from "../packages/storage/dist/index.js";
 
 function startProcess(path, env) {
@@ -78,6 +78,7 @@ async function verifyStack() {
   let api;
   let worker;
   let objectKey;
+  const errors = [];
   try {
     await eventually(() => storage.checkReadiness());
     const id = await database.$transaction((tx) =>
@@ -90,9 +91,12 @@ async function verifyStack() {
     api = startProcess("apps/api/dist/main.js", env);
     worker = startProcess("apps/worker/dist/main.js", env);
     await eventually(async () => {
-      const response = await fetch("http://127.0.0.1:4010/api/v1/health/ready", {
-        signal: AbortSignal.timeout(3000),
-      });
+      const response = await fetch(
+        "http://127.0.0.1:4010/api/v1/health/ready",
+        {
+          signal: AbortSignal.timeout(3000),
+        },
+      );
       assert.equal(response.status, 200);
       assert.deepEqual(await response.json(), { status: "ready" });
     });
@@ -137,34 +141,49 @@ async function verifyStack() {
       );
     });
     assert.equal(
-      (await database.outboxEvent.findUniqueOrThrow({ where: { id } })).attempts,
+      (await database.outboxEvent.findUniqueOrThrow({ where: { id } }))
+        .attempts,
       1,
     );
     assert.deepEqual(Buffer.from((await storage.get(objectKey)).bytes), bytes);
-  } finally {
-    try {
-      const stopped = await Promise.allSettled([
-        stopProcess(worker),
-        stopProcess(api),
-      ]);
-      for (const result of stopped) {
-        if (result.status === "rejected") throw result.reason;
-      }
-    } finally {
-      try {
-        if (objectKey) await storage.delete(objectKey);
-      } finally {
-        storage.close();
-        try {
-          await database.eventPublication.deleteMany({
-            where: { event: { aggregateId } },
-          });
-          await database.outboxEvent.deleteMany({ where: { aggregateId } });
-        } finally {
-          await database.$disconnect();
-        }
-      }
-    }
+  } catch (error) {
+    errors.push(error);
+  }
+
+  const stopped = await Promise.allSettled([
+    stopProcess(worker),
+    stopProcess(api),
+  ]);
+  for (const result of stopped) {
+    if (result.status === "rejected") errors.push(result.reason);
+  }
+
+  try {
+    if (objectKey) await storage.delete(objectKey);
+  } catch (error) {
+    errors.push(error);
+  }
+  try {
+    storage.close();
+  } catch (error) {
+    errors.push(error);
+  }
+  try {
+    await database.eventPublication.deleteMany({
+      where: { event: { aggregateId } },
+    });
+    await database.outboxEvent.deleteMany({ where: { aggregateId } });
+  } catch (error) {
+    errors.push(error);
+  }
+  try {
+    await database.$disconnect();
+  } catch (error) {
+    errors.push(error);
+  }
+
+  if (errors.length > 0) {
+    throw new AggregateError(errors, "Infrastructure smoke test failed");
   }
 }
 
