@@ -1,0 +1,170 @@
+/* First palette for browser acceptance; semantic tokens shared by both apps. */
+:root {
+  color-scheme: dark;
+  --background: #11141b;
+  --foreground: #edf0f7;
+  --card: #1a1f2a;
+  --card-foreground: #edf0f7;
+  --muted: #222936;
+  --muted-foreground: #a7b1c2;
+  --border: #343c4b;
+  --primary: #829aff;
+  --primary-foreground: #101725;
+  --ring: #93a8ff;
+  --destructive: #ff9a9f;
+  --radius: 12px;
+  --font-sans: "Manrope Variable", system-ui, sans-serif;
+  --font-body: 13px;
+  --font-small: 12px;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --background: #f3f5f9;
+  --foreground: #202735;
+  --card: #ffffff;
+  --card-foreground: #202735;
+  --muted: #e8ecf4;
+  --muted-foreground: #526074;
+  --border: #cbd3df;
+  --primary: #3159d7;
+  --primary-foreground: #ffffff;
+  --ring: #3159d7;
+  --destructive: #ac2438;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: var(--font-body);
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.movaro-skip {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 20;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  transform: translateY(-200%);
+}
+
+.movaro-skip:focus {
+  transform: none;
+}
+
+.movaro-header {
+  display: flex;
+  min-height: 60px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 24px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+}
+
+.movaro-wordmark {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.movaro-controls,
+.movaro-language {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.movaro-controls {
+  gap: 12px;
+}
+
+.movaro-language {
+  padding: 3px;
+  background: var(--muted);
+  border-radius: 9px;
+}
+
+.movaro-language a {
+  display: grid;
+  min-width: 34px;
+  min-height: 28px;
+  place-items: center;
+  font-size: var(--font-small);
+  font-weight: 700;
+  border-radius: 7px;
+  color: var(--muted-foreground);
+}
+
+.movaro-language a[aria-current="page"] {
+  background: var(--card);
+  color: var(--foreground);
+}
+
+.movaro-icon-button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+.movaro-icon-button:hover,
+.movaro-language a:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.movaro-main {
+  width: min(100% - 48px, 1200px);
+  margin: 32px auto;
+}
+
+.movaro-heading {
+  margin: 0 0 16px;
+  font-size: 26px;
+  font-weight: 750;
+  line-height: 1.3;
+  letter-spacing: -0.035em;
+}
+
+.movaro-description {
+  max-width: 66ch;
+  color: var(--muted-foreground);
+}
+
+@media (max-width: 480px) {
+  .movaro-header {
+    padding: 0 12px;
+  }
+
+  .movaro-main {
+    width: calc(100% - 24px);
+    margin: 24px auto;
+  }
+
+  .movaro-heading {
+    font-size: 24px;
+  }
+}
