@@ -1,5 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { parseStorageConfig, PrivateStorage, type StorageConfig } from "./index.js";
+import {
+  PrivateStorage,
+  parseStorageConfig,
+  type StorageConfig,
+} from "./index.js";
 
 describe("SeaweedFS private S3", () => {
   let config: StorageConfig;
@@ -9,7 +13,10 @@ describe("SeaweedFS private S3", () => {
   beforeAll(async () => {
     config = parseStorageConfig(process.env);
     storage = new PrivateStorage(config);
-    await vi.waitFor(() => storage.checkReadiness(), { timeout: 60000, interval: 1000 });
+    await vi.waitFor(() => storage.checkReadiness(), {
+      timeout: 60000,
+      interval: 1000,
+    });
   }, 70000);
 
   afterAll(() => storage?.close());
@@ -22,24 +29,36 @@ describe("SeaweedFS private S3", () => {
       expect(Buffer.from(downloaded.bytes)).toEqual(bytes);
       expect(downloaded.contentType).toBe("application/pdf");
 
-      const url = new URL(`/${config.S3_BUCKET}/${uploaded.key}`, config.S3_ENDPOINT);
+      const url = new URL(
+        `/${config.S3_BUCKET}/${uploaded.key}`,
+        config.S3_ENDPOINT,
+      );
       const anonymous = await fetch(url, { signal: AbortSignal.timeout(5000) });
       await anonymous.body?.cancel();
       expect([401, 403]).toContain(anonymous.status);
 
-      const unauthorized = new PrivateStorage({ ...config, S3_SECRET_KEY: "wrong-secret-for-test" });
+      const unauthorized = new PrivateStorage({
+        ...config,
+        S3_SECRET_KEY: "wrong-secret-for-test",
+      });
       try {
-        await expect(unauthorized.get(uploaded.key)).rejects.toMatchObject({ $metadata: { httpStatusCode: 403 } });
+        await expect(unauthorized.get(uploaded.key)).rejects.toMatchObject({
+          $metadata: { httpStatusCode: 403 },
+        });
       } finally {
         unauthorized.close();
       }
     } finally {
       await storage.delete(uploaded.key);
     }
-    await expect(storage.get(uploaded.key)).rejects.toMatchObject({ $metadata: { httpStatusCode: 404 } });
+    await expect(storage.get(uploaded.key)).rejects.toMatchObject({
+      $metadata: { httpStatusCode: 404 },
+    });
   }, 30000);
 
   it("rejects invalid data before upload", async () => {
-    await expect(storage.put(Buffer.from("not an image"), "image/png")).rejects.toThrow("signature");
+    await expect(
+      storage.put(Buffer.from("not an image"), "image/png"),
+    ).rejects.toThrow("signature");
   });
 });

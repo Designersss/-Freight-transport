@@ -1,7 +1,19 @@
 import { Readable } from "node:stream";
-import { DeleteObjectCommand, GetObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadBucketCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import type { StorageConfig } from "./config.js";
-import { type AllowedContentType, assertObjectKey, createObjectKey, MAX_FILE_BYTES, validateFile } from "./file-policy.js";
+import {
+  type AllowedContentType,
+  assertObjectKey,
+  createObjectKey,
+  MAX_FILE_BYTES,
+  validateFile,
+} from "./file-policy.js";
 
 const REQUEST_TIMEOUT_MS = 15000;
 
@@ -13,7 +25,10 @@ export class PrivateStorage {
       endpoint: config.S3_ENDPOINT,
       region: config.S3_REGION,
       forcePathStyle: true,
-      credentials: { accessKeyId: config.S3_ACCESS_KEY, secretAccessKey: config.S3_SECRET_KEY },
+      credentials: {
+        accessKeyId: config.S3_ACCESS_KEY,
+        secretAccessKey: config.S3_SECRET_KEY,
+      },
       requestChecksumCalculation: "WHEN_REQUIRED",
       responseChecksumValidation: "WHEN_REQUIRED",
       maxAttempts: 2,
@@ -21,35 +36,54 @@ export class PrivateStorage {
   }
 
   async checkReadiness(): Promise<void> {
-    await this.client.send(new HeadBucketCommand({ Bucket: this.config.S3_BUCKET }), { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+    await this.client.send(
+      new HeadBucketCommand({ Bucket: this.config.S3_BUCKET }),
+      { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
+    );
   }
 
-  async put(bytes: Uint8Array, contentType: string): Promise<{ key: string; contentType: AllowedContentType; size: number }> {
+  async put(
+    bytes: Uint8Array,
+    contentType: string,
+  ): Promise<{ key: string; contentType: AllowedContentType; size: number }> {
     validateFile(contentType, bytes);
     const key = createObjectKey();
-    await this.client.send(new PutObjectCommand({
-      Bucket: this.config.S3_BUCKET,
-      Key: key,
-      Body: bytes,
-      ContentType: contentType,
-      ContentLength: bytes.byteLength,
-    }), { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.config.S3_BUCKET,
+        Key: key,
+        Body: bytes,
+        ContentType: contentType,
+        ContentLength: bytes.byteLength,
+      }),
+      { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
+    );
     return { key, contentType, size: bytes.byteLength };
   }
 
-  async get(key: string): Promise<{ bytes: Uint8Array; contentType: AllowedContentType }> {
+  async get(
+    key: string,
+  ): Promise<{ bytes: Uint8Array; contentType: AllowedContentType }> {
     assertObjectKey(key);
-    const result = await this.client.send(new GetObjectCommand({ Bucket: this.config.S3_BUCKET, Key: key }), { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+    const result = await this.client.send(
+      new GetObjectCommand({ Bucket: this.config.S3_BUCKET, Key: key }),
+      { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
+    );
     const body = result.Body;
-    if (!(body instanceof Readable)) throw new Error("Missing Node.js object stream");
+    if (!(body instanceof Readable))
+      throw new Error("Missing Node.js object stream");
     try {
-      if (result.ContentLength !== undefined && (result.ContentLength < 1 || result.ContentLength > MAX_FILE_BYTES)) {
+      if (
+        result.ContentLength !== undefined &&
+        (result.ContentLength < 1 || result.ContentLength > MAX_FILE_BYTES)
+      ) {
         throw new Error("Invalid stored file size");
       }
       const chunks: Buffer[] = [];
       let size = 0;
       for await (const chunk of body) {
-        if (!Buffer.isBuffer(chunk)) throw new Error("Invalid object stream chunk");
+        if (!Buffer.isBuffer(chunk))
+          throw new Error("Invalid object stream chunk");
         size += chunk.byteLength;
         if (size > MAX_FILE_BYTES) throw new Error("Invalid stored file size");
         chunks.push(chunk);
@@ -65,7 +99,10 @@ export class PrivateStorage {
 
   async delete(key: string): Promise<void> {
     assertObjectKey(key);
-    await this.client.send(new DeleteObjectCommand({ Bucket: this.config.S3_BUCKET, Key: key }), { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+    await this.client.send(
+      new DeleteObjectCommand({ Bucket: this.config.S3_BUCKET, Key: key }),
+      { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
+    );
   }
 
   close(): void {

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { assertObjectKey, createObjectKey, MAX_FILE_BYTES, validateFile } from "./file-policy.js";
+import {
+  assertObjectKey,
+  createObjectKey,
+  MAX_FILE_BYTES,
+  validateFile,
+} from "./file-policy.js";
 
 describe("File policy", () => {
   it.each([
@@ -17,15 +22,24 @@ describe("File policy", () => {
   });
 
   it("rejects empty and oversized files", () => {
-    expect(() => validateFile("application/pdf", new Uint8Array())).toThrow("size");
-    expect(() => validateFile("application/pdf", new Uint8Array(MAX_FILE_BYTES + 1))).toThrow("size");
+    expect(() => validateFile("application/pdf", new Uint8Array())).toThrow(
+      "size",
+    );
+    expect(() =>
+      validateFile("application/pdf", new Uint8Array(MAX_FILE_BYTES + 1)),
+    ).toThrow("size");
   });
 
   it("generates opaque distinct keys and rejects user-defined paths", () => {
     const key = createObjectKey();
     expect(() => assertObjectKey(key)).not.toThrow();
     expect(createObjectKey()).not.toBe(key);
-    for (const invalid of ["../secret", "/files/abc", "files/abc", "other/path"]) {
+    for (const invalid of [
+      "../secret",
+      "/files/abc",
+      "files/abc",
+      "other/path",
+    ]) {
       expect(() => assertObjectKey(invalid)).toThrow("key");
     }
   });
