@@ -23,7 +23,12 @@ try {
   });
   execFileSync(
     process.execPath,
-    ["--test", fileURLToPath(new URL("./compat.test.mjs", import.meta.url))],
+    [
+      "--test",
+      "--test-concurrency=1",
+      fileURLToPath(new URL("./compat.test.mjs", import.meta.url)),
+      fileURLToPath(new URL("./email-less-oauth.test.mjs", import.meta.url)),
+    ],
     {
       env: { ...process.env, AUTH_COMPAT_DATABASE_URL: url.href },
       stdio: "inherit",

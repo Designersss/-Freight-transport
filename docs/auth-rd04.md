@@ -51,3 +51,9 @@
 - https://github.com/better-auth/better-auth/blob/v1.7.28/packages/better-auth/src/api/routes/sign-up.ts — email sign-up и проверка email.
 - https://github.com/better-auth/better-auth/blob/v1.7.28/packages/better-auth/src/plugins/generic-oauth/index.ts — generic OAuth; не подтверждает совместимость Telegram-only.
 - scripts/auth-compat/compat.test.mjs — принятый тест Fastify, PostgreSQL, session и SSE; не заменяет тесты production auth.
+
+## Compatibility spike: email-less OAuth (только тест)
+
+Добавлен scripts/auth-compat/email-less-oauth.test.mjs в существующий изолированный Testcontainers runner (последовательный запуск, без новых зависимостей). Проверяется documented genericOAuth mapping на реальной БД: исходный профиль без email отклоняется без mapping; детерминированный внутренний идентификатор в зарезервированной зоне .invalid не является почтой пользователя и остаётся emailVerified=false; повторный вход по тому же provider ID не дублирует запись, второй subject изолирован, state tampering отклоняется, пароль не создаётся. Симулируется только внешний OAuth provider через getToken/getUserInfo; это не подтверждает Telegram OIDC, подписи/JWKS или доставку почты. Источники: https://github.com/better-auth/better-auth/blob/v1.7.28/packages/better-auth/src/plugins/generic-oauth/types.ts ; https://github.com/better-auth/better-auth/blob/v1.7.28/packages/better-auth/src/plugins/generic-oauth/generic-oauth.test.ts .
+
+Перед выбором production модели необходимо проверить резервирование namespace на ВСЕХ email endpoints и запрещение доставки/verification/reset для внутреннего идентификатора, привязку настоящего email только с подтверждением владения, изоляцию ролей и явное связывание, проверку Telegram issuer/audience/nonce/state и replay. Не выдавать внутренний идентификатор за реальный email и не показывать его в UI. Тест ещё не запущен; физическая схема и runtime не меняются.
