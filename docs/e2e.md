@@ -17,4 +17,4 @@ pnpm test:e2e
 
 Источники: https://playwright.dev/docs/test-configuration ; https://playwright.dev/docs/test-webserver ; https://playwright.dev/docs/accessibility-testing ; https://github.com/microsoft/playwright/blob/v1.60.0/packages/playwright-test/package.json ; https://github.com/dequelabs/axe-core/blob/v4.14.1/LICENSE .
 
-До приёмки нужно подтвердить реальный lockfile, сборку, тесты, лицензии и CI. Browser binaries отдельно не распространяются. Не считать тесты успешными до фактического запуска.
+26.11.2026 владелец подтвердил локальный запуск macOS ARM64: Chromium 148.0.7778.96, typecheck прошёл, build 9/9, все 16 E2E прошли за 59,8 с без retry/skip, license policy 8/8, 724 установленных пакета, 0 непроверенных. Изменения и lockfile в 957f65c. Финальный CI на Linux ещё не подтверждён. Browser binaries отдельно не распространяются.
