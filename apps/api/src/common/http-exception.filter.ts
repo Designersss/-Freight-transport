@@ -24,8 +24,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
         : status === 503
           ? "SERVICE_UNAVAILABLE"
           : status >= 500
-          ? "INTERNAL_ERROR"
-          : "REQUEST_FAILED";
+            ? "INTERNAL_ERROR"
+            : "REQUEST_FAILED";
     this.adapterHost.httpAdapter.reply(
       context.getResponse(),
       { error: { code, requestId: request.id } },

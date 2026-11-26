@@ -6,5 +6,8 @@ import { createHealthModule } from "./health/health.module.js";
 export class AppModule {}
 
 export function createAppModule(config: ApiConfig): DynamicModule {
-  return { module: AppModule, imports: [createHealthModule(config.DATABASE_URL)] };
+  return {
+    module: AppModule,
+    imports: [createHealthModule(config.DATABASE_URL)],
+  };
 }

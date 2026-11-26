@@ -22,7 +22,7 @@ export async function createApp(
           "res.headers.set-cookie",
         ],
       },
-      disableRequestLogging: true,
+      logController: { disableRequestLogging: true },
     }),
     { logger: false, abortOnError: false },
   );

@@ -9,6 +9,11 @@ export function createHealthModule(databaseUrl: string): DynamicModule {
   return {
     module: HealthModule,
     controllers: [HealthController],
-    providers: [{ provide: DatabaseService, useFactory: () => new DatabaseService(databaseUrl) }],
+    providers: [
+      {
+        provide: DatabaseService,
+        useFactory: () => new DatabaseService(databaseUrl),
+      },
+    ],
   };
 }

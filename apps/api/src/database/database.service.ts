@@ -1,4 +1,4 @@
-import { type DatabaseClient, createDatabaseClient } from "@freight/database";
+import { createDatabaseClient, type DatabaseClient } from "@freight/database";
 import type { OnModuleDestroy } from "@nestjs/common";
 
 export class DatabaseService implements OnModuleDestroy {

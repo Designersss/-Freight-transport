@@ -9,7 +9,11 @@ describe("PostgreSQL integration", () => {
   let client: ReturnType<typeof createDatabaseClient>;
 
   beforeAll(async () => {
-    const config = parseApiConfig({ NODE_ENV: "test", LOG_LEVEL: "silent", DATABASE_URL: process.env.TEST_DATABASE_URL });
+    const config = parseApiConfig({
+      NODE_ENV: "test",
+      LOG_LEVEL: "silent",
+      DATABASE_URL: process.env.TEST_DATABASE_URL,
+    });
     client = createDatabaseClient(config.DATABASE_URL);
     app = await createApp(config);
     await app.init();
@@ -22,17 +26,26 @@ describe("PostgreSQL integration", () => {
   });
 
   it("queries the migrated schema through HTTP readiness", async () => {
-    const response = await app.getHttpAdapter().getInstance().inject({ method: "GET", url: "/api/v1/health/ready" });
+    const response = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({ method: "GET", url: "/api/v1/health/ready" });
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ status: "ready" });
   });
 
   it("persists an outbox event in PostgreSQL and reads it back", async () => {
     const event = await client.outboxEvent.create({
-      data: { eventType: "integration.test", aggregateId: "test", payload: { verified: true } },
+      data: {
+        eventType: "integration.test",
+        aggregateId: "test",
+        payload: { verified: true },
+      },
     });
     try {
-      const saved = await client.outboxEvent.findUniqueOrThrow({ where: { id: event.id } });
+      const saved = await client.outboxEvent.findUniqueOrThrow({
+        where: { id: event.id },
+      });
       expect(saved.payload).toEqual({ verified: true });
       expect(saved.attempts).toBe(0);
       expect(saved.processedAt).toBeNull();
