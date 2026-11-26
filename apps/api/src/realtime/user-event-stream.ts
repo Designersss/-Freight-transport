@@ -11,7 +11,11 @@ const maxCursor = 9_223_372_036_854_775_807n;
 
 export function parseEventCursor(value: unknown): bigint | null {
   if (value === undefined) return 0n;
-  if (typeof value !== "string" || !/^(0|[1-9][0-9]{0,18})$/.test(value)) {
+  if (
+    typeof value !== "string" ||
+    value.trim() !== value ||
+    !/^(0|[1-9][0-9]{0,18})$/.test(value)
+  ) {
     return null;
   }
   const cursor = BigInt(value);

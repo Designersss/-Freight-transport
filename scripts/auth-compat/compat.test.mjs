@@ -174,9 +174,11 @@ test("Better Auth on the real Nest/Fastify adapter and isolated PostgreSQL", asy
     });
     assert.equal(otherSignup.statusCode, 200);
     const otherUserId = otherSignup.json().user.id;
-    await database.$transaction((tx) =>
-      appendUserInvalidation(tx, otherUserId),
-    );
+    for (let i = 0; i < 5; i++) {
+      await database.$transaction((tx) =>
+        appendUserInvalidation(tx, otherUserId),
+      );
+    }
     await assert.rejects(
       database.$transaction(async (tx) => {
         await appendUserInvalidation(tx, userId);
@@ -213,7 +215,10 @@ test("Better Auth on the real Nest/Fastify adapter and isolated PostgreSQL", asy
         assert.equal(chunk.done, false);
         received += decoder.decode(chunk.value, { stream: true });
       }
-      assert.equal(received, "retry: 3000\n\nid: 3\nevent: refresh\ndata: {}\n\n");
+      assert.equal(
+        received,
+        "retry: 3000\n\nid: 3\nevent: refresh\ndata: {}\n\n",
+      );
     } finally {
       await reader.cancel();
     }
