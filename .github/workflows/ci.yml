@@ -71,8 +71,6 @@ jobs:
           pnpm --filter @freight/client-api test:integration
       - name: Install isolated auth compatibility dependencies
         run: |
-          npm --prefix scripts/auth-compat install --package-lock-only --ignore-scripts --no-audit --no-fund
-          node -e 'const b=require("node:fs").readFileSync("scripts/auth-compat/package-lock.json").toString("base64"); for(let i=0;i<b.length;i+=1000) console.log("AUTH_LOCK_CHUNK:"+b.slice(i,i+1000))'
           npm --prefix scripts/auth-compat ci --ignore-scripts --no-audit --no-fund
       - name: Better Auth compatibility on real NestJS Fastify and PostgreSQL
         env:
