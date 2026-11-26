@@ -21,7 +21,10 @@ export function createAuthOptions(
     trustedOrigins: [config.AUTH_WEB_ORIGIN],
     telemetry: { enabled: false },
     logger: { disabled: true },
-    advanced: { useSecureCookies: config.AUTH_BASE_URL.startsWith("https://") },
+    advanced: {
+      useSecureCookies: config.AUTH_BASE_URL.startsWith("https://"),
+      ipAddress: { ipAddressHeaders: ["x-movaro-client-ip"] },
+    },
     rateLimit: { enabled: true, storage: "database" },
     session: { cookieCache: { enabled: false } },
     account: { accountLinking: { disableImplicitLinking: true } },

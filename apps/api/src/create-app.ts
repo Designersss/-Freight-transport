@@ -1,4 +1,7 @@
 import "reflect-metadata";
+import type { AuthConfig } from "@freight/auth/runtime";
+import { AuthService } from "./auth/auth.module.js";
+import { registerAuthRoutes } from "./auth/register-auth-routes.js";
 import { HttpAdapterHost, NestFactory } from "@nestjs/core";
 import {
   FastifyAdapter,
@@ -12,9 +15,10 @@ import { registerDevelopmentDocs } from "./openapi/document.js";
 
 export async function createApp(
   config: ApiConfig,
+  auth?: AuthConfig,
 ): Promise<NestFastifyApplication> {
   const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule.register(config),
+    AppModule.register(config, auth),
     new FastifyAdapter({
       logger: {
         level: config.LOG_LEVEL,
@@ -28,6 +32,13 @@ export async function createApp(
     }),
     { logger: false, abortOnError: false },
   );
+  if (auth) {
+    if (config.NODE_ENV === "production") {
+      await app.close();
+      throw new Error("Auth production activation requires RD-04 security acceptance");
+    }
+    registerAuthRoutes(app.getHttpAdapter().getInstance(), app.get(AuthService), auth.AUTH_BASE_URL);
+  }
   app.setGlobalPrefix("api/v1");
   app.useGlobalFilters(new HttpExceptionFilter(app.get(HttpAdapterHost)));
   if (config.NODE_ENV === "development") {
