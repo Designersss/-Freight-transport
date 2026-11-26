@@ -235,9 +235,7 @@ test("Better Auth on the real Nest/Fastify adapter and isolated PostgreSQL", asy
       await database.$transaction((tx) =>
         appendUserInvalidation(tx, otherUserId),
       );
-      await database.$transaction((tx) =>
-        appendUserInvalidation(tx, userId),
-      );
+      await database.$transaction((tx) => appendUserInvalidation(tx, userId));
       let live = "";
       while (!live.includes("id: 4\nevent: refresh\ndata: {}\n\n")) {
         const chunk = await liveReader.read();
