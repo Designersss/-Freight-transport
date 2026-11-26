@@ -2,7 +2,11 @@
 
 RD-02: локальный PostgreSQL 17 и API. Скопируйте .env.example в .env и задайте непустой уникальный POSTGRES_PASSWORD; заполните DATABASE_URL (пароль в URL должен быть percent-encoded).
 
-Пример структуры URL: postgresql://freight:YOUR_ENCODED_PASSWORD@127.0.0.1:5432/freight?connect_timeout=2&pool_timeout=2
+Пример строки .env (кавычки нужны, в частности, при загрузке через source):
+
+```dotenv
+DATABASE_URL="postgresql://freight:YOUR_ENCODED_PASSWORD@127.0.0.1:5432/freight?connect_timeout=2&pool_timeout=2"
+```
 
 ```bash
 docker compose up -d --wait postgres seaweedfs
@@ -32,6 +36,8 @@ pg-boss и его схема управляются worker при запуске
 ## Приватное файловое хранилище
 
 SeaweedFS 4.51 (weed mini) и S3 SDK. Перед запуском заполните S3_ACCESS_KEY и S3_SECRET_KEY уникальными локальными значениями. S3_BUCKET создаётся при первом запуске, данные сохраняются в seaweed-data. Только S3-порт привязан к loopback; filer, volume, admin и WebDAV наружу не публикуются, сервис в отдельной сети Compose. При изменении ключей существующего тома требуется штатная ротация учётных данных SeaweedFS, а не простая замена .env.
+
+Compose healthcheck SeaweedFS выполняет подписанный AWS SigV4 HEAD-запрос к настроенному bucket через внутренний S3-порт. Успешный ответ подтверждает доступность bucket с указанными credentials, а не только открытый TCP-порт. `docker compose up -d --wait` ожидает успешной проверки; после `docker compose up -d --force-recreate --wait seaweedfs` проверяйте статус `healthy` через `docker compose ps`. При `unhealthy` проверьте логи, имя bucket и credentials, не удаляйте том. Это проверка готовности, а не доказательство сохранности каждого объекта; интеграционные тесты дополнительно выполняют реальные put/get/delete.
 
 Пакет @freight/storage предоставляет серверные put/get/delete/checkReadiness и проверку размера, MIME и начальной сигнатуры. Стартовая техническая политика: JPEG, PNG, PDF до 10 MiB, случайные UUID-ключи. Это предварительные ограничения, не окончательный продуктовый список. Сигнатура не заменяет проверку полного формата, антивирус или безопасную обработку изображений. Не публикуем URL объектов и не выдаём S3-ключи браузеру.
 

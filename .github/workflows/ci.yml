@@ -47,6 +47,12 @@ jobs:
         env:
           POSTGRES_PASSWORD: ci-local-only
         run: docker compose up -d --wait postgres seaweedfs
+      - name: Verify SeaweedFS readiness after recreation
+        env:
+          POSTGRES_PASSWORD: ci-local-only
+        run: |
+          docker compose up -d --force-recreate --wait seaweedfs
+          test "$(docker inspect --format '{{.State.Health.Status}}' "$(docker compose ps -q seaweedfs)")" = healthy
       - name: Inventory local Docker image digests and contents
         run: python3 scripts/report-images.py
       - name: Apply and verify migrations
