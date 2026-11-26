@@ -4,6 +4,7 @@ import {
   FastifyAdapter,
   type NestFastifyApplication,
 } from "@nestjs/platform-fastify";
+import { LogController } from "fastify";
 import { AppModule } from "./app.module.js";
 import { HttpExceptionFilter } from "./common/http-exception.filter.js";
 import type { ApiConfig } from "./config/api-config.js";
@@ -23,7 +24,7 @@ export async function createApp(
           "res.headers.set-cookie",
         ],
       },
-      disableRequestLogging: true,
+      logController: new LogController({ disableRequestLogging: true }),
     }),
     { logger: false, abortOnError: false },
   );

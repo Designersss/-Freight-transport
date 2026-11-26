@@ -12,6 +12,9 @@
 - Серверный API transport отклоняет redirect; тест подтверждает, что даже явный redirect: follow не расширяет границы origin.
 - Корневые правила разработки и чеклист PR.
 
+- Fastify 5.12.8: прямой pin совпадает с зависимостью NestJS 11.2.12; @fastify/static 10.1.4 соответствует peer ^10.1.2 и содержит исправление безопасности. LogController вместо deprecated disableRequestLogging. Требуется повторный Swagger HTTP test и аудит зависимостей.
+- CI для PR в любую ветку, включая этот вложенный PR, без изменения обязательных проверок.
+
 ## Источники официальной документации
 
 - Next.js 16 App Router Link: https://nextjs.org/docs/app/api-reference/components/link
@@ -22,7 +25,7 @@
 - Prisma transactions: https://www.prisma.io/docs/orm/prisma-client/queries/transactions (при изменениях сверять с закреплённой v6)
 - AWS SDK v3 S3 streaming: https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/migrate-s3.html
 - Node.js streams: https://nodejs.org/docs/latest-v24.x/api/stream.html#streamaddabortsignalsignal-stream
-- Fastify: https://fastify.dev/docs/latest/Reference/Server/
+- Точные версии: https://github.com/nestjs/nest/blob/v11.2.12/packages/platform-fastify/package.json ; https://github.com/fastify/fastify/blob/v5.12.8/docs/Reference/Server.md ; https://github.com/fastify/fastify-static/releases/tag/v10.1.4
 
 ## Границы и непроверенные вопросы
 
@@ -30,4 +33,4 @@
 
 Не выполнены локальная установка, сборка, интеграционные и браузерные тесты после новых изменений. Требуются настоящий lockfile и pnpm check, pnpm api:check, интеграции, E2E, CI. Не сливать до приёмки.
 
-Открыто: официальный shadcn registry и components.json для существующего монорепозитория (не выдавать текущие адаптации за полный импорт registry); Fastify peer dependency и FSTDEP023; лицензионный блокер SWC/caniuse-lite/libvips/Lightning CSS на macOS и Linux, обязательства поставки. Не добавлять общие разрешения в лицензионную политику до проверки. Ранее pnpm licenses:check не прошёл. В полном отчёте требуется учёт платформенных сборок.
+Открыто: официальный shadcn registry и components.json для существующего монорепозитория (не выдавать текущие адаптации за полный импорт registry); лицензионный блокер SWC/caniuse-lite/libvips/Lightning CSS на macOS и Linux, обязательства поставки. Не добавлять общие разрешения в лицензионную политику до проверки. Ранее pnpm licenses:check не прошёл. В полном отчёте требуется учёт платформенных сборок.
