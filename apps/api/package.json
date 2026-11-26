@@ -20,7 +20,7 @@
     "rxjs": "7.8.2",
     "zod": "4.1.12",
     "@freight/database": "workspace:*",
-    "@nestjs/swagger": "11.2.0",
+    "@nestjs/swagger": "11.4.8",
     "@fastify/static": "10.1.4",
     "@freight/config": "workspace:*",
     "fastify": "5.12.8"
