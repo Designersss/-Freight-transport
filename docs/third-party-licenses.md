@@ -63,3 +63,5 @@ CI запускает `python3 scripts/report-images.py` после загруз
 Отчёт печатает REVIEWED FOR DEVELOPMENT; RELEASE REVIEW для этих пакетов. Нулевое число REVIEW не означает разрешения распространять бинарники. До RD-18 необходимы SBOM фактических артефактов, сбор LICENSE/NOTICE, проверка LGPL/MPL и атрибуции данных, а также юридическая оценка при необходимости. Пока не публикуем готовые дистрибутивы и образы MOVARO. Не разрешаем GPL/MPL/LGPL/CC-BY глобально; не отключаем блокирующую проверку неизвестных записей.
 
 - argparse@3.0.4 — PSF-2.0. Сохранять лицензию и copyright, документировать изменения при распространении производной версии. https://github.com/nodeca/argparse/blob/3.0.4/LICENSE
+
+- Третий срез RD-03: дополнительные примитивы импортированы и адаптированы из MIT-реестра shadcn https://github.com/shadcn-ui/ui/tree/main/apps/v4/registry/new-york-v4/ui ; оригинальная лицензия в docs/licenses/shadcn.txt. Отдельные пакеты Radix Label и Separator проверяются общей политикой при установке. Lockfile и состав зависимостей требуется подтвердить.
