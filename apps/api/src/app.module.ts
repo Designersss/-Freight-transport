@@ -1,5 +1,10 @@
-import { Module } from "@nestjs/common";
+import { type DynamicModule, Module } from "@nestjs/common";
+import type { ApiConfig } from "./config/api-config.js";
 import { HealthModule } from "./health/health.module.js";
 
-@Module({ imports: [HealthModule] })
-export class AppModule {}
+@Module({})
+export class AppModule {
+  static register(config: ApiConfig): DynamicModule {
+    return { module: AppModule, imports: [HealthModule.register(config.DATABASE_URL)] };
+  }
+}

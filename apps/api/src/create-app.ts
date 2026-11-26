@@ -12,7 +12,7 @@ export async function createApp(
   config: ApiConfig,
 ): Promise<NestFastifyApplication> {
   const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
+    AppModule.register(config),
     new FastifyAdapter({
       logger: {
         level: config.LOG_LEVEL,

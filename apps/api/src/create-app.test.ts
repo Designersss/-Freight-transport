@@ -8,7 +8,7 @@ describe("API HTTP foundation", () => {
 
   beforeAll(async () => {
     app = await createApp(
-      parseApiConfig({ NODE_ENV: "test", LOG_LEVEL: "silent" }),
+      parseApiConfig({ NODE_ENV: "test", LOG_LEVEL: "silent", DATABASE_URL: "postgresql://test:test@127.0.0.1:1/test?connect_timeout=1&pool_timeout=1" }),
     );
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
@@ -36,5 +36,11 @@ describe("API HTTP foundation", () => {
     expect(response.json()).toEqual({
       error: { code: "NOT_FOUND", requestId: expect.any(String) },
     });
+  });
+  it("returns 503 when PostgreSQL is unavailable without exposing credentials", async () => {
+    const response = await app.getHttpAdapter().getInstance().inject({ method: "GET", url: "/api/v1/health/ready" });
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({ error: { code: "SERVICE_UNAVAILABLE", requestId: expect.any(String) } });
+    expect(response.body).not.toContain("postgresql:");
   });
 });

@@ -4,7 +4,7 @@
 
 ## Состояние
 
-Этап RD-01: фундамент монорепозитория. Бизнес-функциональность ещё не реализована.
+Этап RD-02: фундамент Backend и PostgreSQL. Бизнес-функциональность ещё не реализована.
 [Основная задача #1](https://github.com/Designersss/-Freight-transport/issues/1) · [RD-01 #2](https://github.com/Designersss/-Freight-transport/issues/2) · [Roadmap](docs/roadmap.md) · [Архитектура](docs/architecture.md) · [Правила разработки](CONTRIBUTING.md)
 
 ## Локальная настройка
@@ -19,7 +19,7 @@ pnpm check
 
 Первичная генерация lock-файла, если его ещё нет в ветке: `pnpm install --lockfile-only`. Затем выполните frozen install, проверки и добавьте pnpm-lock.yaml в Git. В CI разрешена только воспроизводимая установка.
 
-Команды: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm check`. Сейчас они проверяют фундамент и пакет конфигурации, не бизнес-сценарии. Приложения добавляются в соответствующих этапах; сервер на RD-01 ещё не запускается.
+Команды: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm check`. Они проверяют фундамент и API, не бизнес-сценарии. Для локального запуска PostgreSQL, миграций и API см. [инструкцию](infra/README.md).
 
 ## Безопасность
 

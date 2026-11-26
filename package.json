@@ -14,7 +14,10 @@
     "test": "turbo run test",
     "build": "turbo run build",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "dev:api": "pnpm --filter @freight/api dev"
+    "dev:api": "turbo run build --filter=@freight/api && pnpm --filter @freight/api dev",
+    "db:deploy": "pnpm --filter @freight/database db:deploy",
+    "db:status": "pnpm --filter @freight/database db:status",
+    "test:integration": "pnpm --filter @freight/api test:integration"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.8",
