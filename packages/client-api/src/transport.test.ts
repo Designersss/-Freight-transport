@@ -11,7 +11,18 @@ describe("API transport", () => {
     await apiFetch("/api/v1/health", options);
     expect(fetcher).toHaveBeenCalledWith(
       new URL("http://127.0.0.1:4000/api/v1/health"),
-      options,
+      { ...options, redirect: "error" },
+    );
+  });
+
+  it("does not allow callers to follow redirects outside the API boundary", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response("{}"));
+    await createApiFetch("https://example.com", fetcher)("/api/v1/health", {
+      redirect: "follow",
+    });
+    expect(fetcher).toHaveBeenCalledWith(
+      new URL("https://example.com/api/v1/health"),
+      { redirect: "error" },
     );
   });
 

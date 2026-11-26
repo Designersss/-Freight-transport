@@ -4,7 +4,7 @@ import {
   FastifyAdapter,
   type NestFastifyApplication,
 } from "@nestjs/platform-fastify";
-import { createAppModule } from "./app.module.js";
+import { AppModule } from "./app.module.js";
 import { HttpExceptionFilter } from "./common/http-exception.filter.js";
 import type { ApiConfig } from "./config/api-config.js";
 import { registerDevelopmentDocs } from "./openapi/document.js";
@@ -13,7 +13,7 @@ export async function createApp(
   config: ApiConfig,
 ): Promise<NestFastifyApplication> {
   const app = await NestFactory.create<NestFastifyApplication>(
-    createAppModule(config),
+    AppModule.register(config),
     new FastifyAdapter({
       logger: {
         level: config.LOG_LEVEL,

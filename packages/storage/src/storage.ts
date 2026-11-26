@@ -1,4 +1,4 @@
-import { Readable } from "node:stream";
+import { addAbortSignal, Readable } from "node:stream";
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -65,14 +65,16 @@ export class PrivateStorage {
     key: string,
   ): Promise<{ bytes: Uint8Array; contentType: AllowedContentType }> {
     assertObjectKey(key);
+    const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
     const result = await this.client.send(
       new GetObjectCommand({ Bucket: this.config.S3_BUCKET, Key: key }),
-      { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
+      { abortSignal: signal },
     );
     const body = result.Body;
     if (!(body instanceof Readable))
       throw new Error("Missing Node.js object stream");
     try {
+      addAbortSignal(signal, body);
       if (
         result.ContentLength !== undefined &&
         (result.ContentLength < 1 || result.ContentLength > MAX_FILE_BYTES)
