@@ -18,3 +18,7 @@ pnpm test:e2e
 Источники: https://playwright.dev/docs/test-configuration ; https://playwright.dev/docs/test-webserver ; https://playwright.dev/docs/accessibility-testing ; https://github.com/microsoft/playwright/blob/v1.60.0/packages/playwright-test/package.json ; https://github.com/dequelabs/axe-core/blob/v4.14.1/LICENSE .
 
 26.11.2026 владелец подтвердил локальный запуск macOS ARM64: Chromium 148.0.7778.96, typecheck прошёл, build 9/9, все 16 E2E прошли за 59,8 с без retry/skip, license policy 8/8, 724 установленных пакета, 0 непроверенных. Изменения и lockfile в 957f65c. Финальный CI на Linux ещё не подтверждён. Browser binaries отдельно не распространяются.
+
+## CI runner compatibility
+
+Run 45881174837 прошёл frozen install, OpenAPI, lint, typecheck, unit и build, но не установил Chromium: ubuntu-latest использовал Ubuntu 26.04, которую Playwright 1.60.0 не поддерживает. Закрепляем ubuntu-24.04 для всего quality job, не исключая браузерные, лицензионные или интеграционные проверки. Источники: https://github.com/microsoft/playwright/blob/v1.60.0/packages/playwright-core/src/server/registry/nativeDeps.ts ; https://github.com/actions/runner-images . Повторный Linux CI обязателен.

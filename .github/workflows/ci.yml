@@ -14,7 +14,8 @@ concurrency:
 
 jobs:
   quality:
-    runs-on: ubuntu-latest
+    # Playwright 1.60.0 supports Ubuntu 24.04; avoid a moving runner OS.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       S3_ENDPOINT: http://127.0.0.1:8333
