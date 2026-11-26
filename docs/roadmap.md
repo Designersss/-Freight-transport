@@ -23,4 +23,4 @@
 | RD-17 | [#18](https://github.com/Designersss/-Freight-transport/issues/18) | Комплексное тестирование            |
 | RD-18 | [#19](https://github.com/Designersss/-Freight-transport/issues/19) | Production-развёртывание            |
 
-Текущий этап: RD-01. Сроки и стоимость отдельно не согласованы.
+Текущий этап: RD-02 (RD-01 принят; RD-02 ещё не принят). Сроки и стоимость отдельно не согласованы.

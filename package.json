@@ -13,11 +13,22 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "build": "turbo run build",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "dev:api": "turbo run build --filter=@freight/api && pnpm --filter @freight/api dev",
+    "db:deploy": "pnpm --filter @freight/database db:deploy",
+    "db:status": "pnpm --filter @freight/database db:status",
+    "test:integration": "pnpm --filter @freight/api test:integration && pnpm --filter @freight/worker test:integration && pnpm --filter @freight/storage test:integration",
+    "dev:worker": "turbo run build --filter=@freight/worker && pnpm --filter @freight/worker dev",
+    "api:generate": "turbo run build --filter=@freight/api && pnpm --filter @freight/api openapi:generate && pnpm --filter @freight/client-api generate",
+    "api:check": "pnpm api:generate && node scripts/check-api-contract.mjs",
+    "licenses:report": "node scripts/report-licenses.mjs",
+    "licenses:check": "node --test scripts/license-policy.test.mjs && node scripts/report-licenses.mjs --check",
+    "test:stack": "node --test scripts/stack-smoke.test.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.8",
     "turbo": "2.11.5",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "@types/pg": "8.15.6"
   }
 }

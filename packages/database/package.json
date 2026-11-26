@@ -1,0 +1,27 @@
+{
+  "name": "@freight/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "pnpm exec prisma generate && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "db:deploy": "node --env-file-if-exists=../../.env ./node_modules/prisma/build/index.js migrate deploy",
+    "db:status": "node --env-file-if-exists=../../.env ./node_modules/prisma/build/index.js migrate status"
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.0"
+  },
+  "devDependencies": {
+    "@freight/config": "workspace:*",
+    "@types/node": "24.0.0",
+    "prisma": "6.19.0",
+    "typescript": "5.9.3"
+  }
+}

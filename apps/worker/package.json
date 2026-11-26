@@ -1,0 +1,26 @@
+{
+  "name": "@freight/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file-if-exists=../../.env --watch dist/main.js",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run --exclude '**/*.integration.test.ts'",
+    "test:integration": "vitest run src/outbox.integration.test.ts"
+  },
+  "dependencies": {
+    "@freight/database": "workspace:*",
+    "pg-boss": "12.39.0",
+    "pino": "10.4.0",
+    "zod": "4.1.12"
+  },
+  "devDependencies": {
+    "@freight/config": "workspace:*",
+    "@types/node": "24.0.0",
+    "typescript": "5.9.3",
+    "vitest": "4.0.18"
+  }
+}

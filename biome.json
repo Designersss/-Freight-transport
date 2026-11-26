@@ -19,11 +19,21 @@
   "javascript": {
     "formatter": {
       "quoteStyle": "double"
+    },
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
     }
   },
   "json": {
     "formatter": {
       "trailingCommas": "none"
     }
+  },
+  "files": {
+    "includes": [
+      "**",
+      "!packages/client-api/src/generated",
+      "!packages/client-api/openapi.json"
+    ]
   }
 }

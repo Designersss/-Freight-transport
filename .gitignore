@@ -17,3 +17,4 @@ storybook-static/
 .vscode/
 .idea/
 backups/
+packages/database/generated/

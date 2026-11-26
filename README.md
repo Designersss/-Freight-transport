@@ -4,8 +4,8 @@
 
 ## Состояние
 
-Этап RD-01: фундамент монорепозитория. Бизнес-функциональность ещё не реализована.
-[Основная задача #1](https://github.com/Designersss/-Freight-transport/issues/1) · [RD-01 #2](https://github.com/Designersss/-Freight-transport/issues/2) · [Roadmap](docs/roadmap.md) · [Архитектура](docs/architecture.md) · [Правила разработки](CONTRIBUTING.md)
+Этап RD-02: инфраструктура и фундамент Backend, в процессе приёмки. NestJS/Fastify, PostgreSQL/Prisma, pg-boss, SeaweedFS, OpenAPI/Orval, внутренняя основа SSE. Бизнес-функциональность и production-авторизация ещё не реализованы.
+[Основная задача #1](https://github.com/Designersss/-Freight-transport/issues/1) · [RD-01 #2](https://github.com/Designersss/-Freight-transport/issues/2) · [RD-02 #3](https://github.com/Designersss/-Freight-transport/issues/3) · [Roadmap](docs/roadmap.md) · [Архитектура](docs/architecture.md) · [Правила разработки](CONTRIBUTING.md)
 
 ## Локальная настройка
 
@@ -17,9 +17,9 @@ pnpm install --frozen-lockfile
 pnpm check
 ```
 
-Первичная генерация lock-файла, если его ещё нет в ветке: `pnpm install --lockfile-only`. Затем выполните frozen install, проверки и добавьте pnpm-lock.yaml в Git. В CI разрешена только воспроизводимая установка.
+Lockfile хранится в Git. При изменении зависимостей обновите его отдельно и проверьте frozen install. В CI разрешена только воспроизводимая установка.
 
-Команды: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm check`. Сейчас они проверяют фундамент и пакет конфигурации, не бизнес-сценарии. Приложения добавляются в соответствующих этапах; сервер на RD-01 ещё не запускается.
+Команды: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm check`. Они проверяют фундамент и API, не бизнес-сценарии. Для запуска PostgreSQL, SeaweedFS, API, worker, интеграционных проверок и ручной приёмки см. [инструкцию](infra/README.md). Политика зависимостей: [лицензии](docs/third-party-licenses.md).
 
 ## Безопасность
 

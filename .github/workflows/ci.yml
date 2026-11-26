@@ -17,6 +17,11 @@ jobs:
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      S3_ENDPOINT: http://127.0.0.1:8333
+      S3_BUCKET: freight-private
+      S3_ACCESS_KEY: ci-storage-key
+      S3_SECRET_KEY: ci-storage-secret-local-only
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -28,6 +33,8 @@ jobs:
         run: npm install --global pnpm@10.34.8
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Verify OpenAPI and generated client
+        run: pnpm api:check
       - name: Lint
         run: pnpm lint
       - name: Typecheck
@@ -36,3 +43,60 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm build
+      - name: Start isolated PostgreSQL and SeaweedFS
+        env:
+          POSTGRES_PASSWORD: ci-local-only
+        run: docker compose up -d --wait postgres seaweedfs
+      - name: Verify SeaweedFS readiness after recreation
+        env:
+          POSTGRES_PASSWORD: ci-local-only
+        run: |
+          docker compose up -d --force-recreate --wait seaweedfs
+          test "$(docker inspect --format '{{.State.Health.Status}}' "$(docker compose ps -q seaweedfs)")" = healthy
+      - name: Inventory local Docker image digests and contents
+        run: python3 scripts/report-images.py
+      - name: Apply and verify migrations
+        env:
+          DATABASE_URL: "postgresql://freight:ci-local-only@127.0.0.1:5432/freight?connect_timeout=2&pool_timeout=2"
+        run: |
+          pnpm db:deploy
+          pnpm db:status
+      - name: PostgreSQL and SeaweedFS integration tests
+        env:
+          TEST_DATABASE_URL: "postgresql://freight:ci-local-only@127.0.0.1:5432/freight?connect_timeout=2&pool_timeout=2"
+        run: pnpm test:integration
+      - name: Generated API client integration
+        env:
+          NODE_ENV: test
+          LOG_LEVEL: silent
+          DATABASE_URL: "postgresql://freight:ci-local-only@127.0.0.1:5432/freight?connect_timeout=2&pool_timeout=2"
+          TEST_API_ORIGIN: http://127.0.0.1:4000
+        run: |
+          node apps/api/dist/main.js &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true' EXIT
+          curl --fail --retry 20 --retry-connrefused --retry-delay 1 http://127.0.0.1:4000/api/v1/health/ready
+          pnpm --filter @freight/client-api test:integration
+      - name: Full infrastructure smoke test
+        env:
+          POSTGRES_PASSWORD: ci-local-only
+          TEST_DATABASE_URL: postgresql://freight:ci-local-only@127.0.0.1:5432/freight_stack_smoke?connect_timeout=2&pool_timeout=2
+          STACK_SMOKE: "1"
+        run: |
+          docker compose exec -T postgres createdb -U freight freight_stack_smoke
+          DATABASE_URL="$TEST_DATABASE_URL" pnpm db:deploy
+          pnpm test:stack
+      - name: Install isolated auth compatibility dependencies
+        run: |
+          npm --prefix scripts/auth-compat ci --ignore-scripts --no-audit --no-fund
+      - name: Audit isolated auth compatibility dependencies
+        run: npm --prefix scripts/auth-compat audit --audit-level=moderate
+      - name: Enforce dependency license policy
+        run: pnpm licenses:check
+      - name: Better Auth and SSE integration with PostgreSQL Testcontainers
+        run: node scripts/auth-compat/testcontainers.mjs
+      - name: Stop isolated infrastructure
+        if: always()
+        env:
+          POSTGRES_PASSWORD: ci-local-only
+        run: docker compose down -v
