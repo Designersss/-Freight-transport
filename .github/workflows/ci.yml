@@ -72,6 +72,8 @@ jobs:
       - name: Install isolated auth compatibility dependencies
         run: |
           npm --prefix scripts/auth-compat ci --ignore-scripts --no-audit --no-fund
+      - name: Inventory installed dependency licenses
+        run: pnpm licenses:report
       - name: Better Auth and SSE integration with PostgreSQL Testcontainers
         run: node scripts/auth-compat/testcontainers.mjs
       - name: Stop isolated infrastructure
