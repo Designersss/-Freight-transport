@@ -65,3 +65,20 @@ CI запускает `python3 scripts/report-images.py` после загруз
 - argparse@3.0.4 — PSF-2.0. Сохранять лицензию и copyright, документировать изменения при распространении производной версии. https://github.com/nodeca/argparse/blob/3.0.4/LICENSE
 
 - Третий срез RD-03: дополнительные примитивы импортированы и адаптированы из MIT-реестра shadcn https://github.com/shadcn-ui/ui/tree/main/apps/v4/registry/new-york-v4/ui ; оригинальная лицензия в docs/licenses/shadcn.txt. Отдельные пакеты Radix Label и Separator проверяются общей политикой при установке. Lockfile и состав зависимостей требуется подтвердить.
+
+## RD-03 — axe-core
+
+axe-core@4.14.1 (MPL-2.0) используется для проверки
+доступности в Storybook через @storybook/addon-a11y.
+
+Допуск только для разработки и CI по точной версии.
+Storybook не включается в production Web/Admin.
+Перед распространением проверить фактический состав
+артефактов, исходный код покрытых файлов, LICENSE,
+LICENSE-3RD-PARTY.txt и применимые уведомления.
+
+Источники:
+
+- https://github.com/dequelabs/axe-core/blob/v4.14.1/LICENSE
+- https://github.com/dequelabs/axe-core/blob/v4.14.1/package.json
+- https://github.com/storybookjs/storybook/blob/v10.6.9/code/addons/a11y/package.json

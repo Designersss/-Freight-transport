@@ -12,6 +12,7 @@
 Общие Manrope, UI-примитивы и CSS-токены импортируются из workspace; стили не дублируются. Toolbar Theme/Language меняет data-theme и lang в iframe, тексты историй RU/EN. Истории демонстрируют реальные компоненты, а не бизнес-страницы. FormExample — исключительно изолированный тестовый сценарий, не реализация production формы. Интерактивные play-функции проверяют click и валидацию при открытии истории; автоматизированный браузерный runner и E2E остаются отдельным шагом. Addon a11y включён, ручная клавиатурная проверка также обязательна.
 
 Официальные источники:
+
 - https://storybook.js.org/docs/get-started/frameworks/react-vite
 - https://storybook.js.org/docs/essentials/toolbars-and-globals
 - https://storybook.js.org/docs/writing-tests/interaction-testing

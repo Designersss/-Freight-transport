@@ -127,3 +127,19 @@ test("allows reviewed argparse version only", () => {
   assert.equal(isAllowedLicense("argparse@3.0.4", "PSF-2.0", workspace), true);
   assert.equal(isAllowedLicense("argparse@3.0.5", "PSF-2.0", workspace), false);
 });
+
+test("allows reviewed axe-core version only", () => {
+  assert.equal(isAllowedLicense("axe-core@4.14.1", "MPL-2.0", workspace), true);
+  assert.equal(
+    isAllowedLicense("axe-core@4.14.2", "MPL-2.0", workspace),
+    false,
+  );
+  assert.equal(
+    isAllowedLicense("axe-core@4.14.1", "GPL-3.0-only", workspace),
+    false,
+  );
+  assert.equal(
+    isAllowedLicense("axe-core@4.14.1", "MPL-2.0", compatibility),
+    false,
+  );
+});

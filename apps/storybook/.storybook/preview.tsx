@@ -31,11 +31,21 @@ const preview: Preview = {
   globalTypes: {
     theme: {
       description: "MOVARO color theme",
-      toolbar: { title: "Theme", icon: "circlehollow", items: ["dark", "light"], dynamicTitle: true },
+      toolbar: {
+        title: "Theme",
+        icon: "circlehollow",
+        items: ["dark", "light"],
+        dynamicTitle: true,
+      },
     },
     locale: {
       description: "MOVARO language",
-      toolbar: { title: "Language", icon: "globe", items: ["ru", "en"], dynamicTitle: true },
+      toolbar: {
+        title: "Language",
+        icon: "globe",
+        items: ["ru", "en"],
+        dynamicTitle: true,
+      },
     },
   },
   initialGlobals: { theme: "dark", locale: "ru" },

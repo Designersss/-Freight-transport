@@ -13,7 +13,9 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: (args, { globals }) => (
-    <Button {...args}>{globals.locale === "en" ? "Continue" : "Продолжить"}</Button>
+    <Button {...args}>
+      {globals.locale === "en" ? "Continue" : "Продолжить"}
+    </Button>
   ),
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole("button"));
@@ -41,7 +43,9 @@ export const Sizes: Story = {
   render: (_, { globals }) => (
     <div className="flex flex-wrap items-center gap-3">
       {(["xs", "sm", "default", "lg"] as const).map((size) => (
-        <Button key={size} size={size}>{globals.locale === "en" ? "Button" : "Кнопка"} · {size}</Button>
+        <Button key={size} size={size}>
+          {globals.locale === "en" ? "Button" : "Кнопка"} · {size}
+        </Button>
       ))}
     </div>
   ),
