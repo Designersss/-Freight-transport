@@ -40,5 +40,21 @@
     "parser": {
       "tailwindDirectives": true
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": [
+        "apps/api/src/app.module.ts",
+        "apps/api/src/database/database.module.ts",
+        "apps/api/src/health/health.module.ts"
+      ],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noStaticOnlyClass": "off"
+          }
+        }
+      }
+    }
+  ]
 }

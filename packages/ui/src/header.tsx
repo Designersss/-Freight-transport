@@ -1,10 +1,12 @@
 "use client";
 
-import type { Locale } from "@freight/i18n";
+import { type Locale, locales } from "@freight/i18n";
 import { Moon, Sun } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "./components/button";
+import { Link, usePathname } from "./navigation";
 import { type Theme, themeCookie, toggleTheme } from "./theme";
 
 interface HeaderProps {
@@ -20,6 +22,14 @@ export function Header({
 }: HeaderProps) {
   const t = useTranslations("common");
   const [theme, setTheme] = useState(initialTheme);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const query = Object.fromEntries(
+    Array.from(new Set(searchParams.keys()), (key) => [
+      key,
+      searchParams.getAll(key),
+    ]),
+  );
 
   function changeTheme() {
     const next = toggleTheme(theme);
@@ -33,28 +43,25 @@ export function Header({
   return (
     <header className="movaro-header">
       {showBrand ? (
-        <a className="movaro-wordmark" href={`/${locale}`}>
+        <Link className="movaro-wordmark" href="/">
           MOVARO
-        </a>
+        </Link>
       ) : (
         <span aria-hidden="true" />
       )}
       <div className="movaro-controls">
         <nav aria-label={t("language")} className="movaro-language">
-          <a
-            aria-current={locale === "ru" ? "page" : undefined}
-            href="/ru"
-            lang="ru"
-          >
-            RU
-          </a>
-          <a
-            aria-current={locale === "en" ? "page" : undefined}
-            href="/en"
-            lang="en"
-          >
-            EN
-          </a>
+          {locales.map((language) => (
+            <Link
+              aria-current={language === locale ? "page" : undefined}
+              href={{ pathname, query }}
+              key={language}
+              lang={language}
+              locale={language}
+            >
+              {language.toUpperCase()}
+            </Link>
+          ))}
         </nav>
         <Button
           aria-label={t("theme")}

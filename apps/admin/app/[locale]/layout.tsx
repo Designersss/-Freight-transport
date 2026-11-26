@@ -6,6 +6,7 @@ import {
   Header,
   parseTheme,
   Sidebar,
+  SkipLink,
   themeCookie,
   UiProvider,
 } from "@freight/ui";
@@ -35,23 +36,20 @@ export default async function RootLayout({ children, params }: LayoutProps) {
     <html data-theme={theme} lang={locale}>
       <body>
         <UiProvider locale={locale}>
-          <a className="movaro-skip" href="#main-content">
-            {messages[locale].common.skip}
-          </a>
+          <SkipLink label={messages[locale].common.skip} />
           <AppShell
             header={
               <Header initialTheme={theme} locale={locale} showBrand={false} />
             }
             sidebar={
               <Sidebar
-                brandHref={`/${locale}`}
+                brandHref="/"
                 navigationLabel={messages[locale].common.navigation}
                 items={[
                   {
-                    href: `/${locale}`,
+                    href: "/",
                     label: messages[locale].admin.title,
                     icon: <LayoutDashboard aria-hidden="true" size={16} />,
-                    active: true,
                   },
                 ]}
               />

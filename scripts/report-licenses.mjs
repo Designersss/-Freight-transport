@@ -1,7 +1,10 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { isAllowedLicense } from "./license-policy.mjs";
+import {
+  isAllowedLicense,
+  isReviewedWorkspaceLicense,
+} from "./license-policy.mjs";
 
 const enforce = process.argv.includes("--check");
 
@@ -70,6 +73,7 @@ if (
 
 const groups = new Map();
 const violations = [];
+const releaseReview = [];
 for (const [name, item] of [...inventory.entries()].sort()) {
   const group = groups.get(item.license) ?? [];
   group.push(name);
@@ -82,6 +86,11 @@ for (const [license, packages] of [...groups.entries()].sort()) {
     if (!isAllowedLicense(name, license, item.sources)) {
       violations.push(name);
       console.log(`REVIEW ${license}: ${name}`);
+    } else if (isReviewedWorkspaceLicense(name, license, item.sources)) {
+      releaseReview.push(name);
+      console.log(
+        `REVIEWED FOR DEVELOPMENT; RELEASE REVIEW ${license}: ${name}`,
+      );
     } else if (license === "UNKNOWN") {
       console.log(`REVIEWED EXCEPTION ${license}: ${name}`);
     }
@@ -90,4 +99,7 @@ for (const [license, packages] of [...groups.entries()].sort()) {
 console.log(`Unique installed packages: ${inventory.size}`);
 console.log(`Workspace packages: ${workspaceCount}`);
 console.log(`Unreviewed packages: ${violations.length}`);
+console.log(
+  `Development-reviewed packages requiring release review: ${releaseReview.length}`,
+);
 if (enforce && violations.length > 0) process.exitCode = 1;

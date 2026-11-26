@@ -5,7 +5,10 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./styles.css": "./src/styles.css"
+    "./styles.css": "./src/styles.css",
+    "./components/*": "./src/components/*.tsx",
+    "./lib/*": "./src/lib/*.ts",
+    "./hooks/*": "./src/hooks/*.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -22,7 +25,8 @@
   },
   "peerDependencies": {
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "next": "16.4.6"
   },
   "devDependencies": {
     "@freight/config": "workspace:*",
@@ -32,6 +36,12 @@
     "@types/react": "19.3.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "@types/react-dom": "19.3.0"
+    "@types/react-dom": "19.3.0",
+    "next": "16.4.6"
+  },
+  "imports": {
+    "#components/*": "./src/components/*.tsx",
+    "#lib/*": "./src/lib/*.ts",
+    "#hooks/*": "./src/hooks/*.ts"
   }
 }

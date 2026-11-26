@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./routing": "./src/routing.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -15,5 +16,8 @@
     "@types/node": "24.0.0",
     "typescript": "5.9.3",
     "vitest": "4.0.18"
+  },
+  "dependencies": {
+    "next-intl": "4.16.2"
   }
 }
