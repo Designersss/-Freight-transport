@@ -1,0 +1,33 @@
+# Ревизия архитектуры MOVARO — RD-03
+
+База: d02167e1, PR #22. Ревизия выполняется в отдельной ветке, чтобы не изменять принятую историю main. Задачи #1 и #4.
+
+## Изменения
+
+- Внутренняя навигация Header и Sidebar через next-intl createNavigation; конфигурация локалей общая. При переключении языка сохраняется pathname и параметры, активная ссылка вычисляется из маршрута. Нативный anchor оставлен только для skip-link; общий компонент и доступная цель.
+- Next.js App Router: proxy, getRequestConfig и плагин next-intl в обоих приложениях, без ручного дублирования /ru redirect.
+- NestJS DatabaseModule экспортирует сервис; HealthModule импортирует модуль базы. Область провайдера не ограничена одним контроллером.
+- Общие Zod-схемы server environment и безопасные сообщения ошибок вынесены в @freight/config. API и worker используют расширение схемы вместо копипаста.
+- S3: один AbortSignal на HTTP-запрос и чтение потока; сохраняются лимит размера, проверка сигнатуры и finally.
+- Серверный API transport отклоняет redirect; тест подтверждает, что даже явный redirect: follow не расширяет границы origin.
+- Корневые правила разработки и чеклист PR.
+
+## Источники официальной документации
+
+- Next.js 16 App Router Link: https://nextjs.org/docs/app/api-reference/components/link
+- next-intl v4: https://next-intl.dev/docs/routing/navigation ; https://next-intl.dev/docs/routing/setup
+- shadcn/ui monorepo: https://ui.shadcn.com/docs/monorepo
+- NestJS dynamic modules: https://docs.nestjs.com/fundamentals/dynamic-modules ; https://docs.nestjs.com/exception-filters
+- Zod 4 objects: https://zod.dev/api#objects
+- Prisma transactions: https://www.prisma.io/docs/orm/prisma-client/queries/transactions (при изменениях сверять с закреплённой v6)
+- AWS SDK v3 S3 streaming: https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/migrate-s3.html
+- Node.js streams: https://nodejs.org/docs/latest-v24.x/api/stream.html#streamaddabortsignalsignal-stream
+- Fastify: https://fastify.dev/docs/latest/Reference/Server/
+
+## Границы и непроверенные вопросы
+
+Кодовая ревизия основных модулей не равна полному независимому аудиту. SQL/outbox уже используют транзакции и параметризованный запрос; не переписываем без основания. SSE остаётся закрытым до RD-04 и проверки бизнес-получателей. Не меняем авторизацию и контракт OpenAPI в данном срезе. Прочитаны основные runtime-модули API, worker, database, storage, transport и UI; отдельный построчный аудит всех тестов, CI, generated-файлов, lockfile и SQL ещё не завершён.
+
+Не выполнены локальная установка, сборка, интеграционные и браузерные тесты после новых изменений. Требуются настоящий lockfile и pnpm check, pnpm api:check, интеграции, E2E, CI. Не сливать до приёмки.
+
+Открыто: официальный shadcn registry и components.json для существующего монорепозитория (не выдавать текущие адаптации за полный импорт registry); Fastify peer dependency и FSTDEP023; лицензионный блокер SWC/caniuse-lite/libvips/Lightning CSS на macOS и Linux, обязательства поставки. Не добавлять общие разрешения в лицензионную политику до проверки. Ранее pnpm licenses:check не прошёл. В полном отчёте требуется учёт платформенных сборок.

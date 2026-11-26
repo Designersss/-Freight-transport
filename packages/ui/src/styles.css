@@ -130,19 +130,6 @@ a {
   color: var(--foreground);
 }
 
-.movaro-icon-button {
-  display: grid;
-  width: 36px;
-  height: 36px;
-  place-items: center;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--card);
-  color: var(--foreground);
-  cursor: pointer;
-}
-
-.movaro-icon-button:hover,
 .movaro-language a:hover {
   background: var(--muted);
   color: var(--foreground);
