@@ -3,6 +3,7 @@ import sharp from "sharp";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createProfilePhotoKey } from "./file-policy.js";
 import {
+  InvalidProfilePhotoError,
   MAX_PROFILE_PHOTO_BYTES,
   PrivateStorage,
   parseStorageConfig,
@@ -135,7 +136,7 @@ describe("SeaweedFS private S3", () => {
   it("does not allow general files through the profile photo interface", async () => {
     await expect(
       storage.putProfilePhoto(bytes, "application/pdf"),
-    ).rejects.toThrow("Unsupported");
+    ).rejects.toBeInstanceOf(InvalidProfilePhotoError);
     const uploaded = await storage.put(bytes, "application/pdf");
     try {
       await expect(storage.getProfilePhoto(uploaded.key)).rejects.toThrow(

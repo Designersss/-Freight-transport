@@ -1,11 +1,19 @@
 import "reflect-metadata";
-import { parseRuntimeAuthConfig } from "@freight/auth/runtime";
+import {
+  parseRuntimeAuthConfig,
+  parseStorageConfig,
+} from "@freight/auth/runtime";
 import { parseApiConfig } from "./config/api-config.js";
 import { createApp } from "./create-app.js";
 
 async function bootstrap(): Promise<void> {
   const config = parseApiConfig(process.env);
-  const app = await createApp(config, parseRuntimeAuthConfig(process.env));
+  const auth = parseRuntimeAuthConfig(process.env);
+  const app = await createApp(
+    config,
+    auth,
+    auth ? parseStorageConfig(process.env) : undefined,
+  );
   app.enableShutdownHooks();
   await app.listen(config.API_PORT, config.API_HOST);
   app

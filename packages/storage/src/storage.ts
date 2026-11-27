@@ -18,7 +18,14 @@ import {
   validateFile,
   validateProfilePhoto,
 } from "./file-policy.js";
-import { normalizeProfilePhoto } from "./profile-photo.js";
+import { normalizeProfilePhoto, ProfilePhotoBusyError } from "./profile-photo.js";
+
+export class InvalidProfilePhotoError extends Error {
+  constructor() {
+    super("Invalid profile photo");
+    this.name = "InvalidProfilePhotoError";
+  }
+}
 
 const REQUEST_TIMEOUT_MS = 15000;
 
@@ -77,13 +84,19 @@ export class PrivateStorage {
   async putProfilePhoto(
     bytes: Uint8Array,
     contentType: string,
+    key = createProfilePhotoKey(),
   ): Promise<{
     key: string;
     contentType: "image/jpeg";
     size: number;
   }> {
-    const photo = await normalizeProfilePhoto(bytes, contentType);
-    const key = createProfilePhotoKey();
+    assertProfilePhotoKey(key);
+    const photo = await normalizeProfilePhoto(bytes, contentType).catch(
+      (error: unknown) => {
+        if (error instanceof ProfilePhotoBusyError) throw error;
+        throw new InvalidProfilePhotoError();
+      },
+    );
     await this.write(key, photo.bytes, photo.contentType);
     return {
       key,

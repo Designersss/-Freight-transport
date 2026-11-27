@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import type { AuthConfig } from "@freight/auth/runtime";
+import type { AuthConfig, StorageConfig } from "@freight/auth/runtime";
 import { HttpAdapterHost, NestFactory } from "@nestjs/core";
 import {
   FastifyAdapter,
@@ -16,9 +16,10 @@ import { registerDevelopmentDocs } from "./openapi/document.js";
 export async function createApp(
   config: ApiConfig,
   auth?: AuthConfig,
+  storage?: StorageConfig,
 ): Promise<NestFastifyApplication> {
   const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule.register(config, auth),
+    AppModule.register(config, auth, storage),
     new FastifyAdapter({
       logger: {
         level: config.LOG_LEVEL,

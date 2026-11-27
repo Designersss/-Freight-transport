@@ -9,3 +9,4 @@ async function handle(request: Request, context: Context): Promise<Response> {
 
 export const GET = handle;
 export const POST = handle;
+export const DELETE = handle;

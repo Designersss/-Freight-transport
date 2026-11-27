@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@freight/config": "workspace:*",
+    "@freight/storage": "workspace:*",
     "better-auth": "1.7.28",
     "nodemailer": "10.6.1",
     "pg": "8.16.3",

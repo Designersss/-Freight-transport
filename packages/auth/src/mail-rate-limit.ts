@@ -28,7 +28,7 @@ export function reserveMailRequest(
     { key: `${prefix}:minute`, seconds: 60, max: 1 },
     { key: `${prefix}:hour`, seconds: 3600, max: 5 },
   ];
-  return reserveBuckets(pool, buckets, false);
+  return reserveBuckets(pool, buckets, "mail");
 }
 
 // Public username checks never consume the email delivery budget.
@@ -44,14 +44,31 @@ export function reserveUsernameRequest(
       { key: "username:global:minute", seconds: 60, max: 600 },
       { key: `username:ip:${digest}`, seconds: 60, max: 60 },
     ],
-    true,
+    "username",
+  );
+}
+
+export function reservePhotoRequest(
+  pool: Pool,
+  secret: string,
+  userId: string,
+  action: "read" | "write",
+): Promise<number | null> {
+  const digest = createHmac("sha256", secret).update(userId).digest("hex");
+  return reserveBuckets(
+    pool,
+    [
+      { key: `photo:${action}:global`, seconds: 60, max: action === "read" ? 600 : 60 },
+      { key: `photo:${action}:user:${digest}`, seconds: 60, max: action === "read" ? 60 : 10 },
+    ],
+    "photo",
   );
 }
 
 async function reserveBuckets(
   pool: Pool,
   buckets: Bucket[],
-  usernameScope: boolean,
+  scope: "mail" | "username" | "photo",
 ): Promise<number | null> {
   const client = await pool.connect();
   try {
@@ -78,8 +95,8 @@ async function reserveBuckets(
     }
     // Global buckets serialize admitted requests, and expired state is bounded.
     await client.query(
-      "DELETE FROM auth_mail_rate_limits WHERE expires_at <= now() AND (key LIKE 'username:%') = $1",
-      [usernameScope],
+      "DELETE FROM auth_mail_rate_limits WHERE expires_at <= now() AND CASE WHEN key LIKE 'username:%' THEN 'username' WHEN key LIKE 'photo:%' THEN 'photo' ELSE 'mail' END = $1",
+      [scope],
     );
     await client.query("COMMIT");
     return null;

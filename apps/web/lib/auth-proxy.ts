@@ -14,6 +14,7 @@ const paths = new Set([
   "sessions",
 ]);
 const maxBody = 16_384;
+const maxPhotoBody = 2 * 1024 * 1024;
 
 function configuredOrigin(value: string | undefined, fallback: string): string {
   const url = new URL(value ?? fallback);
@@ -36,7 +37,7 @@ export function authFailure(status: number): Response {
   );
 }
 
-async function boundedBody(request: Request): Promise<string> {
+async function boundedBody(request: Request, limit: number): Promise<Buffer> {
   const reader = request.body?.getReader();
   if (!reader) throw new Error("Missing body");
   const chunks: Uint8Array[] = [];
@@ -46,10 +47,10 @@ async function boundedBody(request: Request): Promise<string> {
       const { done, value } = await reader.read();
       if (done) break;
       length += value.byteLength;
-      if (length > maxBody) throw new Error("Body limit");
+      if (length > limit) throw new Error("Body limit");
       chunks.push(value);
     }
-    return Buffer.concat(chunks).toString("utf8");
+    return Buffer.concat(chunks);
   } finally {
     await reader.cancel();
   }
@@ -60,15 +61,14 @@ export async function forwardAuth(
   path: string,
 ): Promise<Response> {
   const method = request.method;
-  if (
-    method === "POST"
-      ? !paths.has(path)
-      : method !== "GET" ||
-        !["get-session", "profile", "username/settings", "sessions"].includes(
-          path,
-        )
-  )
-    return authFailure(404);
+  const photo = path === "profile/photo";
+  const allowed = photo
+    ? ["GET", "POST", "DELETE"].includes(method)
+    : method === "POST"
+      ? paths.has(path)
+      : method === "GET" &&
+        ["get-session", "profile", "username/settings", "sessions"].includes(path);
+  if (!allowed) return authFailure(404);
   if (new URL(request.url).search) return authFailure(400);
   try {
     const web = configuredOrigin(
@@ -81,27 +81,29 @@ export async function forwardAuth(
     );
     // RD-04 development bridge only; production auth remains explicitly disabled.
     if (process.env.MOVARO_AUTH_PREVIEW !== "true") return authFailure(503);
-    if (method === "POST" && request.headers.get("origin") !== web)
+    if (method !== "GET" && request.headers.get("origin") !== web)
       return authFailure(403);
+    if (method === "DELETE" && request.body) return authFailure(400);
+    const encoding = request.headers.get("content-encoding");
+    if (encoding && encoding !== "identity") return authFailure(415);
     const headers = new Headers();
     const cookie = request.headers.get("cookie");
     if (cookie) headers.set("cookie", cookie);
     const agent = request.headers.get("user-agent");
     if (agent) headers.set("user-agent", agent);
-    let body: string | undefined;
+    let body: string | Uint8Array<ArrayBuffer> | undefined;
+    if (method !== "GET") headers.set("origin", web);
     if (method === "POST") {
-      if (
-        request.headers.get("content-type")?.split(";")[0] !==
-        "application/json"
-      )
+      const type = request.headers.get("content-type")?.split(";")[0];
+      if (photo ? type !== "image/jpeg" && type !== "image/png" : type !== "application/json")
         return authFailure(415);
       try {
-        body = await boundedBody(request);
+        const bytes = await boundedBody(request, photo ? maxPhotoBody : maxBody);
+        body = photo ? new Uint8Array(bytes) : bytes.toString("utf8");
       } catch {
         return authFailure(400);
       }
-      headers.set("origin", web);
-      headers.set("content-type", "application/json");
+      headers.set("content-type", type);
     }
     const result = await fetch(new URL(`/api/v1/auth/${path}`, api), {
       method,
@@ -109,14 +111,16 @@ export async function forwardAuth(
       ...(body === undefined ? {} : { body }),
       redirect: "error",
       cache: "no-store",
-      signal: AbortSignal.timeout(25_000),
+      signal: AbortSignal.timeout(photo ? 45_000 : 25_000),
     });
     const output = new Headers({
-      "cache-control": "no-store",
+      "cache-control": photo ? "private, no-store" : "no-store",
       "referrer-policy": "no-referrer",
+      "x-content-type-options": "nosniff",
     });
     const type = result.headers.get("content-type");
-    if (type?.startsWith("application/json")) output.set("content-type", type);
+    if (type?.startsWith("application/json") || (photo && result.ok && type === "image/jpeg"))
+      output.set("content-type", type);
     else return authFailure(502);
     for (const cookie of result.headers.getSetCookie())
       output.append("set-cookie", cookie);

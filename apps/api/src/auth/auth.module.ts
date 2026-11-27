@@ -2,6 +2,7 @@ import {
   type AuthConfig,
   type AuthHttpRuntime,
   createAuthHttpRuntime,
+  type StorageConfig,
 } from "@freight/auth/runtime";
 import {
   type DynamicModule,
@@ -12,8 +13,8 @@ import {
 export class AuthService implements OnModuleDestroy {
   private readonly runtime: AuthHttpRuntime;
 
-  constructor(config: AuthConfig, databaseUrl: string) {
-    this.runtime = createAuthHttpRuntime(config, databaseUrl);
+  constructor(config: AuthConfig, databaseUrl: string, storage?: StorageConfig) {
+    this.runtime = createAuthHttpRuntime(config, databaseUrl, storage);
   }
 
   handle(request: Request): Promise<Response> {
@@ -27,13 +28,17 @@ export class AuthService implements OnModuleDestroy {
 
 @Module({})
 export class AuthModule {
-  static register(config: AuthConfig, databaseUrl: string): DynamicModule {
+  static register(
+    config: AuthConfig,
+    databaseUrl: string,
+    storage?: StorageConfig,
+  ): DynamicModule {
     return {
       module: AuthModule,
       providers: [
         {
           provide: AuthService,
-          useFactory: () => new AuthService(config, databaseUrl),
+          useFactory: () => new AuthService(config, databaseUrl, storage),
         },
       ],
       exports: [AuthService],

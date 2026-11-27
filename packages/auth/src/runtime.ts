@@ -1,3 +1,4 @@
+import { PrivateStorage, type StorageConfig } from "@freight/storage";
 import { Pool } from "pg";
 import { canUsePublicSession, eligibleAccount } from "./active-account.js";
 import { AUTH_BASE_PATH, createEmailAuth } from "./auth.js";
@@ -10,6 +11,7 @@ import {
 import { isDeliverableEmail } from "./email.js";
 import { reserveMailRequest } from "./mail-rate-limit.js";
 import { handleProfile } from "./profile.js";
+import { handleProfilePhoto } from "./profile-photo.js";
 import { completeRegistration, usernameOwner } from "./registration.js";
 import { handleSessionSettings } from "./session-settings.js";
 import { createSmtpMailer } from "./smtp-mailer.js";
@@ -17,6 +19,7 @@ import { handleUsername } from "./username.js";
 import { handleUsernameSettings } from "./username-settings.js";
 import { readVerifiedSession } from "./verified-session.js";
 
+export { MAX_PROFILE_PHOTO_BYTES, parseStorageConfig, type StorageConfig } from "@freight/storage";
 export { type AuthConfig, parseAuthConfig } from "./config.js";
 
 export interface AuthHttpRuntime {
@@ -34,6 +37,7 @@ function failure(status: number, code: string): Response {
 export function createAuthHttpRuntime(
   config: AuthConfig,
   databaseUrl: string,
+  storageConfig?: StorageConfig,
 ): AuthHttpRuntime {
   const pool = new Pool({
     connectionString: databaseUrl,
@@ -41,6 +45,7 @@ export function createAuthHttpRuntime(
     connectionTimeoutMillis: 5000,
   });
   const auth = createEmailAuth(config, pool, createSmtpMailer(config));
+  const storage = storageConfig ? new PrivateStorage(storageConfig) : null;
   const destination = (language: string, page: string) =>
     new URL(`/${language}${page}`, config.AUTH_WEB_ORIGIN).href;
   const destinations = (page: string) =>
@@ -58,6 +63,11 @@ export function createAuthHttpRuntime(
       const path = url.pathname.slice(AUTH_BASE_PATH.length);
       if (path === "/sessions")
         return handleSessionSettings(request, config, auth, pool);
+      if (path === "/profile/photo") {
+        return storage
+          ? handleProfilePhoto(request, config, auth, pool, storage)
+          : failure(503, "AUTH_REQUEST_FAILED");
+      }
       if (path === "/profile")
         return handleProfile(request, config, auth, pool);
       if (path === "/username") return handleUsername(request, config, pool);
@@ -296,7 +306,11 @@ export function createAuthHttpRuntime(
       }
     },
     async close() {
-      await pool.end();
+      try {
+        storage?.close();
+      } finally {
+        await pool.end();
+      }
     },
   };
 }

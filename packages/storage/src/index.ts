@@ -7,4 +7,4 @@ export {
   validateProfilePhoto,
 } from "./file-policy.js";
 export { ProfilePhotoBusyError } from "./profile-photo.js";
-export { PrivateStorage } from "./storage.js";
+export { InvalidProfilePhotoError, PrivateStorage } from "./storage.js";

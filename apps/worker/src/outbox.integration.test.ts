@@ -5,8 +5,8 @@ import {
   relayOutboxBatch,
 } from "@freight/database";
 import {
-  parseStorageConfig,
   PrivateStorage,
+  parseStorageConfig,
   type StorageConfig,
 } from "@freight/storage";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
@@ -114,7 +114,7 @@ describe("Transactional outbox and pg-boss", () => {
     let worker: Awaited<ReturnType<typeof startWorker>> | undefined;
     try {
       const png = Buffer.from(
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGMwj6oHAAHcARGUV5xbAAAAAElFTkSuQmCC",
+        "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAGUlEQVR4nGPUiKpgIAUwkaR6VMOohiGlAQAvmQEab3goXgAAAABJRU5ErkJggg==",
         "base64",
       );
       const { key } = await storage.putProfilePhoto(png, "image/png");

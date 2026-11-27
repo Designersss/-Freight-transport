@@ -8,7 +8,9 @@ import { createApp } from "../../apps/api/dist/create-app.js";
 import {
   createAuthHttpRuntime,
   parseAuthConfig,
+  parseStorageConfig,
 } from "../../packages/auth/dist/runtime.js";
+import { PrivateStorage } from "../../packages/storage/dist/index.js";
 
 const origin = "http://127.0.0.1:4000";
 const webOrigin = "http://127.0.0.1:3000";
@@ -52,6 +54,10 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
   const password = randomBytes(3).toString("hex");
   const newPassword = randomBytes(24).toString("hex");
   const pool = new pg.Pool({ connectionString: databaseUrl });
+  const storageConfig = parseStorageConfig(process.env);
+  assert.equal(new URL(storageConfig.S3_ENDPOINT).hostname, "127.0.0.1");
+  const storage = new PrivateStorage(storageConfig);
+  const photoKeys = new Set();
   let app;
   try {
     app = await createApp(
@@ -70,6 +76,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
         SMTP_SECURITY: "local",
         SMTP_FROM: "auth@movaro.test",
       }),
+      storageConfig,
     );
     await app.init();
     const fastify = app.getHttpAdapter().getInstance();
@@ -241,6 +248,77 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     assert.equal(read.statusCode, 200);
     assert.deepEqual(read.json(), saved);
     assert.equal(session.json().user.name, "Test Driver");
+    const photoPath = `${base}/profile/photo`;
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAGUlEQVR4nGPUiKpgIAUwkaR6VMOohiGlAQAvmQEab3goXgAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    const uploadPhoto = (payload, extra = {}) =>
+      fastify.inject({
+        method: "POST",
+        url: photoPath,
+        payload,
+        headers: {
+          cookie,
+          origin: webOrigin,
+          "content-type": "image/png",
+          ...extra,
+        },
+      });
+    const readKey = async () => {
+      const result = await pool.query(
+        "SELECT photo_key FROM user_profiles WHERE user_id = $1",
+        [session.json().user.id],
+      );
+      const key = result.rows[0].photo_key;
+      if (key) photoKeys.add(key);
+      return key;
+    };
+    assert.equal((await get(photoPath)).statusCode, 401);
+    assert.equal((await get(photoPath, cookie)).statusCode, 404);
+    assert.equal(await readKey(), null);
+    assert.equal(
+      (await uploadPhoto(png, { origin: "https://untrusted.invalid" }))
+        .statusCode,
+      403,
+    );
+    assert.equal((await uploadPhoto(Buffer.from([0]))).statusCode, 400);
+    assert.equal(await readKey(), null);
+    const uploaded = await uploadPhoto(png);
+    assert.equal(uploaded.statusCode, 200);
+    assert.deepEqual(uploaded.json(), { success: true });
+    const firstKey = await readKey();
+    assert.match(firstKey, /^profile-photos\//);
+    const fetched = await get(photoPath, cookie);
+    assert.equal(fetched.statusCode, 200);
+    assert.equal(fetched.headers["content-type"], "image/jpeg");
+    assert.equal(fetched.headers["cache-control"], "private, no-store");
+    assert.equal(fetched.headers["x-content-type-options"], "nosniff");
+    assert.deepEqual(
+      fetched.rawPayload,
+      Buffer.from((await storage.getProfilePhoto(firstKey)).bytes),
+    );
+    assert.equal(
+      (await get(`${photoPath}?userId=another-user`, cookie)).statusCode,
+      400,
+    );
+    assert.equal((await uploadPhoto(png)).statusCode, 200);
+    const secondKey = await readKey();
+    assert.notEqual(firstKey, secondKey);
+    const removed = await fastify.inject({
+      method: "DELETE",
+      url: photoPath,
+      headers: { cookie, origin: webOrigin },
+    });
+    assert.equal(removed.statusCode, 200);
+    assert.deepEqual(removed.json(), { success: true });
+    assert.equal(await readKey(), null);
+    assert.equal((await get(photoPath, cookie)).statusCode, 404);
+    const retired = await pool.query(
+      "SELECT key FROM profile_photo_cleanup WHERE key = ANY($1::text[]) AND owner_id IS NULL",
+      [[firstKey, secondKey]],
+    );
+    assert.equal(retired.rowCount, 2);
     const settings = await get(`${base}/username/settings`, cookie);
     assert.equal(settings.statusCode, 200);
     assert.deepEqual(settings.json(), {
@@ -436,7 +514,12 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     try {
       await app?.close();
     } finally {
-      await pool.end();
+      try {
+        for (const key of photoKeys) await storage.deleteProfilePhoto(key);
+      } finally {
+        storage.close();
+        await pool.end();
+      }
     }
   }
 });
