@@ -263,6 +263,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       lastName: "Driver",
       role: saved.role,
       driverAge: saved.role === "DISPATCHER" ? 30 : null,
+      birthDate: null,
       companyName: null,
     });
     const read = await get(profilePath, cookie);
@@ -396,6 +397,7 @@ test("registration draft survives verification and reserves one username", async
     lastName: "Owner",
     role: "COMPANY_OWNER",
     companyName: "Test Equipment",
+    birthDate: "1996-02-29",
   };
   const config = parseAuthConfig({
     NODE_ENV: "test",
@@ -430,6 +432,9 @@ test("registration draft survives verification and reserves one username", async
       { ...registration, username: "@bad" },
       { ...registration, profile: { ...profile, role: "PLATFORM_ADMIN" } },
       { ...registration, profile: { ...profile, companyName: "" } },
+      { ...registration, profile: { ...profile, birthDate: undefined } },
+      { ...registration, profile: { ...profile, birthDate: "1997-02-29" } },
+      { ...registration, profile: { ...profile, birthDate: "9999-12-31" } },
     ]) {
       const result = await call("/sign-up/email", {
         ...signup,
@@ -587,6 +592,7 @@ test("registration draft survives verification and reserves one username", async
     const data = await session.json();
     assert.equal(data.user.id, user.id);
     assert.equal(data.user.registrationDraft, undefined);
+    assert.equal(data.user.birthDate, undefined);
     assert.equal(data.user.username, undefined);
     const relogin = await call("/sign-in/email", credentials);
     assert.equal(relogin.status, 200);

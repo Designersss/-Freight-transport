@@ -23,6 +23,12 @@ export const publicSession = z.object({
 const publicRole = z.enum(["COMPANY_OWNER", "DISPATCHER", "DRIVER"]);
 const profileName = z.string().trim().min(1).max(200);
 const driverAge = z.number().int().positive().max(2147483647);
+export const birthDateInput = z
+  .iso.date()
+  .refine(
+    (value) =>
+      value >= "0001-01-01" && value <= new Date().toISOString().slice(0, 10),
+  );
 
 export const profileInput = z
   .strictObject({
@@ -30,6 +36,7 @@ export const profileInput = z
     lastName: profileName,
     role: publicRole,
     driverAge: driverAge.optional(),
+    birthDate: birthDateInput.optional(),
     companyName: profileName.optional(),
   })
   .refine(
@@ -40,17 +47,22 @@ export const profileInput = z
       value.role === "COMPANY_OWNER" || value.companyName === undefined,
   );
 
-// Legacy profiles may lack a company name; new registration requires one.
-export const registrationProfileInput = profileInput.refine(
+// Existing drafts may predate the birth-date requirement.
+export const registrationDraftInput = profileInput.refine(
   (value) => value.role !== "COMPANY_OWNER" || value.companyName !== undefined,
   { path: ["companyName"] },
 );
+
+export const registrationProfileInput = registrationDraftInput
+  .refine((value) => value.birthDate !== undefined, { path: ["birthDate"] })
+  .refine((value) => value.driverAge === undefined, { path: ["driverAge"] });
 
 export const publicProfile = z.object({
   firstName: profileName,
   lastName: profileName,
   role: publicRole,
   driverAge: driverAge.nullable(),
+  birthDate: birthDateInput.nullable(),
   companyName: profileName.nullable(),
 });
 

@@ -159,6 +159,7 @@ test("real signup, email verification, login and session revocation", async ({
     lastName: "Driver",
     role: "DRIVER",
     driverAge: null,
+    birthDate: null,
     companyName: null,
   });
   const settings = await page.request.get("/api/auth/username/settings");
