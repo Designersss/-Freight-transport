@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import type { z } from "zod";
 import { cabinetPaths } from "../../lib/cabinet-paths";
 import { AuthPanel } from "./auth-panel";
+import { DeactivationSettings } from "./deactivation-settings";
 import { EmailChangeSettings } from "./email-change-settings";
 import { PasswordSettings } from "./password-settings";
 import { ProfileForm } from "./profile-form";
@@ -40,6 +41,7 @@ export function Account({
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [sessionRevision, setSessionRevision] = useState(0);
+  const [deactivated, setDeactivated] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
@@ -130,6 +132,7 @@ export function Account({
       description={needsProfile ? t.profileDescription : ""}
     >
       {loading && <Skeleton className="h-20 w-full" />}
+      {deactivated && <p role="status">{t.deactivationDone}</p>}
       {error && (
         <p role="alert" className="mb-4 text-destructive">
           {t.unavailable}
@@ -204,6 +207,16 @@ export function Account({
                 callbackError={telegramLinkError}
               />
               <SessionSettings key={sessionRevision} locale={locale} />
+              <DeactivationSettings
+                locale={locale}
+                onEnded={(success) => {
+                  setSession(null);
+                  setProfile(null);
+                  setProfileLoaded(false);
+                  setDeactivated(success);
+                  if (!success) router.replace("/login", { locale });
+                }}
+              />
             </>
           )}
           <Button disabled={busy || loading} onClick={logout} variant="outline">

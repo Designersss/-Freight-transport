@@ -157,6 +157,17 @@ const ru = {
     completeProfile: "Завершить регистрацию",
     profileDenied: "Доступ к профилю недоступен.",
     accountTitle: "Ваш аккаунт",
+    deactivationTitle: "Деактивация аккаунта",
+    deactivationDescription:
+      "Вход станет недоступен, все сеансы завершатся. Профиль и история сохранятся.",
+    deactivationAction: "Деактивировать аккаунт",
+    deactivationConfirm: "Подтвердить деактивацию",
+    deactivationWarning:
+      "Самостоятельно восстановить доступ не получится. Вы уверены?",
+    deactivationFresh: "Выйдите и снова войдите, чтобы деактивировать аккаунт.",
+    deactivationFailed:
+      "Не удалось подтвердить результат. Проверьте состояние аккаунта перед повтором.",
+    deactivationDone: "Аккаунт деактивирован. Все сеансы завершены.",
     cabinetTitle: "Личный кабинет",
     cabinetOpen: "Перейти в кабинет",
     cabinetSettings: "Настройки аккаунта",
@@ -377,6 +388,17 @@ const en: typeof ru = {
     completeProfile: "Complete registration",
     profileDenied: "Profile access is unavailable.",
     accountTitle: "Your account",
+    deactivationTitle: "Account deactivation",
+    deactivationDescription:
+      "Sign-in will be disabled and all sessions will end. Your profile and history will be retained.",
+    deactivationAction: "Deactivate account",
+    deactivationConfirm: "Confirm deactivation",
+    deactivationWarning:
+      "You will not be able to restore access yourself. Are you sure?",
+    deactivationFresh: "Sign out and sign in again to deactivate your account.",
+    deactivationFailed:
+      "Unable to confirm the result. Check your account status before retrying.",
+    deactivationDone: "Your account is deactivated. All sessions have ended.",
     cabinetTitle: "Your workspace",
     cabinetOpen: "Open workspace",
     cabinetSettings: "Account settings",
