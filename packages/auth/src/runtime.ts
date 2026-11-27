@@ -11,8 +11,8 @@ import { reserveMailRequest } from "./mail-rate-limit.js";
 import { handleProfile } from "./profile.js";
 import { completeRegistration, usernameOwner } from "./registration.js";
 import { createSmtpMailer } from "./smtp-mailer.js";
-import { handleUsernameSettings } from "./username-settings.js";
 import { handleUsername } from "./username.js";
+import { handleUsernameSettings } from "./username-settings.js";
 
 export { type AuthConfig, parseAuthConfig } from "./config.js";
 

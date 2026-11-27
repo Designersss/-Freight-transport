@@ -141,7 +141,11 @@ export async function handleUsernameSettings(
     const session = await readVerifiedSession(request, config, auth, headers);
     if (session instanceof Response) return session;
     if (request.method === "GET") {
-      const current = await readSettings(pool, session.user.id, session.session.id);
+      const current = await readSettings(
+        pool,
+        session.user.id,
+        session.session.id,
+      );
       return current
         ? Response.json(toSettings(current), { headers })
         : fail(403, "AUTH_REQUEST_FAILED");
