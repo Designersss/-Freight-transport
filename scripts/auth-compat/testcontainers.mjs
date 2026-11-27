@@ -43,6 +43,7 @@ try {
       fileURLToPath(new URL("./email-change.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./email-change-http.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./cabinet-access.test.mjs", import.meta.url)),
+      fileURLToPath(new URL("./deactivation.test.mjs", import.meta.url)),
       fileURLToPath(
         new URL("./telegram-registration.test.mjs", import.meta.url),
       ),

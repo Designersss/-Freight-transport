@@ -14,15 +14,6 @@ export async function canUseAdminSession(pool: Pool, userId: string) {
   return result.rowCount === 1;
 }
 
-export async function isPlatformAdminEmail(pool: Pool, email: string) {
-  const result = await pool.query(
-    `SELECT u.id FROM "user" u JOIN user_profiles p ON p.user_id = u.id
-     WHERE u.email = $1 AND p.role = 'PLATFORM_ADMIN'`,
-    [email.toLowerCase()],
-  );
-  return result.rowCount === 1;
-}
-
 export async function readAdminPrincipal(
   pool: Pool,
   userId: string,

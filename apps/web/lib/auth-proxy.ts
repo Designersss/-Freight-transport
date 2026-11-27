@@ -8,6 +8,7 @@ const paths = new Set([
   "request-password-reset",
   "reset-password",
   "change-password",
+  "account/deactivate",
   "email/change",
   "email/change/confirm",
   "profile",

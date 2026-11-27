@@ -63,3 +63,5 @@ Email change: controlled tests cover settings form, unchanged old address, stale
 Cabinets: real browser driver sign-in now redirects to /ru/cabinet/driver, direct visits to owner/dispatcher show denied without role content, settings link opens /ru/account, logout blocks direct driver cabinet access. Server role matrix is covered separately in cabinet-access integration fixture. Results and RU/EN dark/light visual matrix not confirmed.
 
 RD-04 Admin: прежний dev demo test заменён anonymous login/locale/validation/absence of protected sidebar, production page+API denial. Изолированная auth-browser конфигурация дополнительно поднимает Admin 3111, synthetic CLI bootstrap via stdin, login, reload, public cookie isolation, logout/replay; результаты не подтверждены.
+
+RD-04 deactivation: new PostgreSQL/runtime test covers confirmation, origin, stale session, two simultaneous requests, retained identity/Telegram/credential, reset and email-change invalidation, revoked sessions and rejection of late inserts. Browser settings confirmation and actual test runs remain open.

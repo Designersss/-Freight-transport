@@ -22,7 +22,9 @@ export default async function Page({
       <AdminLogin
         locale={locale}
         initialFailure={
-          session.kind === "unavailable" ? messages[locale].auth.unavailable : ""
+          session.kind === "unavailable"
+            ? messages[locale].auth.unavailable
+            : ""
         }
       />
     </>

@@ -46,3 +46,13 @@ export async function canUsePublicSession(
   );
   return result.rowCount === 1;
 }
+
+// Public recovery must not issue credentials to administrators or inactive users.
+export async function isRestrictedPublicEmail(pool: Pool, email: string) {
+  const result = await pool.query(
+    `SELECT u.id FROM "user" u JOIN user_profiles p ON p.user_id = u.id
+     WHERE u.email = $1 AND (p.role = 'PLATFORM_ADMIN' OR p.status <> 'ACTIVE')`,
+    [email.toLowerCase()],
+  );
+  return result.rowCount === 1;
+}

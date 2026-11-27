@@ -47,6 +47,10 @@ export const profileInput = z
 
 export const publicCabinet = z.object({ role: publicRole });
 
+export const deactivateAccountInput = z.strictObject({
+  confirm: z.literal(true),
+});
+
 export const adminLoginInput = z.strictObject({
   email,
   password: z.string().min(1).max(PASSWORD_MAX_LENGTH),

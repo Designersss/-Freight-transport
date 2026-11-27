@@ -1,11 +1,11 @@
 import { PrivateStorage, type StorageConfig } from "@freight/storage";
 import { Pool } from "pg";
-import { eligibleAccount } from "./active-account.js";
+import { eligibleAccount, isRestrictedPublicEmail } from "./active-account.js";
 import { createAdminAuth, handleAdminAuth } from "./admin-auth.js";
-import { isPlatformAdminEmail } from "./admin-principal.js";
 import { AUTH_BASE_PATH, createEmailAuth } from "./auth.js";
 import { cabinetRole, handleCabinet } from "./cabinet-http.js";
 import { type AuthConfig, parseAuthConfig, telegramEnabled } from "./config.js";
+import { handleDeactivation } from "./deactivation-http.js";
 import {
   authBodies as bodies,
   publicSession,
@@ -83,6 +83,8 @@ export function createAuthHttpRuntime(
         return admin
           ? handleAdminAuth(request, config, admin, pool)
           : failure(404, "NOT_FOUND");
+      if (path === "/account/deactivate")
+        return handleDeactivation(request, config, auth, pool);
       const requiredRole = cabinetRole(path);
       if (requiredRole)
         return handleCabinet(request, config, auth, pool, requiredRole);
@@ -193,7 +195,7 @@ export function createAuthHttpRuntime(
           typeof payload.email === "string"
         ) {
           try {
-            if (await isPlatformAdminEmail(pool, payload.email))
+            if (await isRestrictedPublicEmail(pool, payload.email))
               return Response.json(
                 { success: true },
                 { headers: { "cache-control": "no-store" } },

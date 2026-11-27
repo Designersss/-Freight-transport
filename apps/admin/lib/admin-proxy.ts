@@ -19,9 +19,7 @@ export function adminCookies(value: string | null): string {
   return (value ?? "")
     .split(";")
     .map((part) => part.trim())
-    .filter((part) =>
-      /^(?:__Secure-)?movaro-admin\.[A-Za-z0-9_]+=/u.test(part),
-    )
+    .filter((part) => /^(?:__Secure-)?movaro-admin\.[A-Za-z0-9_]+=/u.test(part))
     .join("; ");
 }
 
@@ -110,7 +108,10 @@ export async function forwardAdmin(
     }
     const retry = result.headers.get("retry-after");
     if (retry) output.set("retry-after", retry);
-    return new Response(result.body, { status: result.status, headers: output });
+    return new Response(result.body, {
+      status: result.status,
+      headers: output,
+    });
   } catch {
     return failure(503);
   }
