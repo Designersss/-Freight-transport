@@ -742,12 +742,64 @@ test("registration draft survives verification and reserves one username", async
       (await call(sessionsPath, { action: "revokeOthers" })).status,
       401,
     );
+    const foreignUser = await pool.query(
+      'SELECT id FROM "user" WHERE username = $1',
+      [occupied],
+    );
+    assert.equal(foreignUser.rowCount, 1);
+    const foreignSessionId = randomBytes(16).toString("hex");
+    const expiredSessionId = randomBytes(16).toString("hex");
+    await pool.query(
+      `INSERT INTO "session" (id, "userId", token, "expiresAt", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, now() + interval '1 hour', now(), now()),
+              ($4, $5, $6, now() - interval '1 hour', now(), now())`,
+      [
+        foreignSessionId,
+        foreignUser.rows[0].id,
+        randomBytes(32).toString("hex"),
+        expiredSessionId,
+        user.id,
+        randomBytes(32).toString("hex"),
+      ],
+    );
+    for (const id of [foreignSessionId, expiredSessionId]) {
+      const denied = await call(sessionsPath, { action: "revoke", id }, cookie);
+      assert.equal(denied.status, 404);
+      assert.deepEqual(await denied.json(), { code: "SESSION_NOT_FOUND" });
+    }
+    const foreignRequest = await runtime.handle(
+      new Request(`${origin}${base}${sessionsPath}`, {
+        method: "POST",
+        headers: {
+          origin: "https://untrusted.invalid",
+          "content-type": "application/json",
+          cookie,
+        },
+        body: JSON.stringify({ action: "revokeOthers" }),
+      }),
+    );
+    assert.equal(foreignRequest.status, 403);
+    assert.equal((await call("/list-sessions", undefined, cookie)).status, 404);
+    assert.equal(
+      (await call("/revoke-session", { token: "secret" }, cookie)).status,
+      404,
+    );
     const listed = await listSessions();
     assert.equal(listed.status, 200);
     const active = await listed.json();
     assert.equal(active.hasMore, false);
     assert.equal(active.sessions.length, 3);
     assert.equal(active.sessions[0].current, true);
+    assert.ok(
+      active.sessions.every(
+        ({ id }) => id !== foreignSessionId && id !== expiredSessionId,
+      ),
+    );
+    const untouched = await pool.query(
+      'SELECT id FROM "session" WHERE id = $1',
+      [foreignSessionId],
+    );
+    assert.equal(untouched.rowCount, 1);
     for (const entry of active.sessions) {
       assert.deepEqual(Object.keys(entry).sort(), [
         "createdAt",

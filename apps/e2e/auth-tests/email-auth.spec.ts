@@ -215,6 +215,24 @@ test("real signup, email verification, login and session revocation", async ({
     user: { email, emailVerified: true },
   });
 
+  const secondary = await request.post("/api/auth/sign-in/email", {
+    headers: { origin: new URL(page.url()).origin },
+    data: { email, password },
+  });
+  expect(secondary.status()).toBe(200);
+  const sessions = page.getByRole("region", { name: "Активные сеансы" });
+  await expect(sessions.getByText("Текущий сеанс")).toBeVisible();
+  await sessions.getByRole("button", { name: "Обновить список" }).click();
+  await expect(sessions.getByRole("listitem")).toHaveCount(2);
+  await sessions
+    .getByRole("button", { name: "Завершить другие сеансы" })
+    .click();
+  await sessions.getByRole("button", { name: "Подтвердить" }).click();
+  await expect(sessions.getByRole("listitem")).toHaveCount(1);
+  const secondaryRevoked = await request.get("/api/auth/get-session");
+  expect(secondaryRevoked.status()).toBe(200);
+  expect(await secondaryRevoked.json()).toBeNull();
+
   const newPassword = randomBytes(24).toString("hex");
   await page.getByLabel("Текущий пароль", { exact: true }).fill(password);
   await page.getByLabel("Новый пароль", { exact: true }).fill(newPassword);
@@ -238,6 +256,8 @@ test("real signup, email verification, login and session revocation", async ({
   if (!rotated) throw new Error("Expected rotated session cookie");
   expect(rotated.httpOnly).toBe(true);
   expect(rotated.value).not.toBe(sessionCookie.value);
+  await expect(sessions.getByText("Текущий сеанс")).toBeVisible();
+  await expect(sessions.getByRole("listitem")).toHaveCount(1);
   const rotatedCookie = `${rotated.name}=${rotated.value}`;
   await page.getByRole("button", { name: "Выйти", exact: true }).click();
   await expect(page).toHaveURL("/ru/login");
