@@ -13,9 +13,16 @@ import { ProfilePhotoSettings } from "./profile-photo-settings";
 import { ProfileSettings } from "./profile-settings";
 import { SessionSettings } from "./session-settings";
 import { SignupWizard } from "./signup-wizard";
+import { TelegramSettings } from "./telegram-settings";
 import { UsernameSettings } from "./username-settings";
 
-export function Account({ locale }: { locale: Locale }) {
+export function Account({
+  locale,
+  telegramLinkError = false,
+}: {
+  locale: Locale;
+  telegramLinkError?: boolean;
+}) {
   const t = messages[locale].auth;
   const router = useRouter();
   const [session, setSession] = useState<z.infer<typeof publicSession> | null>(
@@ -166,6 +173,11 @@ export function Account({ locale }: { locale: Locale }) {
                   onChanged={() => setSessionRevision((value) => value + 1)}
                 />
               )}
+              <TelegramSettings
+                locale={locale}
+                callbackError={telegramLinkError}
+                onUnlinked={() => setSessionRevision((value) => value + 1)}
+              />
               <SessionSettings key={sessionRevision} locale={locale} />
             </>
           )}

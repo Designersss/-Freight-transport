@@ -81,9 +81,7 @@ export function createAuthOptions(
               session.userId,
               login.providerEmail,
             );
-            return telegramAccountId
-              ? { data: { telegramAccountId } }
-              : false;
+            return telegramAccountId ? { data: { telegramAccountId } } : false;
           },
         },
       },

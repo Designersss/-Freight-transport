@@ -1,6 +1,19 @@
 import { expect, test } from "@playwright/test";
 import { expectAccessible, expectNoHorizontalOverflow } from "./helpers";
 
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/auth/telegram/settings", (route) =>
+    route.fulfill({
+      json: {
+        linked: false,
+        canLink: false,
+        canUnlink: false,
+        requiresFreshSession: false,
+      },
+    }),
+  );
+});
+
 test("login form validates locally and supports both languages and themes", async ({
   page,
 }) => {
@@ -839,4 +852,95 @@ test("Telegram onboarding reuses role, profile and username steps without creden
   ).toBeVisible();
   await expect(page.getByLabel("Current password")).toHaveCount(0);
   await expect(page).toHaveURL(/\/en\/account$/);
+});
+
+test("Telegram settings reflect server permissions and confirm disconnect", async ({
+  page,
+}) => {
+  let linked = true;
+  let fresh = false;
+  let writes = 0;
+  let sessionReads = 0;
+  await page.route("**/api/auth/get-session", (route) =>
+    route.fulfill({
+      json: {
+        user: {
+          id: "email-user",
+          name: "Test Driver",
+          email: "driver@example.test",
+          emailVerified: true,
+        },
+        session: { expiresAt: "2099-01-01T00:00:00Z" },
+      },
+    }),
+  );
+  await page.route("**/api/auth/profile", (route) =>
+    route.fulfill({
+      json: {
+        firstName: "Test",
+        lastName: "Driver",
+        role: "DRIVER",
+        birthDate: "1998-05-15",
+        companyName: null,
+      },
+    }),
+  );
+  await page.route("**/api/auth/profile/photo", (route) =>
+    route.fulfill({ status: 404, json: { code: "NOT_FOUND" } }),
+  );
+  await page.route("**/api/auth/username/settings", (route) =>
+    route.fulfill({ json: { username: "test_driver", nextChangeAt: null } }),
+  );
+  await page.route("**/api/auth/sessions", (route) => {
+    sessionReads++;
+    return route.fulfill({ json: { sessions: [], hasMore: false } });
+  });
+  await page.route("**/api/auth/telegram/settings", (route) => {
+    if (route.request().method() === "GET")
+      return route.fulfill({
+        json: {
+          linked,
+          canLink: !linked,
+          canUnlink: linked,
+          requiresFreshSession: !fresh,
+        },
+      });
+    expect(route.request().postDataJSON()).toEqual({ action: "unlink" });
+    writes++;
+    linked = false;
+    return route.fulfill({ json: { success: true } });
+  });
+  await page.route("**/api/auth/telegram/start", (route) => {
+    expect(route.request().postDataJSON()).toEqual({
+      intent: "link",
+      locale: "en",
+    });
+    return route.fulfill({ json: { url: "https://untrusted.invalid/auth" } });
+  });
+  await page.goto("/en/account?telegram=link-error");
+  await page.getByRole("button", { name: "Light theme" }).click();
+  const settings = page.getByRole("region", { name: "Telegram", exact: true });
+  const disconnect = settings.getByRole("button", {
+    name: "Disconnect Telegram",
+  });
+  await expect(settings.getByRole("alert")).toBeVisible();
+  await expect(disconnect).toBeDisabled();
+  fresh = true;
+  await settings.getByRole("button", { name: "Refresh status" }).click();
+  await expect(disconnect).toBeEnabled();
+  await disconnect.click();
+  await settings.getByRole("button", { name: "Cancel", exact: true }).click();
+  expect(writes).toBe(0);
+  await disconnect.click();
+  await settings.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(settings.getByRole("status")).toHaveText(
+    "Telegram disconnected. Other sessions ended.",
+  );
+  expect(writes).toBe(1);
+  await expect.poll(() => sessionReads).toBeGreaterThanOrEqual(2);
+  await settings.getByRole("button", { name: "Connect Telegram" }).click();
+  await expect(settings.getByRole("alert")).toBeVisible();
+  await expect(page).toHaveURL(/\/en\/account/);
+  await expectNoHorizontalOverflow(page);
+  await expectAccessible(page);
 });

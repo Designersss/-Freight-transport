@@ -55,3 +55,5 @@ CI 45986801409: 27 из 28 E2E прошли; desktop-тест таблицы з�
 RD-04 персональные данные: EN/light контролируемый сценарий на desktop/mobile Chromium проверяет невалидную дату, сохранение черновика после 503, повтор и обновлённое имя; реальный RU desktop email-auth сценарий сохраняет имя/дату и проверяет reload. Результаты не подтверждены.
 
 Telegram UI: добавлены контролируемые тесты capability/start (EN login, RU signup) и Telegram-only onboarding (EN), без внешнего запроса к Telegram, desktop/mobile Chromium. Проверяют отсутствие email/password/photo на шагах, suggestion/registration payload, активный профиль после reload, отказ внешнего redirect. Реальный browser OAuth callback и полная матрица тем/локалей пока не подтверждены.
+
+Telegram settings: controlled EN/light desktop/mobile Chromium сценарий проверяет server permissions, callback error, подтверждение/отмену отвязки, обновление списка сеансов и отказ внешнего redirect. Результаты не подтверждены; RU/dark и реальный OAuth требуют приёмки.

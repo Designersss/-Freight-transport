@@ -4,8 +4,8 @@ import { AUTH_BASE_PATH, type EmailAuth } from "./auth.js";
 import { type AuthConfig, telegramEnabled } from "./config.js";
 import { reserveTelegramRequest } from "./mail-rate-limit.js";
 import {
-  telegramLinkContext,
   type TelegramLinkIdentity,
+  telegramLinkContext,
   telegramLoginContext,
 } from "./telegram-link-context.js";
 import { TELEGRAM_ISSUER } from "./telegram-provider.js";
