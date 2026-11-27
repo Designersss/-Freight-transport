@@ -369,3 +369,85 @@ for (const variant of [
     await expectAccessible(page);
   });
 }
+
+test("username settings handle validation, conflicts and server cooldown", async ({
+  page,
+}) => {
+  await page.route("**/api/auth/get-session", (route) =>
+    route.fulfill({
+      json: {
+        user: {
+          id: "test-user",
+          name: "Test Driver",
+          email: "user@example.test",
+          emailVerified: true,
+        },
+        session: { expiresAt: "2099-01-01T00:00:00Z" },
+      },
+    }),
+  );
+  await page.route("**/api/auth/profile", (route) =>
+    route.fulfill({
+      json: {
+        firstName: "Test",
+        lastName: "Driver",
+        role: "DRIVER",
+        birthDate: "1998-05-15",
+        companyName: null,
+      },
+    }),
+  );
+  let posts = 0;
+  let current: { username: string; nextChangeAt: string | null } = {
+    username: "test_driver",
+    nextChangeAt: null,
+  };
+  await page.route("**/api/auth/username/settings", (route) => {
+    if (route.request().method() === "GET")
+      return route.fulfill({ json: current });
+    posts++;
+    const data = route.request().postDataJSON();
+    if (posts === 1) {
+      expect(data).toEqual({ username: "occupied" });
+      return route.fulfill({
+        status: 409,
+        json: { code: "USERNAME_TAKEN" },
+      });
+    }
+    expect(data).toEqual({ username: "new_driver" });
+    current = {
+      username: "new_driver",
+      nextChangeAt: "2099-01-07T12:00:00Z",
+    };
+    return route.fulfill({ json: current });
+  });
+  await page.goto("/en/account");
+  await page.getByRole("button", { name: "Light theme" }).click();
+  const username = page.getByLabel("Username", { exact: true });
+  const save = page.getByRole("button", { name: "Save username" });
+  await expect(username).toHaveValue("test_driver");
+  await expect(save).toBeDisabled();
+  await username.fill("@invalid");
+  await save.click();
+  await expect(page.getByText("Enter a valid username.")).toBeVisible();
+  expect(posts).toBe(0);
+  await username.fill("occupied");
+  await save.click();
+  await expect(page.getByText("This name is already taken.")).toBeVisible();
+  await expect(username).toHaveValue("occupied");
+  await username.fill("NEW_DRIVER");
+  await save.click();
+  await expect(page.getByText("Username saved.")).toBeVisible();
+  await expect(username).toHaveValue("new_driver");
+  await expect(username).toHaveAttribute("readonly", "");
+  await expect(save).toHaveCount(0);
+  await expect(
+    page.getByText("Next change available:", { exact: false }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Check change availability" }).click();
+  await expect(username).toHaveValue("new_driver");
+  await expect(username).toHaveAttribute("readonly", "");
+  expect(posts).toBe(2);
+  await expectAccessible(page);
+  await expectNoHorizontalOverflow(page);
+});

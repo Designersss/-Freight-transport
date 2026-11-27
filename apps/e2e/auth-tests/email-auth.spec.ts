@@ -170,15 +170,27 @@ test("real signup, email verification, login and session revocation", async ({
     nextChangeAt: null,
   });
   const username = `driver_${randomBytes(8).toString("hex")}`;
-  const assigned = await page.request.post("/api/auth/username/settings", {
-    headers: { origin: new URL(page.url()).origin },
-    data: { username },
-  });
+  const settingsUsername = page.getByLabel("Username", { exact: true });
+  await expect(settingsUsername).toHaveValue(registeredUsername);
+  await settingsUsername.fill(username);
+  const [assigned] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === "/api/auth/username/settings" &&
+        response.request().method() === "POST",
+    ),
+    page.getByRole("button", { name: "Сохранить username" }).click(),
+  ]);
   expect(assigned.status()).toBe(200);
   const changed = await assigned.json();
   expect(changed.username).toBe(username);
   expect(Date.parse(changed.nextChangeAt)).toBeGreaterThan(Date.now());
+  await expect(page.getByText("Username сохранён.")).toBeVisible();
+  await expect(settingsUsername).toHaveValue(username);
+  await expect(settingsUsername).toHaveAttribute("readonly", "");
   await page.reload();
+  await expect(settingsUsername).toHaveValue(username);
+  await expect(settingsUsername).toHaveAttribute("readonly", "");
   await expect(page.getByRole("main").getByText("Водитель")).toBeVisible();
   await expect(
     page.getByRole("main").getByText(email, { exact: true }),

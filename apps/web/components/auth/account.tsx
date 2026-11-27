@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import type { z } from "zod";
 import { AuthPanel } from "./auth-panel";
 import { ProfileForm } from "./profile-form";
+import { UsernameSettings } from "./username-settings";
 
 export function Account({ locale }: { locale: Locale }) {
   const t = messages[locale].auth;
@@ -120,6 +121,7 @@ export function Account({ locale }: { locale: Locale }) {
               <p className="mt-2 text-sm">{t.roles[profile.role]}</p>
             </div>
           )}
+          {profileLoaded && profile && <UsernameSettings locale={locale} />}
           <Button disabled={busy || loading} onClick={logout} variant="outline">
             {t.logout}
           </Button>
