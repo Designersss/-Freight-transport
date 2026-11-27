@@ -466,6 +466,27 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     assert.equal(updatedSession.json().user.email, email);
     const usernameUnchanged = await get(`${base}/username/settings`, cookie);
     assert.deepEqual(usernameUnchanged.json(), settings.json());
+    // Reproduce a correction after the original profile creation date.
+    // Yesterday remains valid even when the test crosses UTC midnight.
+    const correctionDate = new Date(Date.now() - 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+    await pool.query(
+      `UPDATE user_profiles SET created_at = $2::date::timestamp AT TIME ZONE 'UTC' - interval '1 day'
+       WHERE user_id = $1`,
+      [session.json().user.id, correctionDate],
+    );
+    const correction = await post(
+      "/profile/settings",
+      { ...personal, birthDate: correctionDate },
+      { cookie },
+    );
+    assert.equal(correction.statusCode, 200);
+    assert.equal(correction.json().birthDate, correctionDate);
+    assert.deepEqual((await get(profilePath, cookie)).json(), {
+      ...expectedProfile,
+      birthDate: correctionDate,
+    });
     const restoredProfile = await post(
       "/profile/settings",
       {

@@ -843,7 +843,10 @@ test("Telegram onboarding reuses role, profile and username steps without creden
   });
   await page.route("**/api/auth/profile/photo", (route) => {
     photoRequests++;
-    return route.fulfill({ status: 403, json: { code: "AUTH_REQUEST_FAILED" } });
+    return route.fulfill({
+      status: 403,
+      json: { code: "AUTH_REQUEST_FAILED" },
+    });
   });
   await page.route("**/api/auth/username/settings", (route) =>
     route.fulfill({ json: { username: "test_driver", nextChangeAt: null } }),
@@ -878,7 +881,9 @@ test("Telegram onboarding reuses role, profile and username steps without creden
   expect(photoRequests).toBe(0);
   await expect(page).toHaveURL(/\/en\/account$/);
   await page.reload();
-  await expect(page.getByText("Telegram account", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Telegram account", { exact: true }),
+  ).toBeVisible();
   await expect(page.locator("#profile-photo-title")).toHaveCount(0);
   expect(photoRequests).toBe(0);
 });

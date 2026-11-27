@@ -3,7 +3,11 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { test } from "node:test";
 import { betterAuth } from "better-auth";
 import pg from "pg";
-import { profileInput } from "../../packages/auth/dist/contracts.js";
+import {
+  birthDateInput,
+  profileInput,
+  profileSettingsInput,
+} from "../../packages/auth/dist/contracts.js";
 import { createDatabaseClient } from "../../packages/database/dist/index.js";
 import { assertAuthSchema } from "./assert-auth-schema.mjs";
 
@@ -88,6 +92,57 @@ test("Prisma auth migration enforces identity and profile integrity", async () =
     });
     assert.equal(driver.birthDate.toISOString(), "1998-05-15T00:00:00.000Z");
     assert.equal(driver.status, "ACTIVE");
+
+    // A profile created earlier can receive a new valid date. Use two
+    // session time zones and the database's own UTC date to avoid midnight
+    // races or dependence on the test runner's local clock.
+    for (const zone of ["Pacific/Kiritimati", "Pacific/Honolulu"]) {
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query("SELECT set_config('TimeZone', $1, true)", [zone]);
+        const date = await client.query(
+          `UPDATE user_profiles SET
+             created_at = clock_timestamp() - interval '2 days',
+             birth_date = (clock_timestamp() AT TIME ZONE 'UTC')::date
+           WHERE user_id = $1
+           RETURNING birth_date > (created_at AT TIME ZONE 'UTC')::date AS corrected`,
+          [userId],
+        );
+        assert.equal(date.rows[0].corrected, true);
+        await assert.rejects(
+          client.query(
+            `UPDATE user_profiles
+             SET birth_date = (clock_timestamp() AT TIME ZONE 'UTC')::date + 1
+             WHERE user_id = $1`,
+            [userId],
+          ),
+          (error) =>
+            error.code === "23514" &&
+            error.constraint === "user_profiles_birth_date_check",
+        );
+      } finally {
+        try {
+          await client.query("ROLLBACK");
+        } finally {
+          client.release();
+        }
+      }
+    }
+    const futureUser = randomUUID();
+    await createUser(futureUser, `${futureUser}@example.test`);
+    await assert.rejects(
+      pool.query(
+        `INSERT INTO user_profiles
+           (user_id, first_name, last_name, role, birth_date, created_at)
+         VALUES ($1, 'Future', 'Date', 'DRIVER',
+           (clock_timestamp() AT TIME ZONE 'UTC')::date + 1,
+           clock_timestamp() + interval '2 days')`,
+        [futureUser],
+      ),
+      dbCode("23514"),
+    );
+    await pool.query('DELETE FROM "user" WHERE id = $1', [futureUser]);
     await assert.rejects(
       pool.query(
         "UPDATE user_profiles SET birth_date = NULL WHERE user_id = $1",
@@ -303,5 +358,31 @@ test("birth date is required for every new registration role", () => {
       birthDate: "2000-02-29",
     });
     assert.equal(valid.success, true);
+  }
+});
+
+test("birth date validation uses a date-only UTC boundary", () => {
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const tomorrow = new Date(now.getTime() + 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+  for (const [birthDate, valid] of [
+    ["0001-01-01", true],
+    ["0000-01-01", false],
+    ["1900-02-29", false],
+    ["2000-02-29", true],
+    [today, true],
+    [tomorrow, false],
+  ]) {
+    assert.equal(birthDateInput.safeParse(birthDate).success, valid);
+    assert.equal(
+      profileSettingsInput.safeParse({
+        firstName: "Test",
+        lastName: "User",
+        birthDate,
+      }).success,
+      valid,
+    );
   }
 });
