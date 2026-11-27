@@ -16,6 +16,7 @@ import { handleSessionSettings } from "./session-settings.js";
 import { createSmtpMailer } from "./smtp-mailer.js";
 import { handleTelegramOAuth } from "./telegram-oauth-http.js";
 import { handleTelegramRegistration } from "./telegram-registration-http.js";
+import { handleTelegramSettings } from "./telegram-settings-http.js";
 import { handleUsername } from "./username.js";
 import { handleUsernameSettings } from "./username-settings.js";
 import {
@@ -73,8 +74,7 @@ export function createAuthHttpRuntime(
       }
       const path = url.pathname.slice(AUTH_BASE_PATH.length);
       if (path === "/telegram/status") {
-        if (request.method !== "GET")
-          return failure(405, "METHOD_NOT_ALLOWED");
+        if (request.method !== "GET") return failure(405, "METHOD_NOT_ALLOWED");
         if (url.search) return failure(400, "INVALID_REQUEST");
         return Response.json(
           { enabled: telegramEnabled(config) },
@@ -83,6 +83,8 @@ export function createAuthHttpRuntime(
       }
       if (path === "/telegram/start" || path === "/telegram/callback")
         return handleTelegramOAuth(request, config, auth, pool);
+      if (path === "/telegram/settings")
+        return handleTelegramSettings(request, config, auth, pool);
       if (path === "/telegram/registration")
         return handleTelegramRegistration(request, config, auth, pool);
       if (path === "/sessions")

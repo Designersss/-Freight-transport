@@ -12,6 +12,7 @@ const paths = new Set([
   "profile/settings",
   "telegram/registration",
   "telegram/start",
+  "telegram/settings",
   "username",
   "username/settings",
   "sessions",
@@ -77,6 +78,7 @@ export async function forwardAuth(
           "username/settings",
           "sessions",
           "telegram/status",
+          "telegram/settings",
         ].includes(path);
   if (!allowed && !callback) return authFailure(404);
   const query = new URL(request.url).search;

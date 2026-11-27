@@ -322,7 +322,9 @@ export function SignupWizard({
           {t.signupStep} {stepIndex} {t.signupOf} {steps.length}
         </p>
         <div
-          className={telegram ? "grid grid-cols-3 gap-1" : "grid grid-cols-4 gap-1"}
+          className={
+            telegram ? "grid grid-cols-3 gap-1" : "grid grid-cols-4 gap-1"
+          }
           aria-hidden="true"
         >
           {steps.map((value, index) => (

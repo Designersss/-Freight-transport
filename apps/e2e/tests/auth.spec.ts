@@ -735,7 +735,9 @@ test("Telegram controls use server capability and reject untrusted redirects", a
     route.fulfill({ json: { enabled } }),
   );
   await page.goto("/en/login");
-  await expect(page.getByRole("button", { name: "Sign in with Telegram" })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Sign in with Telegram" }),
+  ).toHaveCount(0);
   enabled = true;
   await page.route("**/api/auth/telegram/start", (route) => {
     expect(route.request().postDataJSON()).toEqual({
@@ -832,7 +834,9 @@ test("Telegram onboarding reuses role, profile and username steps without creden
   await expectAccessible(page);
   await expectNoHorizontalOverflow(page);
   await page.getByRole("button", { name: "Complete registration" }).click();
-  await expect(page.getByText("Telegram account", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Telegram account", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByLabel("Current password")).toHaveCount(0);
   await expect(page).toHaveURL(/\/en\/account$/);
 });
