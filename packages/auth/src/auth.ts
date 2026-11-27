@@ -43,6 +43,12 @@ export function createAuthOptions(
     session: {
       cookieCache: { enabled: false },
       additionalFields: {
+        emailLoginProof: {
+          type: "string",
+          required: false,
+          input: false,
+          returned: false,
+        },
         telegramAccountId: {
           type: "string",
           required: false,
@@ -51,7 +57,32 @@ export function createAuthOptions(
         },
       },
     },
+    verification: {
+      additionalFields: {
+        resetEmail: {
+          type: "string",
+          required: false,
+          input: false,
+          returned: false,
+        },
+      },
+    },
     databaseHooks: {
+      verification: {
+        create: {
+          async before(verification, context) {
+            if (!verification.identifier.startsWith("reset-password:")) return;
+            const email = context?.body?.email;
+            if (
+              context?.path !== "/request-password-reset" ||
+              typeof email !== "string" ||
+              !isDeliverableEmail(email)
+            )
+              return false;
+            return { data: { resetEmail: email.toLowerCase() } };
+          },
+        },
+      },
       account: {
         create: {
           async before(account) {
@@ -64,7 +95,7 @@ export function createAuthOptions(
       },
       session: {
         create: {
-          async before(session) {
+          async before(session, context) {
             if (
               !(await canUsePublicSession(
                 database,
@@ -74,7 +105,13 @@ export function createAuthOptions(
             )
               return false;
             const login = telegramLoginContext.getStore();
-            if (!login) return true;
+            if (!login) {
+              if (context?.path !== "/sign-in/email") return true;
+              const email = context.body?.email;
+              return typeof email === "string" && isDeliverableEmail(email)
+                ? { data: { emailLoginProof: email.toLowerCase() } }
+                : false;
+            }
             if (!login.providerEmail) return false;
             const telegramAccountId = await findTelegramLoginAccount(
               database,
