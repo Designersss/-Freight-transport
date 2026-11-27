@@ -67,7 +67,9 @@ export async function startWorker(
     await boss.schedule(OUTBOX_QUEUE, "* * * * *", {});
     await boss.send(OUTBOX_QUEUE, {});
     await registerProfilePhotoCleanup(boss, database, storage, logger);
-    await registerProfilePhotoScan(boss, database, storage, logger);
+    if (config.PROFILE_PHOTO_SCAN_ENABLED) {
+      await registerProfilePhotoScan(boss, database, storage, logger);
+    }
     logger.info("Worker started");
     return { stop };
   } catch (error) {

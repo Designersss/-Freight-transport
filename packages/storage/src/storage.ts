@@ -138,13 +138,8 @@ export class PrivateStorage {
       }),
       { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
     );
-    const nextToken = result.IsTruncated
-      ? result.NextContinuationToken
-      : null;
-    if (
-      result.IsTruncated &&
-      (!nextToken || nextToken === continuationToken)
-    )
+    const nextToken = result.IsTruncated ? result.NextContinuationToken : null;
+    if (result.IsTruncated && (!nextToken || nextToken === continuationToken))
       throw new Error("Invalid profile photo inventory cursor");
     const objects: { key: string; lastModified: Date }[] = [];
     for (const object of result.Contents ?? []) {

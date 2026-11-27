@@ -124,9 +124,19 @@ describe("Transactional outbox and pg-boss", () => {
       await database.profilePhotoCleanup.createMany({
         data: keys.map((key) => ({ key, availableAt: new Date(0) })),
       });
-      worker = await startWorker(config, storageConfig);
+      const scan = await database.profilePhotoScan.findUniqueOrThrow({
+        where: { id: 1 },
+      });
+      worker = await startWorker(
+        { ...config, PROFILE_PHOTO_SCAN_ENABLED: true },
+        storageConfig,
+      );
       await vi.waitFor(
         async () => {
+          const inventory = await database.profilePhotoScan.findUniqueOrThrow({
+            where: { id: 1 },
+          });
+          expect(inventory.revision).toBeGreaterThan(scan.revision);
           expect(
             await database.profilePhotoCleanup.count({
               where: { key: { in: keys } },
