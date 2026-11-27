@@ -24,7 +24,7 @@ describe("registration email token", () => {
       "",
       "a".repeat(42),
       "a".repeat(44),
-      "a".repeat(42) + "+",
+      `${"a".repeat(42)}+`,
     ])
       assert.equal(registrationEmailProofHash(token), null);
   });

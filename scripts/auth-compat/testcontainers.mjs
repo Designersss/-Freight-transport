@@ -47,6 +47,7 @@ try {
       fileURLToPath(new URL("./credential-login.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./proxy-rate-limit.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./mail-rate-limit.test.mjs", import.meta.url)),
+      fileURLToPath(new URL("./registration-email-http.test.mjs", import.meta.url)),
       fileURLToPath(
         new URL("./registration-email-proof.test.mjs", import.meta.url),
       ),

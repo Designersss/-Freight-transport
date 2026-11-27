@@ -13,6 +13,7 @@ import {
   preparePasswordChange,
   preparePasswordReset,
 } from "./credential-login.js";
+import { registrationContext } from "./registration-context.js";
 import type { TelegramSessionIdentity } from "./telegram-registration.js";
 import { readTelegramSettings } from "./telegram-settings.js";
 
@@ -34,6 +35,12 @@ export function createPublicBeforeHook(
   pool: Pool,
 ): NonNullable<NonNullable<BetterAuthOptions["hooks"]>["before"]> {
   return createAuthMiddleware(async (ctx) => {
+    if (
+      ctx.path === "/verify-email" ||
+      ctx.path === "/send-verification-email" ||
+      (ctx.path === "/sign-up/email" && !registrationContext.getStore())
+    )
+      throw new APIError("FORBIDDEN", { code: "AUTH_REQUEST_FAILED" });
     if (ctx.path === "/sign-in/email" || ctx.path === "/request-password-reset")
       return prepareCredentialLogin(pool, ctx.body?.email);
     if (ctx.path === "/change-password") {

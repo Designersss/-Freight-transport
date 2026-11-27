@@ -15,6 +15,7 @@ export const telegramAccountCondition = `NOT u."emailVerified"
   )`;
 
 const emailAccountCondition = `u."emailVerified" = true
+  AND u."registrationDraft" IS NULL
   AND u.email NOT LIKE '%.invalid'`;
 
 export const eligibleAccount = `FROM "user" u

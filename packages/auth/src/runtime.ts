@@ -5,17 +5,13 @@ import { createAdminAuth, handleAdminAuth } from "./admin-auth.js";
 import { AUTH_BASE_PATH, createEmailAuth } from "./auth.js";
 import { cabinetRole, handleCabinet } from "./cabinet-http.js";
 import { type AuthConfig, parseAuthConfig, telegramEnabled } from "./config.js";
-import {
-  authBodies as bodies,
-  publicSession,
-  registrationInput,
-} from "./contracts.js";
+import { authBodies as bodies } from "./contracts.js";
 import { handleDeactivation } from "./deactivation-http.js";
 import { handleEmailChange } from "./email-change-http.js";
 import { reserveMailRequest } from "./mail-rate-limit.js";
 import { handleProfile, handleProfileSettings } from "./profile.js";
 import { handleProfilePhoto } from "./profile-photo.js";
-import { completeRegistration, usernameOwner } from "./registration.js";
+import { handleEmailRegistration } from "./registration-email-http.js";
 import { handleSessionSettings } from "./session-settings.js";
 import { createSmtpMailer } from "./smtp-mailer.js";
 import { handleTelegramOAuth } from "./telegram-oauth-http.js";
@@ -83,6 +79,8 @@ export function createAuthHttpRuntime(
         return admin
           ? handleAdminAuth(request, config, admin, pool)
           : failure(404, "NOT_FOUND");
+      if (path.startsWith("/registration/email/"))
+        return handleEmailRegistration(request, config, auth, pool, mailer);
       if (path === "/account/deactivate")
         return handleDeactivation(request, config, auth, pool);
       const requiredRole = cabinetRole(path);
@@ -120,7 +118,6 @@ export function createAuthHttpRuntime(
         return handleUsernameSettings(request, config, auth, pool);
       const headers = new Headers(request.headers);
       let body: string | undefined;
-      let username: string | undefined;
       if (request.method === "POST") {
         if (!Object.hasOwn(bodies, path)) return failure(404, "NOT_FOUND");
         if (headers.get("origin") !== config.AUTH_WEB_ORIGIN)
@@ -143,36 +140,19 @@ export function createAuthHttpRuntime(
           ...parsed.data,
         };
         const payload: Record<string, unknown> = fields;
-        if (path === "/sign-up/email") {
-          const registration = registrationInput.parse(payload.registration);
-          delete payload.registration;
-          username = registration.username;
-          payload.username = username;
-          payload.registrationDraft = JSON.stringify(registration.profile);
-          payload.name = `${registration.profile.firstName} ${registration.profile.lastName}`;
-        }
-        if (path === "/sign-up/email" || path === "/send-verification-email") {
-          payload.callbackURL = destination(language, "/email-confirmation");
-        }
         if (path === "/change-password") payload.revokeOtherSessions = true;
         if (path === "/request-password-reset") {
           payload.redirectTo = destination(language, "/reset-password");
         }
         if (
           typeof payload.email === "string" &&
-          [
-            "/sign-up/email",
-            "/send-verification-email",
-            "/request-password-reset",
-          ].includes(path)
+          path === "/request-password-reset"
         ) {
           try {
             const retry = await reserveMailRequest(
               pool,
               config.AUTH_SECRET,
-              path === "/request-password-reset"
-                ? "password-reset"
-                : "verification",
+              "password-reset",
               payload.email,
               headers.get("x-movaro-client-ip"),
             );
@@ -210,29 +190,15 @@ export function createAuthHttpRuntime(
       } else if (request.method === "GET") {
         if (path === "/get-session") {
           if (url.search) return failure(400, "INVALID_REQUEST");
-        } else if (
-          path === "/verify-email" ||
-          /^\/reset-password\/[^/]+$/.test(path)
-        ) {
+        } else if (/^\/reset-password\/[^/]+$/.test(path)) {
           const callback = url.searchParams.get("callbackURL");
-          const allowed = destinations(
-            path === "/verify-email"
-              ? "/email-confirmation"
-              : "/reset-password",
-          );
+          const allowed = destinations("/reset-password");
           const keys = [...url.searchParams.keys()];
           if (
             !callback ||
             !allowed.includes(callback) ||
-            keys.some(
-              (key) =>
-                ![
-                  "callbackURL",
-                  ...(path === "/verify-email" ? ["token"] : []),
-                ].includes(key),
-            ) ||
-            new Set(keys).size !== keys.length ||
-            (path === "/verify-email" && !url.searchParams.get("token"))
+            keys.some((key) => key !== "callbackURL") ||
+            new Set(keys).size !== keys.length
           )
             return failure(400, "INVALID_REQUEST");
         } else return failure(404, "NOT_FOUND");
@@ -256,8 +222,6 @@ export function createAuthHttpRuntime(
           ]);
           if (!eligible.rowCount) return failure(403, "AUTH_REQUEST_FAILED");
         }
-        if (username && (await usernameOwner(pool, username)))
-          return failure(409, "USERNAME_TAKEN");
         const response = await auth.handler(
           new Request(url, {
             method: request.method,
@@ -280,17 +244,6 @@ export function createAuthHttpRuntime(
           const target = new URL(location, config.AUTH_BASE_URL);
           if (target.origin !== config.AUTH_WEB_ORIGIN)
             return failure(400, "INVALID_REDIRECT");
-          if (
-            path === "/verify-email" &&
-            !target.searchParams.has("error") &&
-            destinations("/email-confirmation").includes(target.href)
-          ) {
-            target.pathname = target.pathname.replace(
-              /\/email-confirmation$/,
-              "/login",
-            );
-            target.searchParams.set("verified", "done");
-          }
           outputHeaders.set("location", target.href);
           return new Response(null, {
             status: response.status,
@@ -298,12 +251,6 @@ export function createAuthHttpRuntime(
           });
         }
         if (!response.ok) {
-          if (
-            username &&
-            response.status === 422 &&
-            (await usernameOwner(pool, username))
-          )
-            return failure(409, "USERNAME_TAKEN");
           let code =
             response.status === 429 ? "RATE_LIMITED" : "AUTH_REQUEST_FAILED";
           if (path === "/sign-in/email" && response.status === 403) {
@@ -346,21 +293,7 @@ export function createAuthHttpRuntime(
             headers: outputHeaders,
           });
         }
-        if (username) {
-          const result: unknown = await response.json();
-          const owner = await usernameOwner(pool, username);
-          if (
-            owner &&
-            (!result ||
-              typeof result !== "object" ||
-              !("user" in result) ||
-              publicSession.shape.user.parse(result.user).id !== owner)
-          )
-            return failure(409, "USERNAME_TAKEN");
-        }
-        if (path === "/sign-in/email")
-          await completeRegistration(pool, await response.json());
-        // Never expose Better Auth's raw session token or synthetic signup user.
+        // Never expose Better Auth's raw session token.
         return Response.json({ success: true }, { headers: outputHeaders });
       } catch {
         return failure(500, "AUTH_REQUEST_FAILED");

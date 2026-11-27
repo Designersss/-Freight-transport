@@ -84,6 +84,8 @@ model Account {
   scope                 String?
   linkSessionId         String?
   linkRevision          Int?
+  registrationProofHash String?
+  registrationProfile   String?
   rotationUserId        String?
   rotationEmail         String?
   rotationRevision      Int?

@@ -12,7 +12,7 @@ export function isDeliverableEmail(value: string): boolean {
 }
 
 export type AuthMailKind =
-  | "verify-email"
+  | "registration-email"
   | "reset-password"
   | "email-change-old"
   | "email-change-new";

@@ -3,10 +3,11 @@ import "server-only";
 import { forwardTrustedProxyIp } from "@freight/auth/proxy-ip";
 
 const paths = new Set([
-  "sign-up/email",
+  "registration/email/start",
+  "registration/email/read",
+  "registration/email/complete",
   "sign-in/email",
   "sign-out",
-  "send-verification-email",
   "request-password-reset",
   "reset-password",
   "change-password",

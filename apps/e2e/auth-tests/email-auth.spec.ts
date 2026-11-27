@@ -44,13 +44,12 @@ async function verificationLink(request: APIRequestContext, email: string) {
         if (!link) continue;
         const url = new URL(link);
         if (
-          url.origin !== "http://127.0.0.1:4110" ||
-          url.pathname !== "/api/v1/auth/verify-email" ||
+          url.origin !== "http://127.0.0.1:3110" ||
+          url.pathname !== "/ru/signup" ||
           url.username ||
           url.password ||
-          !url.searchParams.get("token") ||
-          url.searchParams.get("callbackURL") !==
-            "http://127.0.0.1:3110/ru/email-confirmation"
+          url.search ||
+          !/^#token=[A-Za-z0-9_-]{43}$/.test(url.hash)
         )
           throw new Error("Unexpected verification link");
         found.url = url;
@@ -63,7 +62,8 @@ async function verificationLink(request: APIRequestContext, email: string) {
   return found.url;
 }
 
-test("real signup, email verification, login and session revocation", async ({
+test("real signup, email ownership, login and session revocation", async ({
+  browser,
   page,
   request,
 }) => {
@@ -83,7 +83,44 @@ test("real signup, email verification, login and session revocation", async ({
   });
   expect(available.status()).toBe(200);
   expect(await available.json()).toEqual({ available: true });
-  await page.getByLabel("Электронная почта").fill(email);
+  const requester = await browser.newContext();
+  try {
+    const other = await requester.newPage();
+    await other.goto("http://127.0.0.1:3110/ru/signup");
+    await expect(other.getByLabel("Пароль", { exact: true })).toHaveCount(0);
+    await other.getByLabel("Электронная почта").fill(email);
+    await other.getByRole("button", { name: "Продолжить", exact: true }).click();
+    await expect(other.getByRole("heading", { level: 1 })).toHaveText(
+      "Подтверждение почты",
+    );
+    const blocked = await other.request.post(
+      "http://127.0.0.1:3110/api/auth/sign-in/email",
+      {
+        headers: { origin: "http://127.0.0.1:3110" },
+        data: { email, password },
+      },
+    );
+    expect(blocked.status()).toBe(401);
+    const session = await other.request.get(
+      "http://127.0.0.1:3110/api/auth/get-session",
+    );
+    expect(await session.json()).toBeNull();
+  } finally {
+    await requester.close();
+  }
+  const link = await verificationLink(request, email);
+  await page.goto("/ru/login");
+  try {
+    await page.goto(link.href);
+  } catch {
+    throw new Error("Verification navigation failed");
+  }
+  await expect(page).toHaveURL("/ru/signup");
+  await page.getByRole("button", { name: "Подтвердить почту" }).click();
+  await expect(page.getByLabel("Электронная почта")).toHaveValue(email);
+  await expect(page.getByLabel("Электронная почта")).not.toBeEditable();
+  const proofSession = await page.request.get("/api/auth/get-session");
+  expect(await proofSession.json()).toBeNull();
   await page.getByLabel("Пароль", { exact: true }).fill(password);
   const next = page.getByRole("button", { name: "Продолжить", exact: true });
   await next.click();
@@ -100,53 +137,20 @@ test("real signup, email verification, login and session revocation", async ({
   const [signup] = await Promise.all([
     page.waitForResponse(
       (response) =>
-        new URL(response.url()).pathname === "/api/auth/sign-up/email" &&
+        new URL(response.url()).pathname ===
+          "/api/auth/registration/email/complete" &&
         response.request().method() === "POST",
     ),
     page.getByRole("button", { name: "Создать аккаунт" }).click(),
   ]);
   expect(signup.status()).toBe(200);
-  await expect(page).toHaveURL("/ru/email-confirmation");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Подтверждение почты",
+  await expect(page).toHaveURL("/ru/login?verified=done");
+  await expect(page.getByRole("main").getByRole("status")).toHaveText(
+    "Аккаунт создан. Теперь вы можете войти.",
   );
   const initialSession = await page.request.get("/api/auth/get-session");
   expect(initialSession.status()).toBe(200);
-  expect((await initialSession.json()) === null).toBe(true);
-
-  await page.getByRole("link", { name: "Вернуться ко входу" }).click();
-  await expect(page).toHaveURL("/ru/login");
-  await page.getByLabel("Электронная почта").fill(email);
-  await page.getByLabel("Пароль", { exact: true }).fill(password);
-  const [unverified] = await Promise.all([
-    page.waitForResponse(
-      (response) =>
-        new URL(response.url()).pathname === "/api/auth/sign-in/email" &&
-        response.request().method() === "POST",
-    ),
-    page.getByRole("button", { name: "Войти", exact: true }).click(),
-  ]);
-  expect(unverified.status()).toBe(403);
-  expect(await unverified.json()).toEqual({ code: "EMAIL_NOT_VERIFIED" });
-  await expect(page).toHaveURL("/ru/email-confirmation");
-  const blockedSession = await page.request.get("/api/auth/get-session");
-  expect(blockedSession.status()).toBe(200);
-  expect((await blockedSession.json()) === null).toBe(true);
-
-  const link = await verificationLink(request, email);
-  try {
-    await page.goto(link.href);
-  } catch {
-    throw new Error("Verification navigation failed");
-  }
-  expect(new URL(page.url()).pathname).toBe("/ru/login");
-  expect(new URL(page.url()).searchParams.get("verified")).toBe("done");
-  await expect(page.getByRole("main").getByRole("status")).toHaveText(
-    "Почта подтверждена. Теперь вы можете войти.",
-  );
-  const verifiedSession = await page.request.get("/api/auth/get-session");
-  expect(verifiedSession.status()).toBe(200);
-  expect((await verifiedSession.json()) === null).toBe(true);
+  expect(await initialSession.json()).toBeNull();
 
   await page.getByLabel("Электронная почта").fill(email);
   await page.getByLabel("Пароль", { exact: true }).fill(password);

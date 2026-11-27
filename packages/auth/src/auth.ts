@@ -13,6 +13,7 @@ import {
   readCredentialProof,
 } from "./credential-login.js";
 import { type AuthMailer, isDeliverableEmail } from "./email.js";
+import { registrationContext } from "./registration-context.js";
 import {
   createPublicBeforeHook,
   findTelegramLoginAccount,
@@ -88,6 +89,24 @@ export function createAuthOptions(
       },
     },
     databaseHooks: {
+      user: {
+        create: {
+          async before(user, context) {
+            if (context?.path !== "/sign-up/email") return;
+            const proof = registrationContext.getStore();
+            if (!proof || proof.email !== user.email)
+              throw new APIError("BAD_REQUEST", {
+                code: "AUTH_REQUEST_FAILED",
+              });
+            return {
+              data: {
+                emailVerified: true,
+                username: proof.registration.username,
+              },
+            };
+          },
+        },
+      },
       verification: {
         create: {
           async before(verification, context) {
@@ -111,6 +130,24 @@ export function createAuthOptions(
       account: {
         create: {
           async before(account, context) {
+            if (
+              context?.path === "/sign-up/email" &&
+              account.providerId === "credential"
+            ) {
+              const proof = registrationContext.getStore();
+              if (!proof)
+                throw new APIError("BAD_REQUEST", {
+                  code: "AUTH_REQUEST_FAILED",
+                });
+              return {
+                data: {
+                  registrationProofHash: proof.proofHash,
+                  registrationProfile: JSON.stringify(
+                    proof.registration.profile,
+                  ),
+                },
+              };
+            }
             // Public recovery may replace only an existing credential.
             if (
               context?.path === "/reset-password" &&
@@ -181,6 +218,18 @@ export function createAuthOptions(
     hooks: { before: createPublicBeforeHook(database) },
     account: {
       additionalFields: {
+        registrationProofHash: {
+          type: "string",
+          required: false,
+          input: false,
+          returned: false,
+        },
+        registrationProfile: {
+          type: "string",
+          required: false,
+          input: false,
+          returned: false,
+        },
         rotationUserId: {
           type: "string",
           required: false,
@@ -246,6 +295,7 @@ export function createAuthOptions(
       minPasswordLength: PASSWORD_MIN_LENGTH,
       maxPasswordLength: PASSWORD_MAX_LENGTH,
       requireEmailVerification: true,
+      autoSignIn: false,
       resetPasswordTokenExpiresIn: RESET_PASSWORD_TTL_SECONDS,
       revokeSessionsOnPasswordReset: true,
       async sendResetPassword({ user, url }) {
@@ -254,13 +304,9 @@ export function createAuthOptions(
       },
     },
     emailVerification: {
-      sendOnSignUp: true,
+      sendOnSignUp: false,
       sendOnSignIn: false,
       autoSignInAfterVerification: false,
-      async sendVerificationEmail({ user, url }) {
-        if (!isDeliverableEmail(user.email)) return;
-        await mailer.send("verify-email", user.email, url);
-      },
     },
     user: {
       async validateUserInfo({ user, source }) {
@@ -289,8 +335,12 @@ export function createAuthOptions(
       },
       deleteUser: { enabled: false },
       additionalFields: {
-        username: { type: "string", required: false, returned: false },
-        registrationDraft: { type: "string", required: false, returned: false },
+        username: {
+          type: "string",
+          required: false,
+          input: false,
+          returned: false,
+        },
       },
     },
   };

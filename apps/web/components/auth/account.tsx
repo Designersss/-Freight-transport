@@ -59,7 +59,7 @@ export function Account({
         }
         const current = publicSession.parse(data);
         if (current.user.email !== null && !current.user.emailVerified) {
-          router.replace("/email-confirmation", { locale });
+          router.replace("/signup", { locale });
           return;
         }
         setSession(current);

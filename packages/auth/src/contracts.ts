@@ -143,13 +143,17 @@ export const registrationInput = z.strictObject({
   username: usernameInput,
 });
 
+export const registrationEmailStart = z.strictObject({ email, locale });
+export const registrationEmailRead = z.strictObject({
+  token: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+});
+export const registrationEmailComplete = registrationEmailRead.extend({
+  password,
+  registration: registrationInput,
+});
+export const registrationEmailAddress = z.object({ email });
+
 export const authBodies = {
-  "/sign-up/email": z.strictObject({
-    email,
-    password,
-    locale,
-    registration: registrationInput,
-  }),
   "/sign-in/email": z.strictObject({
     email,
     password,
@@ -159,7 +163,6 @@ export const authBodies = {
     currentPassword: password,
     newPassword: password,
   }),
-  "/send-verification-email": z.strictObject({ email, locale }),
   "/request-password-reset": z.strictObject({ email, locale }),
   "/reset-password": z.strictObject({
     token: z.string().min(1).max(512),

@@ -25,7 +25,17 @@ const ru = {
     loginDescription: "Введите данные вашего аккаунта.",
     signup: "Регистрация",
     signupTitle: "Создайте аккаунт",
-    signupDescription: "Укажите электронную почту и пароль.",
+    signupDescription: "Укажите электронную почту для регистрации.",
+    registrationEmailSent:
+      "Откройте ссылку из письма, чтобы продолжить регистрацию. Проверьте входящие и спам.",
+    registrationLinkDescription:
+      "Подтвердите адрес, чтобы установить пароль и создать аккаунт.",
+    registrationConfirmAction: "Подтвердить почту",
+    registrationPasswordTitle: "Придумайте пароль",
+    registrationPasswordDescription:
+      "Почта подтверждена. Установите пароль для входа.",
+    registrationExisting:
+      "Аккаунт с этой почтой уже существует. Войдите или восстановите пароль.",
     continue: "Продолжить",
     back: "Назад",
     signupStep: "Шаг",
@@ -134,7 +144,7 @@ const ru = {
     invalidName: "Введите имя (до 200 символов).",
     invalidPassword: "Проверьте длину пароля.",
     invalidCredentials: "Неверная электронная почта или пароль.",
-    verifiedDone: "Почта подтверждена. Теперь вы можете войти.",
+    verifiedDone: "Аккаунт создан. Теперь вы можете войти.",
     error: "Не удалось выполнить запрос. Проверьте данные и повторите попытку.",
     limited: "Слишком много попыток. Попробуйте позже.",
     unavailable: "Сервис авторизации недоступен. Попробуйте позже.",
@@ -256,7 +266,17 @@ const en: typeof ru = {
     loginDescription: "Enter your account credentials.",
     signup: "Sign up",
     signupTitle: "Create an account",
-    signupDescription: "Enter your email and password.",
+    signupDescription: "Enter your email address to sign up.",
+    registrationEmailSent:
+      "Open the link in your email to continue registration. Check your inbox and spam folder.",
+    registrationLinkDescription:
+      "Confirm your address to set a password and create your account.",
+    registrationConfirmAction: "Confirm email",
+    registrationPasswordTitle: "Choose a password",
+    registrationPasswordDescription:
+      "Your email is confirmed. Set a password to sign in.",
+    registrationExisting:
+      "An account with this email already exists. Sign in or reset your password.",
     continue: "Continue",
     back: "Back",
     signupStep: "Step",
@@ -365,7 +385,7 @@ const en: typeof ru = {
     invalidName: "Enter a name (up to 200 characters).",
     invalidPassword: "Check your password length.",
     invalidCredentials: "Incorrect email or password.",
-    verifiedDone: "Email confirmed. You can now sign in.",
+    verifiedDone: "Your account is ready. You can now sign in.",
     error: "Request failed. Check your details and try again.",
     limited: "Too many attempts. Try again later.",
     unavailable: "Authentication is unavailable. Try again later.",

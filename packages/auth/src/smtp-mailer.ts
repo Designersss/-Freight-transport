@@ -36,16 +36,24 @@ export function createSmtpMailer(config: AuthConfig): AuthMailer {
         /^\/(ru|en)\/email-change-confirmation$/.test(link.pathname) &&
         !link.search &&
         /^#token=[A-Za-z0-9_-]{43}$/.test(link.hash);
-      const authLink =
+      const registration = kind === "registration-email";
+      const registrationLink =
+        link.origin === config.AUTH_WEB_ORIGIN &&
+        /^\/(ru|en)\/signup$/.test(link.pathname) &&
+        !link.search &&
+        /^#token=[A-Za-z0-9_-]{43}$/.test(link.hash);
+      const resetLink =
         link.origin === config.AUTH_BASE_URL &&
         !link.hash &&
-        (kind === "verify-email"
-          ? link.pathname === "/api/v1/auth/verify-email"
-          : /^\/api\/v1\/auth\/reset-password\/[^/]+$/.test(link.pathname));
-      if (link.username || link.password || !(change ? changeLink : authLink)) {
+        /^\/api\/v1\/auth\/reset-password\/[^/]+$/.test(link.pathname);
+      if (
+        link.username ||
+        link.password ||
+        !(change ? changeLink : registration ? registrationLink : resetLink)
+      ) {
         throw new Error("Invalid auth mail URL");
       }
-      const verification = kind === "verify-email";
+      const verification = registration;
       const subject = change
         ? kind === "email-change-old"
           ? "MOVARO — Confirm email change / Подтвердите смену email"
@@ -58,7 +66,7 @@ export function createSmtpMailer(config: AuthConfig): AuthMailer {
           ? "Подтвердите запрос на смену email / Confirm your email change request (15 min):"
           : "Подтвердите новый email / Confirm your new email (15 min):"
         : verification
-          ? "Подтвердите email / Confirm your email:"
+          ? "Продолжите регистрацию / Continue registration (60 min):"
           : "Установите новый пароль / Reset your password (15 min):";
       try {
         const result = await transport.sendMail({

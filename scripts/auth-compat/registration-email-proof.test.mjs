@@ -62,10 +62,7 @@ test("registration proof expires and can be consumed only once", async () => {
       consume(pool, firstHash),
       consume(pool, firstHash),
     ]);
-    assert.deepEqual(
-      race.map((r) => r.rows[0].consumed).sort(),
-      [false, true],
-    );
+    assert.deepEqual(race.map((r) => r.rows[0].consumed).sort(), [false, true]);
     assert.equal(await readRegistrationEmailProof(pool, first), null);
     assert.equal(await readRegistrationEmailProof(pool, second), email);
 

@@ -4,6 +4,10 @@ import {
   authBodies,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
+  registrationEmailAddress,
+  registrationEmailComplete,
+  registrationEmailRead,
+  registrationEmailStart,
   registrationInput,
   usernameInput,
 } from "@freight/auth/contracts";
@@ -36,13 +40,26 @@ import { TelegramButton } from "./telegram-button";
 
 type Credentials = { email: string; password: string };
 type UsernameValues = { username: string };
-type Step = "credentials" | "role" | "profile" | "username";
+type Step =
+  | "email"
+  | "confirmation"
+  | "credentials"
+  | "role"
+  | "profile"
+  | "username";
 type Availability = {
   username: string;
   status: "available" | "taken" | "error";
 };
 
-const emailSteps: Step[] = ["credentials", "role", "profile", "username"];
+const emailSteps: Step[] = [
+  "email",
+  "confirmation",
+  "credentials",
+  "role",
+  "profile",
+  "username",
+];
 const telegramSteps: Step[] = ["role", "profile", "username"];
 const suggestionResponse = z.object({ username: usernameInput });
 const availabilityResponse = z.object({ available: z.boolean() });
@@ -78,8 +95,13 @@ export function SignupWizard({
 }) {
   const t = messages[locale].auth;
   const router = useRouter();
-  const [step, setStep] = useState<Step>(telegram ? "role" : "credentials");
+  const [step, setStep] = useState<Step>(telegram ? "role" : "email");
   const [telegramPending, setTelegramPending] = useState(false);
+  const [confirmationBusy, setConfirmationBusy] = useState(false);
+  const [linkReady, setLinkReady] = useState(false);
+  const proof = useRef("");
+  const initialized = useRef(false);
+  const confirmed = useRef(false);
   const steps = telegram ? telegramSteps : emailSteps;
   const [failure, setFailure] = useState("");
   const [availability, setAvailability] = useState<Availability | null>(null);
@@ -107,6 +129,7 @@ export function SignupWizard({
     profile.formState.isSubmitting ||
     names.formState.isSubmitting ||
     telegramPending ||
+    confirmationBusy ||
     logoutBusy;
   const status =
     canonical && availability?.username === canonical
@@ -116,17 +139,56 @@ export function SignupWizard({
         : "invalid";
   const stepIndex = steps.indexOf(step) + 1;
   const title = {
-    credentials: t.signupTitle,
+    email: t.signupTitle,
+    confirmation: t.verificationTitle,
+    credentials: t.registrationPasswordTitle,
     role: t.roleTitle,
     profile: t.signupProfileTitle,
     username: t.usernameTitle,
   }[step];
   const description = {
-    credentials: t.signupDescription,
+    email: t.signupDescription,
+    confirmation: linkReady
+      ? t.registrationLinkDescription
+      : t.registrationEmailSent,
+    credentials: t.registrationPasswordDescription,
     role: t.roleDescription,
     profile: t.signupProfileDescription,
     username: t.usernameDescription,
   }[step];
+
+  useEffect(() => {
+    if (telegram || initialized.current) return;
+    initialized.current = true;
+    const hash = window.location.hash;
+    if (!hash) return;
+    window.history.replaceState(
+      window.history.state,
+      "",
+      window.location.pathname,
+    );
+    const parsed = registrationEmailRead.safeParse({
+      token: /^#token=[A-Za-z0-9_-]{43}$/.test(hash) ? hash.slice(7) : null,
+    });
+    if (parsed.success) {
+      proof.current = parsed.data.token;
+      setLinkReady(true);
+      setStep("confirmation");
+    } else {
+      setFailure(t.invalidLink);
+    }
+  }, [telegram, t.invalidLink]);
+
+  useEffect(() => {
+    if (telegram) return;
+    // A mail link can navigate the already open signup page by fragment only.
+    // Reload for a new proof so an earlier password/profile cannot carry over.
+    function reopenProof() {
+      if (window.location.hash.startsWith("#token=")) window.location.reload();
+    }
+    window.addEventListener("hashchange", reopenProof);
+    return () => window.removeEventListener("hashchange", reopenProof);
+  }, [telegram]);
 
   useEffect(() => {
     const element = heading.current;
@@ -182,8 +244,90 @@ export function SignupWizard({
     return null;
   }
 
+  async function advanceEmail(values: Credentials) {
+    if (inFlight.current || telegramPending) return;
+    setFailure("");
+    credentials.clearErrors();
+    const parsed = registrationEmailStart.safeParse({
+      email: values.email,
+      locale,
+    });
+    if (!parsed.success) {
+      credentials.setError(
+        "email",
+        { message: t.invalidEmail },
+        { shouldFocus: true },
+      );
+      return;
+    }
+    inFlight.current = true;
+    try {
+      const response = await post("registration/email/start", parsed.data);
+      const data: unknown = await response.json().catch(() => null);
+      if (!response.ok || !successResponse.safeParse(data).success) {
+        setFailure(response.status === 429 ? t.limited : t.unavailable);
+        return;
+      }
+      proof.current = "";
+      confirmed.current = false;
+      setLinkReady(false);
+      credentials.setValue("email", parsed.data.email);
+      go("confirmation");
+    } catch {
+      setFailure(t.unavailable);
+    } finally {
+      inFlight.current = false;
+    }
+  }
+
+  async function confirmEmail() {
+    if (inFlight.current || !proof.current || !linkReady) return;
+    inFlight.current = true;
+    setConfirmationBusy(true);
+    setFailure("");
+    try {
+      const response = await post("registration/email/read", {
+        token: proof.current,
+      });
+      if (response.status === 400 || response.status === 409) {
+        proof.current = "";
+        setLinkReady(false);
+        setStep("email");
+        setFailure(
+          response.status === 409 ? t.registrationExisting : t.invalidLink,
+        );
+        return;
+      }
+      if (!response.ok) {
+        setFailure(response.status === 429 ? t.limited : t.unavailable);
+        return;
+      }
+      const result = registrationEmailAddress.parse(await response.json());
+      credentials.setValue("email", result.email);
+      confirmed.current = true;
+      go("credentials");
+    } catch {
+      setFailure(t.unavailable);
+    } finally {
+      inFlight.current = false;
+      setConfirmationBusy(false);
+    }
+  }
+
   function advanceCredentials(values: Credentials) {
-    if (!telegramPending && validateCredentials(values)) go("role");
+    if (confirmed.current && validateCredentials(values)) go("role");
+  }
+
+  function restartEmail() {
+    proof.current = "";
+    confirmed.current = false;
+    setLinkReady(false);
+    credentials.reset({ email: credentials.getValues("email"), password: "" });
+    profile.reset(emptyProfile);
+    names.reset({ username: "" });
+    manuallyEdited.current = false;
+    setAvailability(null);
+    go("email");
   }
 
   async function advanceProfile(values: ProfileValues) {
@@ -246,9 +390,9 @@ export function SignupWizard({
     }
     const payload = telegram
       ? registrationInput.safeParse(registration)
-      : authBodies["/sign-up/email"].safeParse({
-          ...account,
-          locale,
+      : registrationEmailComplete.safeParse({
+          token: confirmed.current ? proof.current : "",
+          password: account?.password,
           registration,
         });
     if (!payload.success) {
@@ -258,7 +402,7 @@ export function SignupWizard({
     inFlight.current = true;
     try {
       const response = await post(
-        telegram ? "telegram/registration" : "sign-up/email",
+        telegram ? "telegram/registration" : "registration/email/complete",
         payload.data,
       );
       const data: unknown = await response.json().catch(() => null);
@@ -281,9 +425,12 @@ export function SignupWizard({
           router.replace("/login", { locale });
           return;
         }
-        if (!telegram) {
-          credentials.resetField("password");
-          setStep("credentials");
+        if (!telegram && (response.status === 400 || response.status === 409)) {
+          restartEmail();
+          setFailure(
+            response.status === 409 ? t.registrationExisting : t.invalidLink,
+          );
+          return;
         }
         setFailure(
           response.status === 429
@@ -300,12 +447,13 @@ export function SignupWizard({
         return;
       }
       credentials.resetField("password");
-      router.replace("/email-confirmation", { locale });
+      proof.current = "";
+      confirmed.current = false;
+      router.replace(
+        { pathname: "/login", query: { verified: "done" } },
+        { locale },
+      );
     } catch {
-      if (!telegram) {
-        credentials.resetField("password");
-        setStep("credentials");
-      }
       setFailure(t.unavailable);
     } finally {
       inFlight.current = false;
@@ -316,6 +464,7 @@ export function SignupWizard({
     if (step === "username") go("profile");
     else if (step === "profile") go("role");
     else if (step === "role" && !telegram) go("credentials");
+    else if (step === "confirmation" || step === "credentials") restartEmail();
   }
 
   return (
@@ -326,7 +475,7 @@ export function SignupWizard({
         </p>
         <div
           className={
-            telegram ? "grid grid-cols-3 gap-1" : "grid grid-cols-4 gap-1"
+            telegram ? "grid grid-cols-3 gap-1" : "grid grid-cols-6 gap-1"
           }
           aria-hidden="true"
         >
@@ -343,6 +492,61 @@ export function SignupWizard({
         </div>
       </div>
       <div key={step} className="movaro-signup-step">
+        {step === "email" && (
+          <form
+            noValidate
+            className="flex flex-col gap-5"
+            onSubmit={credentials.handleSubmit(advanceEmail)}
+          >
+            <Field data-invalid={Boolean(credentials.formState.errors.email)}>
+              <FieldLabel htmlFor="email">{t.email}</FieldLabel>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                maxLength={254}
+                required
+                disabled={busy}
+                aria-invalid={Boolean(credentials.formState.errors.email)}
+                aria-describedby="email-error"
+                {...credentials.register("email")}
+              />
+              <FieldError id="email-error">
+                {credentials.formState.errors.email?.message}
+              </FieldError>
+            </Field>
+            <Button type="submit" size="lg" disabled={busy}>
+              {busy ? t.submitting : t.continue}
+            </Button>
+          </form>
+        )}
+        {step === "confirmation" && (
+          <div className="flex flex-col gap-4">
+            {linkReady ? (
+              <Button
+                size="lg"
+                disabled={busy}
+                onClick={() => void confirmEmail()}
+              >
+                {busy ? t.submitting : t.registrationConfirmAction}
+              </Button>
+            ) : (
+              <>
+                <p role="status" className="break-all text-sm">
+                  {credentials.getValues("email")}
+                </p>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => void credentials.handleSubmit(advanceEmail)()}
+                >
+                  {busy ? t.submitting : t.resend}
+                </Button>
+              </>
+            )}
+          </div>
+        )}
         {step === "credentials" && (
           <form
             noValidate
@@ -375,6 +579,7 @@ export function SignupWizard({
                             : undefined
                       }
                       disabled={busy}
+                      readOnly={field === "email"}
                       {...credentials.register(field)}
                     />
                     <FieldError id={`${field}-error`}>
@@ -493,7 +698,7 @@ export function SignupWizard({
           <AlertDescription>{failure}</AlertDescription>
         </Alert>
       )}
-      {!telegram && step === "credentials" && (
+      {!telegram && step === "email" && (
         <TelegramButton
           locale={locale}
           intent="register"

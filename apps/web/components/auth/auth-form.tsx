@@ -22,7 +22,7 @@ import { useForm } from "react-hook-form";
 import { AuthPanel } from "./auth-panel";
 import { TelegramButton } from "./telegram-button";
 
-export type AuthMode = "login" | "forgot" | "reset" | "verification";
+export type AuthMode = "login" | "forgot" | "reset";
 type Values = {
   email: string;
   password: string;
@@ -32,7 +32,6 @@ const endpoints = {
   login: "/sign-in/email",
   forgot: "/request-password-reset",
   reset: "/reset-password",
-  verification: "/send-verification-email",
 } as const;
 
 export function AuthForm({
@@ -69,19 +68,16 @@ export function AuthForm({
     login: t.loginTitle,
     forgot: t.forgotTitle,
     reset: t.resetTitle,
-    verification: t.verificationTitle,
   }[mode];
   const description = {
     login: t.loginDescription,
     forgot: t.forgotDescription,
     reset: t.resetDescription,
-    verification: t.verificationDescription,
   }[mode];
   const action = {
     login: t.loginAction,
     forgot: t.send,
     reset: t.resetAction,
-    verification: t.resend,
   }[mode];
   const unavailable = mode === "reset" && (!token || invalid);
   const fields: Array<{
@@ -120,7 +116,6 @@ export function AuthForm({
       login: { email: values.email, password: values.password },
       forgot: { email: values.email, locale },
       reset: { token, newPassword: values.newPassword },
-      verification: { email: values.email, locale },
     }[mode];
     const parsed = authBodies[endpoints[mode]].safeParse(payload);
     if (!parsed.success) {
@@ -153,10 +148,6 @@ export function AuthForm({
           ? data.code
           : undefined;
       if (!result.ok) {
-        if (mode === "login" && code === "EMAIL_NOT_VERIFIED") {
-          router.replace("/email-confirmation", { locale });
-          return;
-        }
         setFailure(
           result.status === 429
             ? t.limited
@@ -188,7 +179,7 @@ export function AuthForm({
         );
         return;
       }
-      setNotice(mode === "forgot" ? t.resetSent : t.sent);
+      setNotice(t.resetSent);
     } catch {
       setFailure(t.unavailable);
     } finally {
@@ -220,11 +211,6 @@ export function AuthForm({
           onSubmit={handleSubmit(submit)}
           className="flex flex-col gap-5"
         >
-          {invalid && mode === "verification" && (
-            <p role="alert" className="text-destructive">
-              {t.verificationError}
-            </p>
-          )}
           <FieldGroup className="gap-4">
             {fields.map((field) => (
               <Field
