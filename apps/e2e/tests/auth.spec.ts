@@ -75,7 +75,7 @@ test("login preserves email and clears password after invalid credentials", asyn
   await email.fill("user@example.test");
   await password.fill("test-password");
   await submit.click();
-  await expect(page.getByRole("alert")).toHaveText(
+  await expect(page.getByRole("main").getByRole("alert")).toHaveText(
     "Неверная электронная почта или пароль.",
   );
   await expect(email).toHaveValue("user@example.test");
@@ -102,7 +102,7 @@ test("registration preserves name and email after a network failure", async ({
   await email.fill("user@example.test");
   await password.fill("test-password");
   await submit.click();
-  await expect(page.getByRole("alert")).toHaveText(
+  await expect(page.getByRole("main").getByRole("alert")).toHaveText(
     "Authentication is unavailable. Try again later.",
   );
   await expect(name).toHaveValue("Test User");
