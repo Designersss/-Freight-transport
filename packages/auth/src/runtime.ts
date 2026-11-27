@@ -1,6 +1,8 @@
 import { PrivateStorage, type StorageConfig } from "@freight/storage";
 import { Pool } from "pg";
 import { eligibleAccount } from "./active-account.js";
+import { createAdminAuth, handleAdminAuth } from "./admin-auth.js";
+import { isPlatformAdminEmail } from "./admin-principal.js";
 import { AUTH_BASE_PATH, createEmailAuth } from "./auth.js";
 import { cabinetRole, handleCabinet } from "./cabinet-http.js";
 import { type AuthConfig, parseAuthConfig, telegramEnabled } from "./config.js";
@@ -60,6 +62,7 @@ export function createAuthHttpRuntime(
   });
   const mailer = createSmtpMailer(config);
   const auth = createEmailAuth(config, pool, mailer);
+  const admin = createAdminAuth(config, pool);
   const storage = storageConfig ? new PrivateStorage(storageConfig) : null;
   const destination = (language: string, page: string) =>
     new URL(`/${language}${page}`, config.AUTH_WEB_ORIGIN).href;
@@ -76,6 +79,10 @@ export function createAuthHttpRuntime(
         return failure(404, "NOT_FOUND");
       }
       const path = url.pathname.slice(AUTH_BASE_PATH.length);
+      if (path.startsWith("/admin/"))
+        return admin
+          ? handleAdminAuth(request, config, admin, pool)
+          : failure(404, "NOT_FOUND");
       const requiredRole = cabinetRole(path);
       if (requiredRole)
         return handleCabinet(request, config, auth, pool, requiredRole);
@@ -176,6 +183,20 @@ export function createAuthHttpRuntime(
                     "retry-after": String(retry),
                   },
                 },
+              );
+          } catch {
+            return failure(503, "AUTH_REQUEST_FAILED");
+          }
+        }
+        if (
+          path === "/request-password-reset" &&
+          typeof payload.email === "string"
+        ) {
+          try {
+            if (await isPlatformAdminEmail(pool, payload.email))
+              return Response.json(
+                { success: true },
+                { headers: { "cache-control": "no-store" } },
               );
           } catch {
             return failure(503, "AUTH_REQUEST_FAILED");

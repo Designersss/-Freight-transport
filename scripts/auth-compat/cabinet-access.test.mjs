@@ -3,6 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { test } from "node:test";
 import { hashPassword } from "better-auth/crypto";
 import pg from "pg";
+import { createFirstAdmin } from "../../packages/auth/dist/admin-bootstrap.js";
 import {
   createAuthHttpRuntime,
   parseAuthConfig,
@@ -20,6 +21,8 @@ test("public cabinets require a live completed profile of the exact role", async
     AUTH_BASE_URL: origin,
     AUTH_WEB_ORIGIN: webOrigin,
     AUTH_SECRET: randomBytes(32).toString("hex"),
+    AUTH_ADMIN_ORIGIN: "http://127.0.0.1:3001",
+    AUTH_ADMIN_SECRET: randomBytes(32).toString("hex"),
     SMTP_HOST: "127.0.0.1",
     SMTP_PORT: process.env.AUTH_COMPAT_SMTP_PORT,
     SMTP_SECURITY: "local",
@@ -132,9 +135,66 @@ test("public cabinets require a live completed profile of the exact role", async
       ).status,
       403,
     );
-    const admin = await createIdentity("PLATFORM_ADMIN", "192.0.2.221");
-    assert.equal(admin.login.status, 401);
-    assert.equal(admin.cookie, "");
+    const input = {
+      email: `${randomUUID()}@example.test`,
+      password: "admin-test-password-2026",
+      firstName: "Test",
+      lastName: "Admin",
+      birthDate: "1998-05-15",
+    };
+    const created = await Promise.all([
+      createFirstAdmin(pool, input),
+      createFirstAdmin(pool, input),
+    ]);
+    assert.deepEqual(created.sort(), [false, true]);
+    const publicLogin = await call(
+      "/sign-in/email",
+      undefined,
+      { email: input.email, password: input.password },
+      "192.0.2.221",
+    );
+    assert.equal(publicLogin.status, 401);
+    const adminCall = (
+      path,
+      body,
+      cookie,
+      requestOrigin = config.AUTH_ADMIN_ORIGIN,
+    ) =>
+      runtime.handle(
+        new Request(`${origin}/api/v1/auth/admin${path}`, {
+          method: body === undefined ? "GET" : "POST",
+          headers: {
+            origin: requestOrigin,
+            "content-type": "application/json",
+            "x-movaro-client-ip": "192.0.2.222",
+            ...(cookie ? { cookie } : {}),
+          },
+          ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        }),
+      );
+    const credentials = { email: input.email, password: input.password };
+    assert.equal(
+      (await adminCall("/sign-in/email", credentials, undefined, webOrigin))
+        .status,
+      403,
+    );
+    assert.equal((await adminCall("/sign-up/email", credentials)).status, 404);
+    const login = await adminCall("/sign-in/email", credentials);
+    assert.equal(login.status, 200);
+    const cookie = login.headers
+      .getSetCookie()
+      .map((value) => value.split(";")[0])
+      .join("; ");
+    assert.match(cookie, /movaro-admin\.session_token=/);
+    const session = await adminCall("/get-session", undefined, cookie);
+    assert.equal(session.status, 200);
+    assert.equal((await session.json()).role, "PLATFORM_ADMIN");
+    assert.equal((await call("/cabinet/driver", cookie)).status, 401);
+    assert.equal((await adminCall("/sign-out", {}, cookie)).status, 200);
+    assert.equal(
+      await (await adminCall("/get-session", undefined, cookie)).json(),
+      null,
+    );
   } finally {
     await runtime.close();
     await pool.end();

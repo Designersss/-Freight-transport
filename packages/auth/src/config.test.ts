@@ -50,6 +50,12 @@ describe("auth config", () => {
 
   for (const override of [
     { AUTH_SECRET: "short" },
+    { AUTH_ADMIN_ORIGIN: "http://127.0.0.1:3001" },
+    { AUTH_ADMIN_SECRET: env.AUTH_SECRET },
+    {
+      AUTH_ADMIN_ORIGIN: env.AUTH_WEB_ORIGIN,
+      AUTH_ADMIN_SECRET: "distinct-admin-secret-0123456789-abcdefgh",
+    },
     { AUTH_TELEGRAM_CLIENT_ID: "123456" },
     { AUTH_TELEGRAM_CLIENT_SECRET: "secret" },
     {

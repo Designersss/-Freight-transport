@@ -13,8 +13,7 @@ export default async function Page({
   if (!isLocale(locale)) notFound();
   const access = await readCabinetAccess();
   if (access.kind === "anonymous") redirect(`/${locale}/login`);
-  if (access.kind === "onboarding")
-    redirect(`/${locale}/account?onboarding=1`);
+  if (access.kind === "onboarding") redirect(`/${locale}/account?onboarding=1`);
   if (access.kind === "allowed")
     redirect(`/${locale}${cabinetPaths[access.profile.role]}`);
   return <CabinetFailure locale={locale} denied={access.kind === "denied"} />;

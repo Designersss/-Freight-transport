@@ -22,6 +22,8 @@ const schema = z
     AUTH_BASE_URL: origin,
     AUTH_WEB_ORIGIN: origin,
     AUTH_SECRET: z.string().min(32),
+    AUTH_ADMIN_ORIGIN: origin.optional(),
+    AUTH_ADMIN_SECRET: z.string().min(32).optional(),
     SMTP_HOST: z.string().trim().min(1),
     SMTP_PORT: z.coerce.number().int().min(1).max(65535),
     SMTP_SECURITY: z.enum(["tls", "starttls", "local"]),
@@ -35,6 +37,21 @@ const schema = z
     AUTH_TELEGRAM_CLIENT_SECRET: z.string().min(1).max(512).optional(),
   })
   .superRefine((config, ctx) => {
+    if (
+      Boolean(config.AUTH_ADMIN_ORIGIN) !== Boolean(config.AUTH_ADMIN_SECRET) ||
+      (config.AUTH_ADMIN_SECRET &&
+        (config.AUTH_ADMIN_SECRET === config.AUTH_SECRET ||
+          config.AUTH_ADMIN_ORIGIN === config.AUTH_WEB_ORIGIN ||
+          config.AUTH_ADMIN_ORIGIN === config.AUTH_BASE_URL ||
+          (config.NODE_ENV === "production" &&
+            !config.AUTH_ADMIN_ORIGIN?.startsWith("https://"))))
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["AUTH_ADMIN_ORIGIN"],
+        message: "Admin requires a distinct origin and secret",
+      });
+    }
     if (
       Boolean(config.AUTH_TELEGRAM_CLIENT_ID) !==
       Boolean(config.AUTH_TELEGRAM_CLIENT_SECRET)

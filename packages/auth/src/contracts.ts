@@ -47,6 +47,17 @@ export const profileInput = z
 
 export const publicCabinet = z.object({ role: publicRole });
 
+export const adminLoginInput = z.strictObject({
+  email,
+  password: z.string().min(1).max(PASSWORD_MAX_LENGTH),
+});
+
+export const adminSession = z.object({
+  name: z.string(),
+  role: z.literal("PLATFORM_ADMIN"),
+  expiresAt: z.string(),
+});
+
 export const profileSettingsInput = z.strictObject({
   firstName: profileName,
   lastName: profileName,
