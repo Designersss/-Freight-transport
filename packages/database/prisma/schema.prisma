@@ -167,3 +167,14 @@ model AuthMailRateLimit {
   @@index([expiresAt], map: "auth_mail_rate_limits_expiry_idx")
   @@map("auth_mail_rate_limits")
 }
+
+// Staged upload reservations and retired objects awaiting private S3 cleanup.
+model ProfilePhotoCleanup {
+  key         String   @id
+  ownerId     String?  @map("owner_id")
+  availableAt DateTime @map("available_at") @db.Timestamptz(6)
+  attempts    Int      @default(0)
+
+  @@index([availableAt, key], map: "profile_photo_cleanup_available_idx")
+  @@map("profile_photo_cleanup")
+}

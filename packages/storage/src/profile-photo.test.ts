@@ -51,9 +51,7 @@ describe("Profile photo normalization", () => {
       normalizeProfilePhoto(Buffer.from([255, 216, 255]), "image/jpeg"),
     ).rejects.toThrow();
     const png = await fixture(20, 20).png().toBuffer();
-    await expect(
-      normalizeProfilePhoto(png, "image/jpeg"),
-    ).rejects.toThrow();
+    await expect(normalizeProfilePhoto(png, "image/jpeg")).rejects.toThrow();
     await expect(
       normalizeProfilePhoto(png.subarray(0, png.length - 8), "image/png"),
     ).rejects.toThrow();
@@ -63,8 +61,15 @@ describe("Profile photo normalization", () => {
     const png = await fixture(20, 20).png().toBuffer();
     // Insert an acTL control chunk after IHDR. The parser must reject it
     // even before a decoder would verify its CRC or frame data.
-    const control = Buffer.from("000000086163544c000000020000000000000000", "hex");
-    const animated = Buffer.concat([png.subarray(0, 33), control, png.subarray(33)]);
+    const control = Buffer.from(
+      "000000086163544c000000020000000000000000",
+      "hex",
+    );
+    const animated = Buffer.concat([
+      png.subarray(0, 33),
+      control,
+      png.subarray(33),
+    ]);
     await expect(normalizeProfilePhoto(animated, "image/png")).rejects.toThrow(
       "Animated profile photos",
     );
@@ -81,7 +86,9 @@ describe("Profile photo normalization", () => {
     } finally {
       await Promise.all([first, second]);
     }
-    await expect(normalizeProfilePhoto(input, "image/png")).resolves.toMatchObject({
+    await expect(
+      normalizeProfilePhoto(input, "image/png"),
+    ).resolves.toMatchObject({
       contentType: "image/jpeg",
     });
   });
