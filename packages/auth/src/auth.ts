@@ -7,10 +7,11 @@ import {
 } from "./active-account.js";
 import { type AuthConfig, telegramEnabled } from "./config.js";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./contracts.js";
+import { credentialLoginProof } from "./credential-login.js";
 import { type AuthMailer, isDeliverableEmail } from "./email.js";
 import {
+  createPublicBeforeHook,
   findTelegramLoginAccount,
-  prepareTelegramLink,
   telegramLinkContext,
   telegramLinkProof,
   telegramLoginContext,
@@ -48,6 +49,12 @@ export function createAuthOptions(
       additionalFields: {
         emailLoginProof: {
           type: "string",
+          required: false,
+          input: false,
+          returned: false,
+        },
+        emailLoginRevision: {
+          type: "number",
           required: false,
           input: false,
           returned: false,
@@ -111,10 +118,11 @@ export function createAuthOptions(
             const login = telegramLoginContext.getStore();
             if (!login) {
               if (context?.path !== "/sign-in/email") return true;
-              const email = context.body?.email;
-              return typeof email === "string" && isDeliverableEmail(email)
-                ? { data: { emailLoginProof: email.toLowerCase() } }
-                : false;
+              const proof = credentialLoginProof(
+                context.context,
+                session.userId,
+              );
+              return proof ? { data: proof } : false;
             }
             if (!login.providerEmail) return false;
             const telegramAccountId = await findTelegramLoginAccount(
@@ -127,7 +135,7 @@ export function createAuthOptions(
         },
       },
     },
-    hooks: { before: prepareTelegramLink },
+    hooks: { before: createPublicBeforeHook(database) },
     account: {
       additionalFields: {
         linkSessionId: {

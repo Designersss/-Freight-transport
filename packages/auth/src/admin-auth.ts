@@ -1,10 +1,12 @@
 import { betterAuth } from "better-auth";
+import { createAuthMiddleware } from "better-auth/api";
 import type { Pool } from "pg";
 import { z } from "zod";
 import { canUseAdminSession, readAdminPrincipal } from "./admin-principal.js";
 import type { EmailAuth } from "./auth.js";
 import type { AuthConfig } from "./config.js";
 import { adminLoginInput, adminSession } from "./contracts.js";
+import { credentialLoginProof, prepareCredentialLogin } from "./credential-login.js";
 import { internalSession } from "./verified-session.js";
 
 const basePath = "/api/v1/auth/admin";
@@ -39,6 +41,18 @@ export function createAdminAuth(
       disableSessionRefresh: true,
       cookieCache: { enabled: false },
       additionalFields: {
+        emailLoginProof: {
+          type: "string",
+          required: false,
+          input: false,
+          returned: false,
+        },
+        emailLoginRevision: {
+          type: "number",
+          required: false,
+          input: false,
+          returned: false,
+        },
         adminSession: {
           type: "boolean",
           required: false,
@@ -54,12 +68,20 @@ export function createAdminAuth(
       minPasswordLength: 16,
       maxPasswordLength: 128,
     },
+    hooks: {
+      before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path === "/sign-in/email")
+          return prepareCredentialLogin(pool, ctx.body?.email);
+      }),
+    },
     databaseHooks: {
       session: {
         create: {
-          async before(session) {
-            return (await canUseAdminSession(pool, session.userId))
-              ? { data: { adminSession: true } }
+          async before(session, context) {
+            if (context?.path !== "/sign-in/email") return false;
+            const proof = credentialLoginProof(context.context, session.userId);
+            return proof && (await canUseAdminSession(pool, session.userId))
+              ? { data: { ...proof, adminSession: true } }
               : false;
           },
         },

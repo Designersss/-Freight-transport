@@ -6,6 +6,7 @@ import {
   getOAuthState,
 } from "better-auth/api";
 import type { Pool } from "pg";
+import { prepareCredentialLogin } from "./credential-login.js";
 import type { TelegramSessionIdentity } from "./telegram-registration.js";
 import { readTelegramSettings } from "./telegram-settings.js";
 
@@ -23,22 +24,26 @@ export const telegramLoginContext = new AsyncLocalStorage<{
   providerEmail?: string;
 }>();
 
-export const prepareTelegramLink = createAuthMiddleware(async (ctx) => {
-  if (ctx.path === "/unlink-account")
-    throw new APIError("FORBIDDEN", { code: "AUTH_REQUEST_FAILED" });
-  if (ctx.path !== "/link-social") return;
-  const identity = telegramLinkContext.getStore();
-  if (
-    !identity ||
-    identity.revision === undefined ||
-    ctx.body?.provider !== "telegram"
-  )
-    throw new APIError("FORBIDDEN", { code: "AUTH_REQUEST_FAILED" });
-  await addOAuthServerContext({
-    movaroTelegramLinkSessionId: identity.sessionId,
-    movaroTelegramLinkRevision: identity.revision,
+export function createPublicBeforeHook(pool: Pool) {
+  return createAuthMiddleware(async (ctx) => {
+    if (ctx.path === "/sign-in/email")
+      return prepareCredentialLogin(pool, ctx.body?.email);
+    if (ctx.path === "/unlink-account")
+      throw new APIError("FORBIDDEN", { code: "AUTH_REQUEST_FAILED" });
+    if (ctx.path !== "/link-social") return;
+    const identity = telegramLinkContext.getStore();
+    if (
+      !identity ||
+      identity.revision === undefined ||
+      ctx.body?.provider !== "telegram"
+    )
+      throw new APIError("FORBIDDEN", { code: "AUTH_REQUEST_FAILED" });
+    await addOAuthServerContext({
+      movaroTelegramLinkSessionId: identity.sessionId,
+      movaroTelegramLinkRevision: identity.revision,
+    });
   });
-});
+}
 
 export async function validateTelegramLink(
   pool: Pool,
