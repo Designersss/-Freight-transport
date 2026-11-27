@@ -11,7 +11,6 @@ import { AuthPanel } from "./auth-panel";
 import { DeactivationSettings } from "./deactivation-settings";
 import { EmailChangeSettings } from "./email-change-settings";
 import { PasswordSettings } from "./password-settings";
-import { ProfileForm } from "./profile-form";
 import { ProfilePhotoSettings } from "./profile-photo-settings";
 import { ProfileSettings } from "./profile-settings";
 import { SessionSettings } from "./session-settings";
@@ -58,11 +57,9 @@ export function Account({
           return;
         }
         const current = publicSession.parse(data);
-        if (current.user.email !== null && !current.user.emailVerified) {
-          router.replace("/signup", { locale });
-          return;
-        }
         setSession(current);
+        if (current.user.email !== null && !current.user.emailVerified)
+          throw new Error("Unverified email session");
         const result = await fetch("/api/auth/profile", {
           cache: "no-store",
           signal: controller.signal,
@@ -76,6 +73,8 @@ export function Account({
         if (!result.ok) throw new Error("Profile unavailable");
         const saved: unknown = await result.json();
         if (controller.signal.aborted) return;
+        if (saved === null && current.user.email !== null)
+          throw new Error("Email profile missing");
         const stored = saved === null ? null : publicProfile.parse(saved);
         if (enterCabinet && stored) {
           router.replace(cabinetPaths[stored.role], { locale });
@@ -130,10 +129,7 @@ export function Account({
     );
   }
   return (
-    <AuthPanel
-      title={needsProfile ? t.profileTitle : t.accountTitle}
-      description={needsProfile ? t.profileDescription : ""}
-    >
+    <AuthPanel title={t.accountTitle} description="">
       {loading && <Skeleton className="h-20 w-full" />}
       {deactivated && <p role="status">{t.deactivationDone}</p>}
       {error && (
@@ -143,20 +139,6 @@ export function Account({
       )}
       {session ? (
         <div className="flex flex-col gap-4">
-          {needsProfile && (
-            <ProfileForm
-              locale={locale}
-              onComplete={(completed) => {
-                if (enterCabinet)
-                  router.replace(cabinetPaths[completed.role], { locale });
-                else setProfile(completed);
-              }}
-              onExpired={() => {
-                setSession(null);
-                router.replace("/login", { locale });
-              }}
-            />
-          )}
           {profileLoaded && profile && (
             <div className="break-all rounded-lg border border-border p-3">
               <p className="font-semibold">

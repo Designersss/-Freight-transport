@@ -1,53 +1,12 @@
 import type { Pool } from "pg";
-import { z } from "zod";
+import type { z } from "zod";
 import { eligibleAccount } from "./active-account.js";
 import type { EmailAuth } from "./auth.js";
 import type { AuthConfig } from "./config.js";
-import {
-  profileInput,
-  profileSettingsInput,
-  publicProfile,
-} from "./contracts.js";
+import { profileSettingsInput, publicProfile } from "./contracts.js";
 import { readVerifiedSession } from "./verified-session.js";
 
-const storedProfile = publicProfile.extend({
-  role: z.enum(["PLATFORM_ADMIN", "COMPANY_OWNER", "DISPATCHER", "DRIVER"]),
-  status: z.enum(["ACTIVE", "DEACTIVATED"]),
-});
-
 const columns = `first_name AS "firstName", last_name AS "lastName", role, status, company_name AS "companyName", to_char(birth_date::timestamp, 'YYYY-MM-DD') AS "birthDate"`;
-
-async function readProfile(pool: Pool, userId: string) {
-  const result = await pool.query(
-    `SELECT ${columns} FROM user_profiles WHERE user_id = $1`,
-    [userId],
-  );
-  const row: unknown = result.rows[0];
-  return row === undefined ? null : storedProfile.parse(row);
-}
-
-async function insertProfile(
-  pool: Pool,
-  userId: string,
-  input: z.infer<typeof profileInput>,
-) {
-  const result = await pool.query(
-    `INSERT INTO user_profiles (user_id, first_name, last_name, role, company_name, birth_date)
-     VALUES ($1, $2, $3, $4, $5, $6::date)
-     ON CONFLICT (user_id) DO NOTHING
-     RETURNING ${columns}`,
-    [
-      userId,
-      input.firstName,
-      input.lastName,
-      input.role,
-      input.companyName ?? null,
-      input.birthDate,
-    ],
-  );
-  const row: unknown = result.rows[0];
-  return row === undefined ? null : publicProfile.parse(row);
-}
 
 export async function handleProfile(
   request: Request,
@@ -62,17 +21,11 @@ export async function handleProfile(
   const fail = (status: number, code: string) =>
     Response.json({ code }, { status, headers });
 
-  if (request.method !== "GET" && request.method !== "POST")
+  if (request.method !== "GET") {
+    headers.set("allow", "GET");
     return fail(405, "METHOD_NOT_ALLOWED");
-  if (new URL(request.url).search) return fail(400, "INVALID_REQUEST");
-  if (request.method === "POST") {
-    if (request.headers.get("origin") !== config.AUTH_WEB_ORIGIN)
-      return fail(403, "INVALID_ORIGIN");
-    if (
-      request.headers.get("content-type")?.split(";")[0] !== "application/json"
-    )
-      return fail(400, "INVALID_REQUEST");
   }
+  if (new URL(request.url).search) return fail(400, "INVALID_REQUEST");
 
   try {
     const session = await readVerifiedSession(
@@ -81,32 +34,21 @@ export async function handleProfile(
       auth,
       headers,
       pool,
-      request.method === "GET",
+      true,
     );
     if (session instanceof Response) return session;
-    if (request.method === "POST" && session.access !== "email")
-      return fail(403, "AUTH_REQUEST_FAILED");
+    // Only the verified Telegram identity has an incomplete-profile state.
+    if (session.access === "onboarding")
+      return Response.json(null, { headers });
 
-    const existing = await readProfile(pool, session.user.id);
-    if (
-      existing &&
-      (existing.status !== "ACTIVE" || existing.role === "PLATFORM_ADMIN")
-    )
-      return fail(403, "AUTH_REQUEST_FAILED");
-    if (request.method === "GET")
-      return Response.json(existing ? publicProfile.parse(existing) : null, {
-        headers,
-      });
-
-    const input = profileInput.safeParse(
-      await request.json().catch(() => null),
+    const result = await pool.query(
+      `SELECT ${columns} ${eligibleAccount}
+       AND u.username IS NOT NULL AND NOT s."adminSession"`,
+      [session.user.id, session.session.id],
     );
-    if (!input.success) return fail(400, "INVALID_REQUEST");
-    if (existing) return fail(409, "PROFILE_ALREADY_EXISTS");
-
-    const profile = await insertProfile(pool, session.user.id, input.data);
-    if (!profile) return fail(409, "PROFILE_ALREADY_EXISTS");
-    return Response.json(profile, { status: 201, headers });
+    const row: unknown = result.rows[0];
+    if (row === undefined) return fail(403, "AUTH_REQUEST_FAILED");
+    return Response.json(publicProfile.parse(row), { headers });
   } catch {
     return fail(500, "AUTH_REQUEST_FAILED");
   }

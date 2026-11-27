@@ -177,6 +177,11 @@ test("real signup, email ownership, login and session revocation", async ({
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Ваш аккаунт",
   );
+  const obsoleteProfile = await page.request.post("/api/auth/profile", {
+    headers: { origin: "http://127.0.0.1:3110" },
+    data: {},
+  });
+  expect(obsoleteProfile.status()).toBe(404);
   const profile = await page.request.get("/api/auth/profile");
   expect(profile.status()).toBe(200);
   expect(await profile.json()).toEqual({

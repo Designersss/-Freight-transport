@@ -14,6 +14,7 @@ import { genericOAuth } from "better-auth/plugins";
 import pg from "pg";
 import { createAuthOptions } from "../../packages/auth/dist/auth.js";
 import { parseAuthConfig } from "../../packages/auth/dist/config.js";
+import { handleProfile } from "../../packages/auth/dist/profile.js";
 import { handleProfilePhoto } from "../../packages/auth/dist/profile-photo.js";
 import { handleTelegramOAuth } from "../../packages/auth/dist/telegram-oauth-http.js";
 import {
@@ -257,6 +258,18 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
     assert.equal(publicView.user.email, null);
     assert.equal(publicView.user.emailVerified, false);
     assert.ok(!("id" in publicView.session));
+    const readProfile = (sessionCookie) =>
+      handleProfile(
+        new Request(`${origin}${base}/profile`, {
+          headers: { cookie: sessionCookie },
+        }),
+        authConfig,
+        auth,
+        pool,
+      );
+    const incompleteProfile = await readProfile(cookie(first));
+    assert.equal(incompleteProfile.status, 200);
+    assert.equal(await incompleteProfile.json(), null);
     const registration = {
       username: `tg_${subject.slice(0, 20)}`,
       profile: {
@@ -282,6 +295,12 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
     );
     assert.equal(complete.status, 200);
     assert.equal(await sessionAccess(pool, authConfig, identity), "active");
+    const completedProfile = await readProfile(cookie(first));
+    assert.equal(completedProfile.status, 200);
+    assert.deepEqual(await completedProfile.json(), {
+      ...registration.profile,
+      companyName: null,
+    });
     // Authorization must precede all storage operations. This test double
     // fails on any access; the real S3 success flow is exercised elsewhere.
     const noStorageAccess = {

@@ -261,7 +261,9 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     assert.equal(session.json().session.token, undefined);
     const profilePath = `${base}/profile`;
     assert.equal((await get(profilePath)).statusCode, 401);
-    assert.equal((await post("/profile", profile)).statusCode, 401);
+    const obsolete = await post("/profile", profile);
+    assert.equal(obsolete.statusCode, 405);
+    assert.equal(obsolete.headers.allow, "GET");
     const saved = { ...profile, companyName: null };
     const read = await get(profilePath, cookie);
     assert.equal(read.statusCode, 200);
@@ -367,55 +369,20 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       (await get(`${profilePath}?userId=another-user`, cookie)).statusCode,
       400,
     );
-    for (const invalidProfile of [
+    for (const payload of [
+      profile,
       { ...profile, role: "PLATFORM_ADMIN" },
-      { ...profile, firstName: " " },
-      { ...profile, driverAge: 30 },
-      { ...profile, photoKey: "test-photo" },
-      { ...profile, photo: "test-photo" },
-      { ...profile, image: "https://example.test/photo.png" },
-      { ...profile, birthDate: undefined },
-      { ...profile, birthDate: "1999-02-29" },
-      { ...profile, birthDate: "9999-12-31" },
-      { ...profile, role: "COMPANY_OWNER" },
-      { ...profile, companyName: "Other company" },
-      { ...profile, role: "DISPATCHER", companyName: "Other company" },
-      { ...profile, role: "COMPANY_OWNER", companyName: " " },
-      { ...profile, userId: "another-user" },
-      { ...profile, status: "ACTIVE" },
+      { ...profile, role: "COMPANY_OWNER", companyName: "Test Equipment" },
     ]) {
-      assert.equal(
-        (await post("/profile", invalidProfile, { cookie })).statusCode,
-        400,
-      );
+      const response = await post("/profile", payload, { cookie });
+      assert.equal(response.statusCode, 405);
+      assert.equal(response.headers.allow, "GET");
     }
-    assert.equal(
-      (
-        await post("/profile", profile, {
-          cookie,
-          origin: "https://untrusted.invalid",
-        })
-      ).statusCode,
-      403,
-    );
-    const competing = await Promise.all([
+    const concurrent = await Promise.all([
       post("/profile", profile, { cookie }),
       post("/profile", { ...profile, role: "DISPATCHER" }, { cookie }),
     ]);
-    assert.deepEqual(
-      competing.map(({ statusCode }) => statusCode).sort(),
-      [409, 409],
-    );
-    assert.equal(
-      (
-        await post(
-          "/profile",
-          { ...profile, role: "COMPANY_OWNER", companyName: "Test Equipment" },
-          { cookie },
-        )
-      ).statusCode,
-      409,
-    );
+    assert.deepEqual(concurrent.map(({ statusCode }) => statusCode), [405, 405]);
     assert.deepEqual((await get(profilePath, cookie)).json(), saved);
     const personal = {
       firstName: " Updated ",
@@ -568,7 +535,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       );
       assert.equal(
         (await post("/profile", profile, { cookie })).statusCode,
-        403,
+        405,
       );
     } finally {
       await pool.query(
@@ -720,6 +687,28 @@ test("verified registration atomically claims one username", async () => {
       });
       assert.equal(result.status, 400);
     }
+    for (const invalidProfile of [
+      { ...profile, firstName: " " },
+      { ...profile, driverAge: 30 },
+      { ...profile, photoKey: "test-photo" },
+      { ...profile, photo: "test-photo" },
+      { ...profile, image: "https://example.test/photo.png" },
+      { ...profile, companyName: undefined },
+      { ...profile, role: "DRIVER", companyName: "Other company" },
+      { ...profile, role: "DISPATCHER", companyName: "Other company" },
+      { ...profile, role: "COMPANY_OWNER", companyName: " " },
+      { ...profile, userId: "another-user" },
+      { ...profile, status: "ACTIVE" },
+    ]) {
+      const invalid = await call("/registration/email/complete", {
+        ...signup,
+        registration: { ...registration, profile: invalidProfile },
+      });
+      assert.equal(invalid.status, 400);
+    }
+    const validProof = await call("/registration/email/read", { token });
+    assert.equal(validProof.status, 200);
+    assert.deepEqual(await validProof.json(), { email });
     const check = (name) =>
       call("/username", { action: "check", username: name });
     const suggestion = (firstName, lastName) =>

@@ -272,10 +272,9 @@ for (const variant of [
   {
     locale: "ru",
     theme: "dark",
-    title: "Завершите регистрацию",
+    title: "Персональные данные",
     firstName: "Имя",
     lastName: "Фамилия",
-    driver: "Водитель",
     birthDate: "Дата рождения",
     typedDate: "15.05.1998",
     pickedDate: "16.05.1998",
@@ -284,16 +283,14 @@ for (const variant of [
     month: "Месяц",
     year: "Год",
     invalidBirthDate: "Введите корректную дату рождения.",
-    submit: "Завершить регистрацию",
-    invalidRole: "Выберите роль.",
+    submit: "Сохранить данные",
   },
   {
     locale: "en",
     theme: "light",
-    title: "Complete your registration",
+    title: "Personal details",
     firstName: "First name",
     lastName: "Last name",
-    driver: "Driver",
     birthDate: "Date of birth",
     typedDate: "05/15/1998",
     pickedDate: "05/16/1998",
@@ -302,11 +299,10 @@ for (const variant of [
     month: "Month",
     year: "Year",
     invalidBirthDate: "Enter a valid date of birth.",
-    submit: "Complete registration",
-    invalidRole: "Choose a role.",
+    submit: "Save details",
   },
 ]) {
-  test(`profile onboarding validates and preserves input: ${variant.locale}/${variant.theme}`, async ({
+  test(`profile settings validate and preserve input: ${variant.locale}/${variant.theme}`, async ({
     page,
   }) => {
     await page.route("**/api/auth/get-session", (route) =>
@@ -324,11 +320,36 @@ for (const variant of [
     );
     let posts = 0;
     await page.route("**/api/auth/profile", (route) => {
-      if (route.request().method() === "GET") {
-        return route.fulfill({ json: null });
-      }
+      expect(route.request().method()).toBe("GET");
+      return route.fulfill({
+        json: {
+          firstName: "Test",
+          lastName: "Driver",
+          role: "DRIVER",
+          birthDate: "1998-05-15",
+          companyName: null,
+        },
+      });
+    });
+    await page.route("**/api/auth/profile/photo", (route) =>
+      route.fulfill({ status: 404, json: { code: "NOT_FOUND" } }),
+    );
+    await page.route("**/api/auth/username/settings", (route) =>
+      route.fulfill({ json: { username: "test_driver", nextChangeAt: null } }),
+    );
+    await page.route("**/api/auth/sessions", (route) =>
+      route.fulfill({ json: { sessions: [], hasMore: false } }),
+    );
+    await page.route("**/api/auth/telegram/settings", (route) =>
+      route.fulfill({ status: 404, json: { code: "NOT_FOUND" } }),
+    );
+    await page.route("**/api/auth/profile/settings", (route) => {
       posts++;
-      expect(route.request().postDataJSON().birthDate).toBe("1998-05-16");
+      expect(route.request().postDataJSON()).toEqual({
+        firstName: "Updated",
+        lastName: "Driver",
+        birthDate: "1998-05-16",
+      });
       return route.fulfill({
         status: 503,
         json: { code: "AUTH_REQUEST_FAILED" },
@@ -341,34 +362,22 @@ for (const variant of [
       "data-theme",
       variant.theme,
     );
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      variant.title,
-    );
-    const first = page.getByLabel(variant.firstName, { exact: true });
-    const last = page.getByLabel(variant.lastName, { exact: true });
-    const submit = page.getByRole("button", { name: variant.submit });
-    await first.fill("Test");
-    await last.fill("Driver");
+    const settings = page.getByRole("region", { name: variant.title });
+    await expect(settings).toBeVisible();
+    const first = settings.getByLabel(variant.firstName, { exact: true });
+    const last = settings.getByLabel(variant.lastName, { exact: true });
+    const submit = settings.getByRole("button", { name: variant.submit });
+    await expect(submit).toBeDisabled();
+    await first.fill("Updated");
+    const birthDate = settings.getByLabel(variant.birthDate);
+    await birthDate.fill("");
     await submit.click();
     await expect(
-      page.getByText(variant.invalidRole, { exact: true }),
-    ).toBeVisible();
-    expect(posts).toBe(0);
-    const driver = page.getByRole("button", {
-      name: variant.driver,
-      exact: true,
-    });
-    await driver.click();
-    await expect(driver).toHaveAttribute("aria-pressed", "true");
-    const birthDate = page.getByLabel(variant.birthDate);
-    await expect(birthDate).toBeVisible();
-    await submit.click();
-    await expect(
-      page.getByText(variant.invalidBirthDate, { exact: true }),
+      settings.getByText(variant.invalidBirthDate, { exact: true }),
     ).toBeVisible();
     expect(posts).toBe(0);
     await birthDate.fill(variant.typedDate);
-    const trigger = page.getByRole("button", { name: variant.openCalendar });
+    const trigger = settings.getByRole("button", { name: variant.openCalendar });
     await trigger.click();
     const calendar = page.getByRole("dialog", { name: variant.openCalendar });
     await expect(
@@ -398,18 +407,54 @@ for (const variant of [
     await expect(calendar).toHaveCount(0);
     await expect(birthDate).toHaveValue(variant.pickedDate);
     await submit.click();
-    await expect(page.getByRole("main").getByRole("alert")).toBeVisible();
+    await expect(settings.getByRole("alert")).toBeVisible();
     await expect(submit).toBeEnabled();
     expect(posts).toBe(1);
-    await expect(first).toHaveValue("Test");
+    await expect(first).toHaveValue("Updated");
     await expect(last).toHaveValue("Driver");
     await expect(birthDate).toHaveValue(variant.pickedDate);
-    await expect(driver).toHaveAttribute("aria-pressed", "true");
     await expect(page).toHaveTitle("MOVARO");
     await expectNoHorizontalOverflow(page);
     await expectAccessible(page);
   });
 }
+
+test("missing email profile never opens obsolete onboarding", async ({
+  page,
+}) => {
+  await page.route("**/api/auth/get-session", (route) =>
+    route.fulfill({
+      json: {
+        user: {
+          id: "incomplete-email",
+          name: "Test User",
+          email: "user@example.test",
+          emailVerified: true,
+        },
+        session: { expiresAt: "2099-01-01T00:00:00Z" },
+      },
+    }),
+  );
+  for (const status of [403, 200]) {
+    await page.route("**/api/auth/profile", (route) => {
+      expect(route.request().method()).toBe("GET");
+      return route.fulfill({
+        status,
+        json: status === 403 ? { code: "AUTH_REQUEST_FAILED" } : null,
+      });
+    });
+    await page.goto("/en/account");
+    await expect(page.getByRole("main").getByRole("alert")).toBeVisible();
+    await expect(page.getByLabel("First name")).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Driver", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Sign out", exact: true }),
+    ).toBeVisible();
+    await page.unroute("**/api/auth/profile");
+  }
+});
 
 test("username settings handle validation, conflicts and server cooldown", async ({
   page,

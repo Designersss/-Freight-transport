@@ -14,7 +14,6 @@ const paths = new Set([
   "account/deactivate",
   "email/change",
   "email/change/confirm",
-  "profile",
   "profile/settings",
   "telegram/registration",
   "telegram/start",
