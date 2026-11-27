@@ -137,7 +137,9 @@ export function ProfileForm({
               disabled={isSubmitting}
               {...register(name)}
             />
-            <FieldError id={`${name}-error`}>{errors[name]?.message}</FieldError>
+            <FieldError id={`${name}-error`}>
+              {errors[name]?.message}
+            </FieldError>
           </Field>
         ))}
         <FieldSet
