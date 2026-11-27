@@ -107,7 +107,8 @@ test("deactivation revokes sessions and preserves the user's identity", async ()
       403,
     );
     assert.equal(
-      (await call(path, { confirm: true, userId: randomUUID() }, cookie)).status,
+      (await call(path, { confirm: true, userId: randomUUID() }, cookie))
+        .status,
       400,
     );
     await pool.query(

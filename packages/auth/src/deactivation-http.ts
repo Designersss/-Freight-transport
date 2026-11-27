@@ -55,11 +55,14 @@ export async function handleDeactivation(
       const upstreamHeaders = new Headers(request.headers);
       upstreamHeaders.delete("content-length");
       const logout = await auth.handler(
-        new Request(new URL(`${AUTH_BASE_PATH}/sign-out`, config.AUTH_BASE_URL), {
-          method: "POST",
-          headers: upstreamHeaders,
-          body: "{}",
-        }),
+        new Request(
+          new URL(`${AUTH_BASE_PATH}/sign-out`, config.AUTH_BASE_URL),
+          {
+            method: "POST",
+            headers: upstreamHeaders,
+            body: "{}",
+          },
+        ),
       );
       if (logout.ok)
         for (const cookie of logout.headers.getSetCookie())

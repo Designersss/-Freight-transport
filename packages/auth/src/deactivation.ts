@@ -24,7 +24,7 @@ export async function deactivateAccount(
       [identity.userId, identity.sessionId, allowTelegram],
     );
     const owner = result.rows[0];
-    if (!owner || !owner.fresh) {
+    if (!owner?.fresh) {
       await client.query("ROLLBACK");
       return owner ? "session-not-fresh" : "denied";
     }

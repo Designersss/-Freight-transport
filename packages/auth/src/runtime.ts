@@ -5,12 +5,12 @@ import { createAdminAuth, handleAdminAuth } from "./admin-auth.js";
 import { AUTH_BASE_PATH, createEmailAuth } from "./auth.js";
 import { cabinetRole, handleCabinet } from "./cabinet-http.js";
 import { type AuthConfig, parseAuthConfig, telegramEnabled } from "./config.js";
-import { handleDeactivation } from "./deactivation-http.js";
 import {
   authBodies as bodies,
   publicSession,
   registrationInput,
 } from "./contracts.js";
+import { handleDeactivation } from "./deactivation-http.js";
 import { handleEmailChange } from "./email-change-http.js";
 import { reserveMailRequest } from "./mail-rate-limit.js";
 import { handleProfile, handleProfileSettings } from "./profile.js";
