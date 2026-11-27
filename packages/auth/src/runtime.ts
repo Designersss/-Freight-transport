@@ -2,7 +2,7 @@ import { PrivateStorage, type StorageConfig } from "@freight/storage";
 import { Pool } from "pg";
 import { eligibleAccount } from "./active-account.js";
 import { AUTH_BASE_PATH, createEmailAuth } from "./auth.js";
-import { type AuthConfig, parseAuthConfig } from "./config.js";
+import { type AuthConfig, parseAuthConfig, telegramEnabled } from "./config.js";
 import {
   authBodies as bodies,
   publicSession,
@@ -72,6 +72,15 @@ export function createAuthHttpRuntime(
         return failure(404, "NOT_FOUND");
       }
       const path = url.pathname.slice(AUTH_BASE_PATH.length);
+      if (path === "/telegram/status") {
+        if (request.method !== "GET")
+          return failure(405, "METHOD_NOT_ALLOWED");
+        if (url.search) return failure(400, "INVALID_REQUEST");
+        return Response.json(
+          { enabled: telegramEnabled(config) },
+          { headers: { "cache-control": "no-store" } },
+        );
+      }
       if (path === "/telegram/start" || path === "/telegram/callback")
         return handleTelegramOAuth(request, config, auth, pool);
       if (path === "/telegram/registration")

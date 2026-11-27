@@ -47,7 +47,7 @@ function validCallback(url: URL): boolean {
     keys.every((key) => callbackKeys.has(key)) &&
     new Set(keys).size === keys.length &&
     Boolean(params.get("state")) &&
-    (Boolean(params.get("code")) !== Boolean(params.get("error"))) &&
+    Boolean(params.get("code")) !== Boolean(params.get("error")) &&
     (!params.has("iss") || params.get("iss") === TELEGRAM_ISSUER)
   );
 }
@@ -69,10 +69,7 @@ export async function handleTelegramOAuth(
   if (!telegramEnabled(config)) return fail(404, "NOT_FOUND");
   const url = new URL(request.url);
   const start = url.pathname === `${AUTH_BASE_PATH}/telegram/start`;
-  if (
-    !start &&
-    url.pathname !== `${AUTH_BASE_PATH}/telegram/callback`
-  )
+  if (!start && url.pathname !== `${AUTH_BASE_PATH}/telegram/callback`)
     return fail(404, "NOT_FOUND");
   if (request.method !== (start ? "POST" : "GET"))
     return fail(405, "METHOD_NOT_ALLOWED");
@@ -90,7 +87,8 @@ export async function handleTelegramOAuth(
         return fail(403, "INVALID_ORIGIN");
       if (
         url.search ||
-        request.headers.get("content-type")?.split(";")[0] !== "application/json"
+        request.headers.get("content-type")?.split(";")[0] !==
+          "application/json"
       )
         return fail(400, "INVALID_REQUEST");
       const parsed = startInput.safeParse(
@@ -108,9 +106,7 @@ export async function handleTelegramOAuth(
     );
     if (retry !== null) {
       headers.set("retry-after", String(retry));
-      return start
-        ? fail(429, "RATE_LIMITED")
-        : redirect(loginError("ru"));
+      return start ? fail(429, "RATE_LIMITED") : redirect(loginError("ru"));
     }
     const upstreamHeaders = new Headers(request.headers);
     upstreamHeaders.delete("content-length");
@@ -121,14 +117,20 @@ export async function handleTelegramOAuth(
     if (payload) {
       const current = await auth.handler(
         new Request(
-          new URL(`${AUTH_BASE_PATH}/get-session?disableRefresh=true`, config.AUTH_BASE_URL),
+          new URL(
+            `${AUTH_BASE_PATH}/get-session?disableRefresh=true`,
+            config.AUTH_BASE_URL,
+          ),
           { headers: upstreamHeaders },
         ),
       );
       if (!current.ok) return fail(503, "AUTH_REQUEST_FAILED");
       if ((await current.json()) !== null)
         return fail(409, "AUTH_REQUEST_FAILED");
-      const account = new URL(`/${payload.locale}/account`, config.AUTH_WEB_ORIGIN).href;
+      const account = new URL(
+        `/${payload.locale}/account`,
+        config.AUTH_WEB_ORIGIN,
+      ).href;
       const response = await auth.handler(
         new Request(upstream, {
           method: "POST",

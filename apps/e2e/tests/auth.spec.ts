@@ -726,3 +726,113 @@ for (const variant of [
     await expectAccessible(page);
   });
 }
+
+test("Telegram controls use server capability and reject untrusted redirects", async ({
+  page,
+}) => {
+  let enabled = false;
+  await page.route("**/api/auth/telegram/status", (route) =>
+    route.fulfill({ json: { enabled } }),
+  );
+  await page.goto("/en/login");
+  await expect(page.getByRole("button", { name: "Sign in with Telegram" })).toHaveCount(0);
+  enabled = true;
+  await page.route("**/api/auth/telegram/start", (route) => {
+    expect(route.request().postDataJSON()).toEqual({
+      intent: "login",
+      locale: "en",
+    });
+    return route.fulfill({ json: { url: "https://untrusted.invalid/auth" } });
+  });
+  await page.reload();
+  await page.getByRole("button", { name: "Sign in with Telegram" }).click();
+  await expect(page.getByRole("alert")).toHaveText(
+    "Unable to sign in with Telegram. Try again.",
+  );
+  await expect(page).toHaveURL(/\/en\/login$/);
+  await page.goto("/ru/signup");
+  await expect(
+    page.getByRole("button", { name: "Регистрация через Telegram" }),
+  ).toBeVisible();
+  await expectAccessible(page);
+});
+
+test("Telegram onboarding reuses role, profile and username steps without credentials", async ({
+  page,
+}) => {
+  let completed = false;
+  const profile = {
+    firstName: "Test",
+    lastName: "Driver",
+    role: "DRIVER",
+    birthDate: "1998-05-15",
+    companyName: null,
+  };
+  await page.route("**/api/auth/get-session", (route) =>
+    route.fulfill({
+      json: {
+        user: {
+          id: "telegram-user",
+          name: "Test Driver",
+          email: null,
+          emailVerified: false,
+        },
+        session: { expiresAt: "2099-01-01T00:00:00Z" },
+      },
+    }),
+  );
+  await page.route("**/api/auth/profile", (route) =>
+    route.fulfill({ json: completed ? profile : null }),
+  );
+  await page.route("**/api/auth/username", (route) =>
+    route.fulfill({
+      json:
+        route.request().postDataJSON().action === "suggest"
+          ? { username: "test_driver" }
+          : { available: true },
+    }),
+  );
+  await page.route("**/api/auth/telegram/registration", (route) => {
+    expect(route.request().postDataJSON()).toEqual({
+      profile: {
+        firstName: "Test",
+        lastName: "Driver",
+        role: "DRIVER",
+        birthDate: "1998-05-15",
+      },
+      username: "test_driver",
+    });
+    completed = true;
+    return route.fulfill({ json: { success: true } });
+  });
+  await page.route("**/api/auth/profile/photo", (route) =>
+    route.fulfill({ status: 404, json: { code: "NOT_FOUND" } }),
+  );
+  await page.route("**/api/auth/username/settings", (route) =>
+    route.fulfill({ json: { username: "test_driver", nextChangeAt: null } }),
+  );
+  await page.route("**/api/auth/sessions", (route) =>
+    route.fulfill({ json: { sessions: [], hasMore: false } }),
+  );
+  await page.goto("/en/account");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Choose your role",
+  );
+  await expect(page.getByLabel("Email address")).toHaveCount(0);
+  await expect(page.getByLabel("Password", { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Driver", exact: true }).click();
+  await page.getByLabel("First name").fill("Test");
+  await page.getByLabel("Last name").fill("Driver");
+  await page.getByLabel("Date of birth").fill("05/15/1998");
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page.getByLabel("Username", { exact: true })).toHaveValue(
+    "test_driver",
+  );
+  await expectAccessible(page);
+  await expectNoHorizontalOverflow(page);
+  await page.getByRole("button", { name: "Complete registration" }).click();
+  await expect(page.getByText("Telegram account", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Current password")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/en\/account$/);
+});

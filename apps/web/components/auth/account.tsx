@@ -12,6 +12,7 @@ import { ProfileForm } from "./profile-form";
 import { ProfilePhotoSettings } from "./profile-photo-settings";
 import { ProfileSettings } from "./profile-settings";
 import { SessionSettings } from "./session-settings";
+import { SignupWizard } from "./signup-wizard";
 import { UsernameSettings } from "./username-settings";
 
 export function Account({ locale }: { locale: Locale }) {
@@ -44,7 +45,7 @@ export function Account({ locale }: { locale: Locale }) {
           return;
         }
         const current = publicSession.parse(data);
-        if (!current.user.emailVerified) {
+        if (current.user.email !== null && !current.user.emailVerified) {
           router.replace("/email-confirmation", { locale });
           return;
         }
@@ -94,6 +95,18 @@ export function Account({ locale }: { locale: Locale }) {
     }
   }
   const needsProfile = session && profileLoaded && !profile;
+  const telegramOnly = session?.user.email === null;
+  if (needsProfile && telegramOnly) {
+    return (
+      <SignupWizard
+        locale={locale}
+        telegram
+        onLogout={logout}
+        logoutBusy={busy}
+        logoutError={error}
+      />
+    );
+  }
   return (
     <AuthPanel
       title={needsProfile ? t.profileTitle : t.accountTitle}
@@ -122,7 +135,9 @@ export function Account({ locale }: { locale: Locale }) {
               <p className="font-semibold">
                 {profile.firstName} {profile.lastName}
               </p>
-              <p className="text-muted-foreground">{session.user.email}</p>
+              <p className="text-muted-foreground">
+                {session.user.email ?? t.telegramIdentity}
+              </p>
               <p className="mt-2 text-sm">{t.roles[profile.role]}</p>
             </div>
           )}
@@ -145,10 +160,12 @@ export function Account({ locale }: { locale: Locale }) {
           {profileLoaded && profile && <UsernameSettings locale={locale} />}
           {profileLoaded && profile && (
             <>
-              <PasswordSettings
-                locale={locale}
-                onChanged={() => setSessionRevision((value) => value + 1)}
-              />
+              {!telegramOnly && (
+                <PasswordSettings
+                  locale={locale}
+                  onChanged={() => setSessionRevision((value) => value + 1)}
+                />
+              )}
               <SessionSettings key={sessionRevision} locale={locale} />
             </>
           )}

@@ -20,6 +20,7 @@ import { Link, useRouter } from "@freight/ui/navigation";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AuthPanel } from "./auth-panel";
+import { TelegramButton } from "./telegram-button";
 
 export type AuthMode = "login" | "forgot" | "reset" | "verification";
 type Values = {
@@ -40,16 +41,19 @@ export function AuthForm({
   token = "",
   invalid = false,
   completed = false,
+  telegramError = false,
 }: {
   mode: AuthMode;
   locale: Locale;
   token?: string;
   invalid?: boolean;
   completed?: boolean;
+  telegramError?: boolean;
 }) {
   const t = messages[locale].auth;
   const router = useRouter();
   const [notice, setNotice] = useState("");
+  const [telegramPending, setTelegramPending] = useState(false);
   const inFlight = useRef(false);
   const [failure, setFailure] = useState("");
   const {
@@ -109,7 +113,7 @@ export function AuthForm({
     });
 
   async function submit(values: Values) {
-    if (inFlight.current) return;
+    if (inFlight.current || telegramPending) return;
     setFailure("");
     setNotice("");
     const payload = {
@@ -196,6 +200,11 @@ export function AuthForm({
 
   return (
     <AuthPanel title={title} description={description}>
+      {telegramError && mode === "login" && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{t.telegramError}</AlertDescription>
+        </Alert>
+      )}
       {completed && mode === "login" && (
         <p role="status" className="mb-4 text-primary">
           {t.verifiedDone}
@@ -237,7 +246,7 @@ export function AuthForm({
                   aria-describedby={
                     errors[field.name] ? `${field.name}-error` : undefined
                   }
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || telegramPending}
                   {...register(field.name)}
                 />
                 <FieldError id={`${field.name}-error`}>
@@ -276,11 +285,19 @@ export function AuthForm({
             type="submit"
             size="lg"
             className="w-full"
-            disabled={isSubmitting}
+            disabled={isSubmitting || telegramPending}
           >
             {isSubmitting ? t.submitting : action}
           </Button>
         </form>
+      )}
+      {mode === "login" && (
+        <TelegramButton
+          locale={locale}
+          intent="login"
+          disabled={isSubmitting}
+          onPendingChange={setTelegramPending}
+        />
       )}
       <div className="mt-5 flex flex-col gap-2 text-center text-muted-foreground">
         {mode === "login" ? (

@@ -71,9 +71,13 @@ export async function forwardAuth(
     : method === "POST"
       ? paths.has(path)
       : method === "GET" &&
-        ["get-session", "profile", "username/settings", "sessions"].includes(
-          path,
-        );
+        [
+          "get-session",
+          "profile",
+          "username/settings",
+          "sessions",
+          "telegram/status",
+        ].includes(path);
   if (!allowed && !callback) return authFailure(404);
   const query = new URL(request.url).search;
   if ((!callback && query) || query.length > 8192) return authFailure(400);

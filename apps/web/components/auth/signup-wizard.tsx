@@ -4,6 +4,7 @@ import {
   authBodies,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
+  registrationInput,
   usernameInput,
 } from "@freight/auth/contracts";
 import { type Locale, messages } from "@freight/i18n";
@@ -31,6 +32,8 @@ import {
   validateProfile,
 } from "./profile-fields";
 
+import { TelegramButton } from "./telegram-button";
+
 type Credentials = { email: string; password: string };
 type UsernameValues = { username: string };
 type Step = "credentials" | "role" | "profile" | "username";
@@ -39,7 +42,8 @@ type Availability = {
   status: "available" | "taken" | "error";
 };
 
-const steps: Step[] = ["credentials", "role", "profile", "username"];
+const emailSteps: Step[] = ["credentials", "role", "profile", "username"];
+const telegramSteps: Step[] = ["role", "profile", "username"];
 const suggestionResponse = z.object({ username: usernameInput });
 const availabilityResponse = z.object({ available: z.boolean() });
 const successResponse = z.object({ success: z.literal(true) });
@@ -57,10 +61,24 @@ function post(path: string, data: unknown, signal?: AbortSignal) {
   });
 }
 
-export function SignupWizard({ locale }: { locale: Locale }) {
+export function SignupWizard({
+  locale,
+  telegram = false,
+  onLogout,
+  logoutBusy = false,
+  logoutError = false,
+}: {
+  locale: Locale;
+  telegram?: boolean;
+  onLogout?: () => void;
+  logoutBusy?: boolean;
+  logoutError?: boolean;
+}) {
   const t = messages[locale].auth;
   const router = useRouter();
-  const [step, setStep] = useState<Step>("credentials");
+  const [step, setStep] = useState<Step>(telegram ? "role" : "credentials");
+  const [telegramPending, setTelegramPending] = useState(false);
+  const steps = telegram ? telegramSteps : emailSteps;
   const [failure, setFailure] = useState("");
   const [availability, setAvailability] = useState<Availability | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -85,7 +103,9 @@ export function SignupWizard({ locale }: { locale: Locale }) {
   const busy =
     credentials.formState.isSubmitting ||
     profile.formState.isSubmitting ||
-    names.formState.isSubmitting;
+    names.formState.isSubmitting ||
+    telegramPending ||
+    logoutBusy;
   const status =
     canonical && availability?.username === canonical
       ? availability.status
@@ -161,7 +181,7 @@ export function SignupWizard({ locale }: { locale: Locale }) {
   }
 
   function advanceCredentials(values: Credentials) {
-    if (validateCredentials(values)) go("role");
+    if (!telegramPending && validateCredentials(values)) go("role");
   }
 
   async function advanceProfile(values: ProfileValues) {
@@ -209,28 +229,36 @@ export function SignupWizard({ locale }: { locale: Locale }) {
       );
       return;
     }
-    const account = validateCredentials(credentials.getValues());
-    if (!account) {
-      go("credentials");
-      return;
-    }
     const details = validateProfile(profile.getValues(), locale, profile);
     if (!details) {
       go("profile");
       return;
     }
-    const payload = authBodies["/sign-up/email"].safeParse({
-      ...account,
-      locale,
-      registration: { profile: details, username: name.data },
-    });
+    const registration = { profile: details, username: name.data };
+    const account = telegram
+      ? null
+      : validateCredentials(credentials.getValues());
+    if (!telegram && !account) {
+      go("credentials");
+      return;
+    }
+    const payload = telegram
+      ? registrationInput.safeParse(registration)
+      : authBodies["/sign-up/email"].safeParse({
+          ...account,
+          locale,
+          registration,
+        });
     if (!payload.success) {
       setFailure(t.error);
       return;
     }
     inFlight.current = true;
     try {
-      const response = await post("sign-up/email", payload.data);
+      const response = await post(
+        telegram ? "telegram/registration" : "sign-up/email",
+        payload.data,
+      );
       const data: unknown = await response.json().catch(() => null);
       const error = errorResponse.safeParse(data);
       if (
@@ -247,8 +275,14 @@ export function SignupWizard({ locale }: { locale: Locale }) {
         return;
       }
       if (!response.ok || !successResponse.safeParse(data).success) {
-        credentials.resetField("password");
-        setStep("credentials");
+        if (telegram && response.status === 401) {
+          router.replace("/login", { locale });
+          return;
+        }
+        if (!telegram) {
+          credentials.resetField("password");
+          setStep("credentials");
+        }
         setFailure(
           response.status === 429
             ? t.limited
@@ -258,11 +292,17 @@ export function SignupWizard({ locale }: { locale: Locale }) {
         );
         return;
       }
+      if (telegram) {
+        window.location.reload();
+        return;
+      }
       credentials.resetField("password");
       router.replace("/email-confirmation", { locale });
     } catch {
-      credentials.resetField("password");
-      setStep("credentials");
+      if (!telegram) {
+        credentials.resetField("password");
+        setStep("credentials");
+      }
       setFailure(t.unavailable);
     } finally {
       inFlight.current = false;
@@ -272,7 +312,7 @@ export function SignupWizard({ locale }: { locale: Locale }) {
   function back() {
     if (step === "username") go("profile");
     else if (step === "profile") go("role");
-    else if (step === "role") go("credentials");
+    else if (step === "role" && !telegram) go("credentials");
   }
 
   return (
@@ -281,7 +321,10 @@ export function SignupWizard({ locale }: { locale: Locale }) {
         <p className="text-xs text-muted-foreground" role="status">
           {t.signupStep} {stepIndex} {t.signupOf} {steps.length}
         </p>
-        <div className="grid grid-cols-4 gap-1" aria-hidden="true">
+        <div
+          className={telegram ? "grid grid-cols-3 gap-1" : "grid grid-cols-4 gap-1"}
+          aria-hidden="true"
+        >
           {steps.map((value, index) => (
             <span
               key={value}
@@ -431,7 +474,11 @@ export function SignupWizard({ locale }: { locale: Locale }) {
               <FieldError id="username-error">{usernameError}</FieldError>
             </Field>
             <Button type="submit" size="lg" disabled={busy}>
-              {busy ? t.submitting : t.signupAction}
+              {busy
+                ? t.submitting
+                : telegram
+                  ? t.completeProfile
+                  : t.signupAction}
             </Button>
           </form>
         )}
@@ -441,7 +488,15 @@ export function SignupWizard({ locale }: { locale: Locale }) {
           <AlertDescription>{failure}</AlertDescription>
         </Alert>
       )}
-      {step !== "credentials" && (
+      {!telegram && step === "credentials" && (
+        <TelegramButton
+          locale={locale}
+          intent="register"
+          disabled={credentials.formState.isSubmitting}
+          onPendingChange={setTelegramPending}
+        />
+      )}
+      {stepIndex > 1 && (
         <Button
           className="mt-3 w-full"
           variant="ghost"
@@ -451,14 +506,27 @@ export function SignupWizard({ locale }: { locale: Locale }) {
           {t.back}
         </Button>
       )}
-      <div className="mt-5 text-center">
-        <Link
-          className="font-semibold text-primary hover:underline"
-          href="/login"
-        >
-          {t.backLogin}
-        </Link>
-      </div>
+      {telegram ? (
+        <div className="mt-5 flex flex-col gap-2">
+          {logoutError && (
+            <Alert variant="destructive">
+              <AlertDescription>{t.unavailable}</AlertDescription>
+            </Alert>
+          )}
+          <Button variant="outline" disabled={busy} onClick={onLogout}>
+            {t.logout}
+          </Button>
+        </div>
+      ) : (
+        <div className="mt-5 text-center">
+          <Link
+            className="font-semibold text-primary hover:underline"
+            href="/login"
+          >
+            {t.backLogin}
+          </Link>
+        </div>
+      )}
     </AuthPanel>
   );
 }

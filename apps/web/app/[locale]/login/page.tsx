@@ -18,6 +18,7 @@ export default async function Page({
       locale={locale}
       invalid={Boolean(query.error)}
       completed={query.verified === "done"}
+      telegramError={query.telegram === "error"}
     />
   );
 }

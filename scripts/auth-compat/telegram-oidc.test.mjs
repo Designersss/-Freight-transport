@@ -195,7 +195,10 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
   }
   async function reject(flow, state) {
     const result = await callback(flow, state);
-    assert.match(result.headers.get("location") ?? "", /\/login\?telegram=error$/);
+    assert.match(
+      result.headers.get("location") ?? "",
+      /\/login\?telegram=error$/,
+    );
     assert.equal(await session(result), null);
   }
 
