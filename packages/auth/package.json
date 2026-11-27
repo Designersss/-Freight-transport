@@ -25,7 +25,7 @@
     "build": "tsc -p tsconfig.build.json",
     "admin:create": "node dist/admin-cli.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --experimental-strip-types --test src/config.test.ts src/proxy-ip.test.ts"
+    "test": "node --experimental-strip-types --test src/config.test.ts src/proxy-ip.test.ts src/registration-email-token.test.ts"
   },
   "dependencies": {
     "@freight/config": "workspace:*",

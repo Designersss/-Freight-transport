@@ -137,6 +137,16 @@ model PendingEmailChange {
   @@map("pending_email_change")
 }
 
+// Proof of mailbox ownership before any credential account is created.
+model RegistrationEmailProof {
+  tokenHash String   @id @map("token_hash")
+  email     String
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+
+  @@index([expiresAt], map: "registration_email_proofs_expiry_idx")
+  @@map("registration_email_proofs")
+}
+
 model Verification {
   id         String   @id
   identifier String
