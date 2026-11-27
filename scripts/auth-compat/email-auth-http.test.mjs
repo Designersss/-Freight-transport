@@ -735,6 +735,76 @@ test("registration draft survives verification and reserves one username", async
     const afterCooldown = await change(username);
     assert.equal(afterCooldown.status, 200);
     assert.equal((await afterCooldown.json()).username, username);
+    const sessionsPath = "/sessions";
+    const listSessions = () => call(sessionsPath, undefined, cookie);
+    assert.equal((await call(sessionsPath)).status, 401);
+    assert.equal(
+      (await call(sessionsPath, { action: "revokeOthers" })).status,
+      401,
+    );
+    const listed = await listSessions();
+    assert.equal(listed.status, 200);
+    const active = await listed.json();
+    assert.equal(active.hasMore, false);
+    assert.equal(active.sessions.length, 3);
+    assert.equal(active.sessions[0].current, true);
+    for (const entry of active.sessions) {
+      assert.deepEqual(Object.keys(entry).sort(), [
+        "createdAt",
+        "current",
+        "expiresAt",
+        "id",
+        "userAgent",
+      ]);
+      assert.ok(Date.parse(entry.expiresAt) > Date.now());
+    }
+    const currentId = active.sessions[0].id;
+    const currentRevoke = await call(
+      sessionsPath,
+      { action: "revoke", id: currentId },
+      cookie,
+    );
+    assert.equal(currentRevoke.status, 409);
+    assert.equal(
+      (
+        await call(
+          sessionsPath,
+          { action: "revoke", id: "missing-session" },
+          cookie,
+        )
+      ).status,
+      404,
+    );
+    assert.equal(
+      (
+        await call(
+          sessionsPath,
+          { action: "revokeOthers", userId: user.id },
+          cookie,
+        )
+      ).status,
+      400,
+    );
+    const thirdCookie = relogin.headers
+      .getSetCookie()
+      .map((value) => value.split(";")[0])
+      .join("; ");
+    const thirdList = await call(sessionsPath, undefined, thirdCookie);
+    assert.equal(thirdList.status, 200);
+    const thirdId = (await thirdList.json()).sessions[0].id;
+    assert.notEqual(thirdId, currentId);
+    const ended = await call(
+      sessionsPath,
+      { action: "revoke", id: thirdId },
+      cookie,
+    );
+    assert.equal(ended.status, 200);
+    assert.deepEqual(await ended.json(), { success: true });
+    const thirdRevoked = await call("/get-session", undefined, thirdCookie);
+    assert.equal(thirdRevoked.status, 200);
+    assert.equal(await thirdRevoked.json(), null);
+    assert.equal((await (await listSessions()).json()).sessions.length, 2);
+
     const retained = await call("/profile", undefined, cookie);
     assert.deepEqual(await retained.json(), profile);
     assert.equal((await profileRows()).rowCount, 1);
@@ -745,6 +815,11 @@ test("registration draft survives verification and reserves one username", async
     );
     assert.equal((await getSettings()).status, 403);
     assert.equal((await change(username)).status, 403);
+    assert.equal((await listSessions()).status, 403);
+    assert.equal(
+      (await call(sessionsPath, { action: "revokeOthers" }, cookie)).status,
+      403,
+    );
     const replacementPassword = randomBytes(24).toString("hex");
     const passwordChange = {
       currentPassword: password,
@@ -794,6 +869,30 @@ test("registration draft survives verification and reserves one username", async
       (await call("/profile", undefined, rotatedCookie)).status,
       200,
     );
+    const extraLogin = await call(
+      "/sign-in/email",
+      { ...credentials, password: replacementPassword },
+      undefined,
+      "192.0.2.56",
+    );
+    assert.equal(extraLogin.status, 200);
+    const extraCookie = extraLogin.headers
+      .getSetCookie()
+      .map((value) => value.split(";")[0])
+      .join("; ");
+    const bulk = await call(
+      sessionsPath,
+      { action: "revokeOthers" },
+      rotatedCookie,
+    );
+    assert.equal(bulk.status, 200);
+    assert.deepEqual(await bulk.json(), { success: true });
+    const remaining = await call(sessionsPath, undefined, rotatedCookie);
+    assert.equal(remaining.status, 200);
+    assert.equal((await remaining.json()).sessions.length, 1);
+    const extraRevoked = await call("/get-session", undefined, extraCookie);
+    assert.equal(extraRevoked.status, 200);
+    assert.equal(await extraRevoked.json(), null);
     assert.equal((await call("/sign-out", {}, rotatedCookie)).status, 200);
     assert.equal((await getSettings()).status, 401);
     const oldLogin = await call(

@@ -9,6 +9,7 @@ import type { z } from "zod";
 import { AuthPanel } from "./auth-panel";
 import { PasswordSettings } from "./password-settings";
 import { ProfileForm } from "./profile-form";
+import { SessionSettings } from "./session-settings";
 import { UsernameSettings } from "./username-settings";
 
 export function Account({ locale }: { locale: Locale }) {
@@ -24,6 +25,7 @@ export function Account({ locale }: { locale: Locale }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [sessionRevision, setSessionRevision] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
@@ -123,7 +125,15 @@ export function Account({ locale }: { locale: Locale }) {
             </div>
           )}
           {profileLoaded && profile && <UsernameSettings locale={locale} />}
-          {profileLoaded && profile && <PasswordSettings locale={locale} />}
+          {profileLoaded && profile && (
+            <>
+              <PasswordSettings
+                locale={locale}
+                onChanged={() => setSessionRevision((value) => value + 1)}
+              />
+              <SessionSettings key={sessionRevision} locale={locale} />
+            </>
+          )}
           <Button disabled={busy || loading} onClick={logout} variant="outline">
             {t.logout}
           </Button>

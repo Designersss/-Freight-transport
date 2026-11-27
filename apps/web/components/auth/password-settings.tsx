@@ -37,7 +37,13 @@ const emptyValues: Values = {
 const successResponse = z.object({ success: z.literal(true) });
 const errorResponse = z.object({ code: z.string() });
 
-export function PasswordSettings({ locale }: { locale: Locale }) {
+export function PasswordSettings({
+  locale,
+  onChanged,
+}: {
+  locale: Locale;
+  onChanged: () => void;
+}) {
   const t = messages[locale].auth;
   const router = useRouter();
   const [failure, setFailure] = useState("");
@@ -118,6 +124,7 @@ export function PasswordSettings({ locale }: { locale: Locale }) {
         return;
       }
       setSaved(true);
+      onChanged();
     } catch {
       setFailure(t.unavailable);
     } finally {

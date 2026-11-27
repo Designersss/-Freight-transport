@@ -60,6 +60,26 @@ export const usernameInput = z
   .transform((value) => value.toLowerCase())
   .refine((value) => !["admin", "support", "movaro"].includes(value));
 
+const sessionId = z.string().min(1).max(128);
+
+export const sessionAction = z.discriminatedUnion("action", [
+  z.strictObject({ action: z.literal("revoke"), id: sessionId }),
+  z.strictObject({ action: z.literal("revokeOthers") }),
+]);
+
+export const publicActiveSessions = z.object({
+  sessions: z.array(
+    z.object({
+      id: sessionId,
+      current: z.boolean(),
+      createdAt: z.iso.datetime(),
+      expiresAt: z.iso.datetime(),
+      userAgent: z.string().max(256).nullable(),
+    }),
+  ),
+  hasMore: z.boolean(),
+});
+
 export const usernameChangeInput = z.strictObject({ username: usernameInput });
 
 export const publicUsernameSettings = z.object({

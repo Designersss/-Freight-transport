@@ -421,6 +421,34 @@ test("username settings handle validation, conflicts and server cooldown", async
     };
     return route.fulfill({ json: current });
   });
+  const currentSession = {
+    id: "current-session",
+    current: true,
+    createdAt: "2026-01-01T12:00:00Z",
+    expiresAt: "2099-01-01T12:00:00Z",
+    userAgent: "Current browser",
+  };
+  const otherSession = {
+    ...currentSession,
+    id: "other-session",
+    current: false,
+    userAgent: "Other browser",
+  };
+  let activeSessions = [currentSession, otherSession];
+  let revocations = 0;
+  await page.route("**/api/auth/sessions", (route) => {
+    if (route.request().method() === "GET")
+      return route.fulfill({
+        json: { sessions: activeSessions, hasMore: false },
+      });
+    revocations++;
+    expect(route.request().postDataJSON()).toEqual({
+      action: "revoke",
+      id: "other-session",
+    });
+    activeSessions = [currentSession];
+    return route.fulfill({ json: { success: true } });
+  });
   await page.goto("/en/account");
   await page.getByRole("button", { name: "Light theme" }).click();
   const username = page.getByLabel("Username", { exact: true });
@@ -448,6 +476,22 @@ test("username settings handle validation, conflicts and server cooldown", async
   await expect(username).toHaveValue("new_driver");
   await expect(username).toHaveAttribute("readonly", "");
   expect(posts).toBe(2);
+  await expect(
+    page.getByText("Current session", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Other browser")).toBeVisible();
+  const endSession = page.getByRole("button", {
+    name: "End session",
+    exact: true,
+  });
+  await endSession.click();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  expect(revocations).toBe(0);
+  await endSession.click();
+  await page.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(page.getByText("Sessions updated.")).toBeVisible();
+  await expect(page.getByText("Other browser")).toHaveCount(0);
+  expect(revocations).toBe(1);
   let passwordPosts = 0;
   await page.route("**/api/auth/change-password", (route) => {
     passwordPosts++;

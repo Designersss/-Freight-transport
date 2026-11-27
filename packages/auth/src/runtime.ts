@@ -1,4 +1,5 @@
 import { Pool } from "pg";
+import { eligibleAccount } from "./active-account.js";
 import { AUTH_BASE_PATH, createEmailAuth } from "./auth.js";
 import { type AuthConfig, parseAuthConfig } from "./config.js";
 import {
@@ -10,6 +11,7 @@ import { isDeliverableEmail } from "./email.js";
 import { reserveMailRequest } from "./mail-rate-limit.js";
 import { handleProfile } from "./profile.js";
 import { completeRegistration, usernameOwner } from "./registration.js";
+import { handleSessionSettings } from "./session-settings.js";
 import { createSmtpMailer } from "./smtp-mailer.js";
 import { handleUsername } from "./username.js";
 import { handleUsernameSettings } from "./username-settings.js";
@@ -54,6 +56,8 @@ export function createAuthHttpRuntime(
         return failure(404, "NOT_FOUND");
       }
       const path = url.pathname.slice(AUTH_BASE_PATH.length);
+      if (path === "/sessions")
+        return handleSessionSettings(request, config, auth, pool);
       if (path === "/profile")
         return handleProfile(request, config, auth, pool);
       if (path === "/username") return handleUsername(request, config, pool);
@@ -174,12 +178,8 @@ export function createAuthHttpRuntime(
           );
           if (session instanceof Response) return session;
           const eligible = await pool.query(
-            `SELECT p.user_id FROM user_profiles p
-             JOIN "user" u ON u.id = p.user_id
-             WHERE p.user_id = $1 AND p.status = 'ACTIVE'
-               AND p.role <> 'PLATFORM_ADMIN' AND u."emailVerified" = true
-               AND u."registrationDraft" IS NULL`,
-            [session.user.id],
+            `SELECT u.id ${eligibleAccount}`,
+            [session.user.id, session.session.id],
           );
           if (!eligible.rowCount) return failure(403, "AUTH_REQUEST_FAILED");
         }
