@@ -69,6 +69,35 @@ export function reserveMailRequest(
   return reserveBuckets(pool, buckets, "mail");
 }
 
+// Charge structurally valid proof attempts before any proof lookup or
+// password hashing. Keep confirmation admission separate from SMTP quotas.
+export function reserveRegistrationRequest(
+  pool: Pool,
+  secret: string,
+  action: "read" | "complete",
+  ip: string | null,
+): Promise<number | null> {
+  const digest = createHmac("sha256", secret)
+    .update(rateLimitClient(ip))
+    .digest("hex");
+  return reserveBuckets(
+    pool,
+    [
+      {
+        key: `registration:${action}:global`,
+        seconds: 60,
+        max: action === "read" ? 600 : 120,
+      },
+      {
+        key: `registration:${action}:ip:${digest}`,
+        seconds: 60,
+        max: action === "read" ? 60 : 10,
+      },
+    ],
+    "registration",
+  );
+}
+
 // Public username checks never consume the email delivery budget.
 export function reserveUsernameRequest(
   pool: Pool,
@@ -156,7 +185,13 @@ export function reserveEmailChangeRequest(
 async function reserveBuckets(
   pool: Pool,
   buckets: Bucket[],
-  scope: "mail" | "username" | "photo" | "telegram" | "email-change",
+  scope:
+    | "mail"
+    | "username"
+    | "photo"
+    | "telegram"
+    | "email-change"
+    | "registration",
 ): Promise<number | null> {
   const client = await pool.connect();
   try {
@@ -187,7 +222,7 @@ async function reserveBuckets(
     }
     // Global buckets serialize admitted requests, and expired state is bounded.
     await client.query(
-      "DELETE FROM auth_mail_rate_limits WHERE expires_at <= now() AND CASE WHEN key LIKE 'username:%' THEN 'username' WHEN key LIKE 'photo:%' THEN 'photo' WHEN key LIKE 'telegram:%' THEN 'telegram' WHEN key LIKE 'email-change:%' THEN 'email-change' ELSE 'mail' END = $1",
+      "DELETE FROM auth_mail_rate_limits WHERE expires_at <= now() AND CASE WHEN key LIKE 'username:%' THEN 'username' WHEN key LIKE 'photo:%' THEN 'photo' WHEN key LIKE 'telegram:%' THEN 'telegram' WHEN key LIKE 'email-change:%' THEN 'email-change' WHEN key LIKE 'registration:%' THEN 'registration' ELSE 'mail' END = $1",
       [scope],
     );
     await client.query("COMMIT");

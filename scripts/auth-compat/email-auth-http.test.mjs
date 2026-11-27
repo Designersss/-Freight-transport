@@ -5,6 +5,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import pg from "pg";
 import { parseApiConfig } from "../../apps/api/dist/config/api-config.js";
 import { createApp } from "../../apps/api/dist/create-app.js";
+import { issueRegistrationEmailProof } from "../../packages/auth/dist/registration-email-proof.js";
 import {
   createAuthHttpRuntime,
   parseAuthConfig,
@@ -23,10 +24,10 @@ async function mailLink(mailOrigin, email, fragment) {
     });
     assert.equal(list.status, 200);
     const { messages } = await list.json();
-    const entry = messages.find((message) =>
+    const entries = messages.filter((message) =>
       message.To.some((to) => to.Address === email),
     );
-    if (entry) {
+    for (const entry of entries) {
       const detail = `${mailOrigin}/api/v1/message/${entry.ID}`;
       const message = await fetch(detail, {
         signal: AbortSignal.timeout(3000),
@@ -101,7 +102,8 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       birthDate: "1998-05-15",
     };
     const signup = {
-      ...creds,
+      token: "a".repeat(43),
+      password,
       registration: {
         profile,
         username: `driver_${randomBytes(8).toString("hex")}`,
@@ -126,7 +128,10 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       { ...signup, registration: { profile } },
       { ...signup, registration: { username: signup.registration.username } },
     ]) {
-      assert.equal((await post("/sign-up/email", invalid)).statusCode, 400);
+      assert.equal(
+        (await post("/registration/email/complete", invalid)).statusCode,
+        400,
+      );
     }
     const beforeSignup = await pool.query(
       'SELECT id FROM "user" WHERE email = $1',
@@ -141,7 +146,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       );
       assert.equal(
         (
-          await post("/sign-up/email", {
+          await post("/registration/email/complete", {
             ...signup,
             password: invalidPassword,
           })
@@ -156,7 +161,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     );
     assert.equal(
       (
-        await post("/sign-up/email", {
+        await post("/registration/email/complete", {
           ...signup,
           role: "PLATFORM_ADMIN",
         })
@@ -165,8 +170,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     );
     assert.equal(
       (
-        await post("/sign-up/email", {
-          ...signup,
+        await post("/registration/email/start", {
           email: "someone@telegram.invalid",
         })
       ).statusCode,
@@ -174,7 +178,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     );
     assert.equal(
       (
-        await post("/sign-up/email", signup, {
+        await post("/registration/email/complete", signup, {
           origin: "https://untrusted.invalid",
         })
       ).statusCode,
@@ -184,13 +188,16 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       (await post("/update-user", { role: "PLATFORM_ADMIN" })).statusCode,
       404,
     );
-    assert.equal((await post("/sign-up/email", signup)).statusCode, 200);
+    assert.equal(
+      (await post("/registration/email/start", { email })).statusCode,
+      200,
+    );
     const unverified = await post("/sign-in/email", creds);
-    assert.equal(unverified.statusCode, 403);
-    assert.equal(unverified.json().code, "EMAIL_NOT_VERIFIED");
+    assert.equal(unverified.statusCode, 401);
+    assert.equal(unverified.json().code, "INVALID_CREDENTIALS");
     assert.equal(unverified.headers["set-cookie"], undefined);
     assert.equal((await get(`${base}/profile`)).statusCode, 401);
-    const blockedMail = await post("/send-verification-email", {
+    const blockedMail = await post("/registration/email/start", {
       email: email.toUpperCase(),
     });
     assert.equal(blockedMail.statusCode, 429);
@@ -200,7 +207,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       Array.from({ length: 5 }, (_, i) =>
         fastify.inject({
           method: "POST",
-          url: `${base}/send-verification-email`,
+          url: `${base}/registration/email/start`,
           remoteAddress: `192.0.2.${i + 1}`,
           headers: {
             origin: webOrigin,
@@ -218,14 +225,27 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       simultaneous.filter((result) => result.statusCode === 429).length,
       4,
     );
-    const verification = await mailLink(mailOrigin, email, "/verify-email?");
-    const verified = await get(verification.pathname + verification.search);
-    assert.equal(verified.statusCode, 302);
-    assert.equal(
-      verified.headers.location,
-      `${webOrigin}/ru/login?verified=done`,
+    const verification = await mailLink(mailOrigin, email, "/signup#token=");
+    assert.equal(verification.origin, webOrigin);
+    assert.equal(verification.pathname, "/ru/signup");
+    assert.equal(verification.search, "");
+    const proof = new URLSearchParams(verification.hash.slice(1)).get("token");
+    assert.ok(proof);
+    const readProof = await post("/registration/email/read", { token: proof });
+    assert.equal(readProof.statusCode, 200);
+    assert.deepEqual(readProof.json(), { email });
+    assert.equal(readProof.headers["set-cookie"], undefined);
+    const pending = await pool.query(
+      'SELECT id FROM "user" WHERE email = $1',
+      [email],
     );
-    assert.equal(verified.headers["set-cookie"], undefined);
+    assert.equal(pending.rowCount, 0);
+    const complete = await post("/registration/email/complete", {
+      ...signup,
+      token: proof,
+    });
+    assert.equal(complete.statusCode, 200);
+    assert.equal(complete.headers["set-cookie"], undefined);
     assert.equal((await get(`${base}/get-session`)).json(), null);
     const login = await post("/sign-in/email", creds);
     assert.equal(login.statusCode, 200);
@@ -618,15 +638,12 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
   }
 });
 
-test("registration draft survives verification and reserves one username", async () => {
+test("verified registration atomically claims one username", async () => {
   const databaseUrl = process.env.AUTH_COMPAT_DATABASE_URL;
   assert.ok(databaseUrl);
   const target = new URL(databaseUrl);
   assert.equal(target.hostname, "127.0.0.1");
   assert.equal(target.pathname, "/freight_auth_compat");
-  const mailPort = Number(process.env.AUTH_COMPAT_MAILPIT_PORT);
-  assert.ok(Number.isInteger(mailPort) && mailPort > 0);
-  const mailOrigin = `http://127.0.0.1:${mailPort}`;
   const email = `${randomBytes(12).toString("hex")}@example.test`;
   const otherEmail = `${randomBytes(12).toString("hex")}@example.test`;
   const password = randomBytes(24).toString("hex");
@@ -664,8 +681,10 @@ test("registration draft survives verification and reserves one username", async
       }),
     );
   const registration = { profile, username };
-  const signup = { email, password, registration };
   try {
+    const token = await issueRegistrationEmailProof(pool, email);
+    const otherToken = await issueRegistrationEmailProof(pool, otherEmail);
+    const signup = { token, password, registration };
     for (const invalid of [
       { ...registration, username: "admin" },
       { ...registration, username: "@bad" },
@@ -675,7 +694,7 @@ test("registration draft survives verification and reserves one username", async
       { ...registration, profile: { ...profile, birthDate: "1997-02-29" } },
       { ...registration, profile: { ...profile, birthDate: "9999-12-31" } },
     ]) {
-      const result = await call("/sign-up/email", {
+      const result = await call("/registration/email/complete", {
         ...signup,
         registration: invalid,
       });
@@ -720,12 +739,12 @@ test("registration draft survives verification and reserves one username", async
     assert.match((await fallback.json()).username, /^[a-z][a-z0-9_]{2,31}$/);
 
     const competing = await Promise.all([
-      call("/sign-up/email", signup),
+      call("/registration/email/complete", signup),
       call(
-        "/sign-up/email",
+        "/registration/email/complete",
         {
           ...signup,
-          email: otherEmail,
+          token: otherToken,
           registration: { ...registration, username: username.toUpperCase() },
         },
         undefined,
@@ -755,37 +774,40 @@ test("registration draft survives verification and reserves one username", async
     const next = await suggestion(first, last);
     assert.equal(next.status, 200);
     assert.deepEqual(await next.json(), { username: `${username}2` });
-    assert.equal(user.emailVerified, false);
-    assert.deepEqual(JSON.parse(user.registrationDraft), profile);
+    assert.equal(user.emailVerified, true);
+    assert.equal(user.registrationDraft, null);
     const profileRows = () =>
       pool.query("SELECT role FROM user_profiles WHERE user_id = $1", [
         user.id,
       ]);
-    assert.equal((await profileRows()).rowCount, 0);
+    assert.equal((await profileRows()).rowCount, 1);
+    assert.equal((await profileRows()).rows[0].role, profile.role);
     const credentials = { email: winner, password };
-    const unverified = await call("/sign-in/email", credentials);
-    assert.equal(unverified.status, 403);
-    assert.equal(unverified.headers.get("set-cookie"), null);
     assert.equal((await call("/profile")).status, 401);
     const anonymous = await call("/get-session");
     assert.equal(anonymous.status, 200);
     assert.equal(await anonymous.json(), null);
 
-    // Advance only this isolated recipient's minute bucket to exercise
-    // Better Auth's duplicate-email behavior without waiting a real minute.
-    const digest = createHmac("sha256", config.AUTH_SECRET)
-      .update(winner)
-      .digest("hex");
-    await pool.query(
-      "UPDATE auth_mail_rate_limits SET expires_at = now() - interval '1 second' WHERE key = $1",
-      [`recipient:verification:${digest}:minute`],
+    // Username conflict rolls back the losing user, leaving their proof usable.
+    const loser = winner === email ? otherEmail : email;
+    const loserToken = winner === email ? otherToken : token;
+    const remainingProof = await call("/registration/email/read", {
+      token: loserToken,
+    });
+    assert.equal(remainingProof.status, 200);
+    assert.deepEqual(await remainingProof.json(), { email: loser });
+    const winningToken = winner === email ? token : otherToken;
+    assert.equal(
+      (await call("/registration/email/read", { token: winningToken })).status,
+      400,
     );
     const duplicateName = `other_${randomBytes(8).toString("hex")}`;
+    const duplicateProof = await issueRegistrationEmailProof(pool, winner);
     const duplicate = await call(
-      "/sign-up/email",
+      "/registration/email/complete",
       {
         ...signup,
-        email: winner,
+        token: duplicateProof,
         registration: {
           username: duplicateName,
           profile: { ...profile, firstName: "Changed" },
@@ -794,22 +816,15 @@ test("registration draft survives verification and reserves one username", async
       undefined,
       "192.0.2.52",
     );
-    assert.equal(duplicate.status, 200);
-    assert.deepEqual(await duplicate.json(), { success: true });
+    assert.equal(duplicate.status, 409);
     const unchanged = await pool.query(
-      'SELECT id, username, "registrationDraft" FROM "user" WHERE email = $1 OR username = $2',
+      'SELECT id, username FROM "user" WHERE email = $1 OR username = $2',
       [winner, duplicateName],
     );
     assert.equal(unchanged.rowCount, 1);
     assert.equal(unchanged.rows[0].id, user.id);
     assert.equal(unchanged.rows[0].username, username);
-    assert.deepEqual(JSON.parse(unchanged.rows[0].registrationDraft), profile);
 
-    const verification = await mailLink(mailOrigin, winner, "/verify-email?");
-    const verified = await runtime.handle(new Request(verification));
-    assert.equal(verified.status, 302);
-    assert.equal(verified.headers.get("set-cookie"), null);
-    assert.equal((await profileRows()).rowCount, 0);
     const [login, simultaneousLogin] = await Promise.all([
       call("/sign-in/email", credentials),
       call("/sign-in/email", credentials, undefined, "192.0.2.54"),

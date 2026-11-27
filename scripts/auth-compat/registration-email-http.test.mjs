@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { test } from "node:test";
 import pg from "pg";
+import { issueRegistrationEmailProof } from "../../packages/auth/dist/registration-email-proof.js";
 import {
   createAuthHttpRuntime,
   parseAuthConfig,
 } from "../../packages/auth/dist/runtime.js";
-import { issueRegistrationEmailProof } from "../../packages/auth/dist/registration-email-proof.js";
 
 test("registration creates only the mailbox owner account", async () => {
   const database = new URL(process.env.AUTH_COMPAT_DATABASE_URL);
@@ -82,11 +82,25 @@ test("registration creates only the mailbox owner account", async () => {
       email,
     ]);
     assert.equal(before.rowCount, 0);
-    const result = await call("registration/email/complete", {
-      token,
-      password,
-      registration,
-    });
+    const competingPassword = randomBytes(24).toString("hex");
+    const competing = await Promise.all([
+      call("registration/email/complete", { token, password, registration }),
+      call(
+        "registration/email/complete",
+        { token, password: competingPassword, registration },
+        "192.0.2.91",
+      ),
+    ]);
+    const result = competing.find((response) => response.ok);
+    assert.ok(result);
+    assert.equal(competing.filter((response) => response.ok).length, 1);
+    const rejected = competing.find((response) => !response.ok);
+    assert.ok(rejected);
+    assert.ok([400, 409].includes(rejected.status));
+    assert.equal(rejected.headers.get("set-cookie"), null);
+    const winnerPassword =
+      competing[0] === result ? password : competingPassword;
+    const loserPassword = competing[0] === result ? competingPassword : password;
     assert.equal(result.status, 200);
     assert.equal(result.headers.get("set-cookie"), null);
     assert.deepEqual(await result.json(), { success: true });
@@ -128,9 +142,113 @@ test("registration creates only the mailbox owner account", async () => {
         .status,
       401,
     );
-    const login = await call("sign-in/email", { email, password });
+    const duplicateProof = await issueRegistrationEmailProof(pool, email);
+    assert.equal(
+      (await call("registration/email/read", { token: duplicateProof }))
+        .status,
+      409,
+    );
+    const duplicate = await call("registration/email/complete", {
+      token: duplicateProof,
+      password: untrustedPassword,
+      registration: {
+        ...registration,
+        username: `other_${randomBytes(8).toString("hex")}`,
+      },
+    });
+    assert.equal(duplicate.status, 409);
+    assert.equal(duplicate.headers.get("set-cookie"), null);
+    assert.equal(
+      (
+        await call(
+          "sign-in/email",
+          { email, password: loserPassword },
+          "192.0.2.92",
+        )
+      ).status,
+      401,
+    );
+    const login = await call("sign-in/email", {
+      email,
+      password: winnerPassword,
+    });
     assert.equal(login.status, 200);
     assert.ok(login.headers.get("set-cookie"));
+    // Invalid proofs are charged before lookup; a different source can
+    // still confirm. Mapped IPv4 shares the original address budget.
+    for (let i = 0; i < 10; i++) {
+      const attempt = await call(
+        "registration/email/complete",
+        { token: "b".repeat(43), password, registration },
+        "192.0.2.93",
+      );
+      assert.equal(attempt.status, 400);
+    }
+    const limited = await call(
+      "registration/email/complete",
+      { token: "b".repeat(43), password, registration },
+      "::ffff:192.0.2.93",
+    );
+    assert.equal(limited.status, 429);
+    assert.ok(Number(limited.headers.get("retry-after")) > 0);
+    const otherSource = await call(
+      "registration/email/complete",
+      { token: "b".repeat(43), password, registration },
+      "192.0.2.94",
+    );
+    assert.equal(otherSource.status, 400);
+
+    // Independent links for the same mailbox must not create two accounts.
+    const anotherEmail = `${randomBytes(12).toString("hex")}@example.test`;
+    const links = await Promise.all([
+      issueRegistrationEmailProof(pool, anotherEmail),
+      issueRegistrationEmailProof(pool, anotherEmail),
+    ]);
+    const accounts = links.map((token, index) => ({
+      token,
+      password: randomBytes(24).toString("hex"),
+      registration: {
+        ...registration,
+        username: `race_${randomBytes(8).toString("hex")}`,
+        profile: { ...registration.profile, firstName: `Owner ${index}` },
+      },
+    }));
+    const outcomes = await Promise.all(
+      accounts.map((body, index) =>
+        call("registration/email/complete", body, `192.0.2.${95 + index}`),
+      ),
+    );
+    assert.deepEqual(outcomes.map(({ status }) => status).sort(), [200, 409]);
+    const winner = outcomes[0].ok ? accounts[0] : accounts[1];
+    const loser = outcomes[0].ok ? accounts[1] : accounts[0];
+    const committed = await pool.query(
+      `SELECT u.username, p.first_name
+       FROM "user" u JOIN user_profiles p ON p.user_id = u.id
+       WHERE u.email = $1`,
+      [anotherEmail],
+    );
+    assert.deepEqual(committed.rows, [
+      {
+        username: winner.registration.username,
+        first_name: winner.registration.profile.firstName,
+      },
+    ]);
+    const losingRead = await call("registration/email/read", {
+      token: loser.token,
+    });
+    assert.equal(losingRead.status, 409);
+    const losingLogin = await call(
+      "sign-in/email",
+      { email: anotherEmail, password: loser.password },
+      "192.0.2.97",
+    );
+    assert.equal(losingLogin.status, 401);
+    const winningLogin = await call(
+      "sign-in/email",
+      { email: anotherEmail, password: winner.password },
+      "192.0.2.97",
+    );
+    assert.equal(winningLogin.status, 200);
   } finally {
     await runtime.close();
     await pool.end();

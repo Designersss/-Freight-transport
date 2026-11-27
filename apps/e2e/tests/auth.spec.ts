@@ -112,11 +112,25 @@ test("registration wizard preserves profile after conflict and network failure",
     });
   });
   let attempts = 0;
-  await page.route("**/api/auth/sign-up/email", async (route) => {
+  const token = "a".repeat(43);
+  await page.route("**/api/auth/registration/email/start", (route) => {
+    expect(route.request().postDataJSON()).toEqual({
+      email: "user@example.test",
+      locale: "en",
+    });
+    return route.fulfill({ json: { success: true } });
+  });
+  await page.route("**/api/auth/registration/email/read", (route) => {
+    expect(route.request().postDataJSON()).toEqual({ token });
+    return route.fulfill({ json: { email: "user@example.test" } });
+  });
+  await page.route("**/api/auth/registration/email/complete", async (route) => {
     attempts++;
     const data = route.request().postDataJSON();
     expect(data).not.toHaveProperty("name");
     expect(data).not.toHaveProperty("image");
+    expect(data).not.toHaveProperty("email");
+    expect(data.token).toBe(token);
     expect(Object.keys(data.registration).sort()).toEqual([
       "profile",
       "username",
@@ -148,6 +162,15 @@ test("registration wizard preserves profile after conflict and network failure",
   const back = page.getByRole("button", { name: "Back", exact: true });
   const heading = page.getByRole("heading", { level: 1 });
   await email.fill("user@example.test");
+  await expect(password).toHaveCount(0);
+  await next.click();
+  await expect(heading).toHaveText("Confirm your email");
+  await page.goto("/en/login");
+  await page.goto(`/en/signup#token=${token}`);
+  await page.getByRole("button", { name: "Confirm email" }).click();
+  await expect(heading).toHaveText("Choose a password");
+  await expect(email).toHaveValue("user@example.test");
+  await expect(email).not.toBeEditable();
   await password.fill("test-password");
   await next.click();
   await expect(heading).toHaveText("Choose your role");
@@ -191,14 +214,9 @@ test("registration wizard preserves profile after conflict and network failure",
   await expect(page.getByRole("main").getByRole("alert")).toHaveText(
     "Authentication is unavailable. Try again later.",
   );
-  await expect(heading).toHaveText("Create an account");
-  await expect(email).toHaveValue("user@example.test");
-  await expect(password).toHaveValue("");
-  await password.fill("test-password");
-  await next.click();
-  await page
-    .getByRole("button", { name: "Company owner", exact: true })
-    .click();
+  await expect(heading).toHaveText("Choose a username");
+  await expect(username).toHaveValue("test_user2");
+  await back.click();
   await expect(first).toHaveValue("Test");
   await expect(last).toHaveValue("User");
   await expect(page.getByLabel("Company name")).toHaveValue("Test Company");
@@ -215,21 +233,21 @@ for (const language of [
     email: "Электронная почта",
     password: "Пароль",
     submit: "Войти",
-    confirmation: "Подтверждение почты",
+    error: "Неверная электронная почта или пароль.",
   },
   {
     locale: "en",
     email: "Email address",
     password: "Password",
     submit: "Sign in",
-    confirmation: "Confirm your email",
+    error: "Incorrect email or password.",
   },
 ]) {
-  test(`unverified login preserves ${language.locale} locale`, async ({
+  test(`unregistered login preserves ${language.locale} locale`, async ({
     page,
   }) => {
     await page.route("**/api/auth/sign-in/email", (route) =>
-      route.fulfill({ status: 403, json: { code: "EMAIL_NOT_VERIFIED" } }),
+      route.fulfill({ status: 401, json: { code: "INVALID_CREDENTIALS" } }),
     );
     await page.goto(`/${language.locale}/login`);
     await page.getByLabel(language.email).fill("user@example.test");
@@ -239,10 +257,13 @@ for (const language of [
     await page
       .getByRole("button", { name: language.submit, exact: true })
       .click();
-    await expect(page).toHaveURL(`/${language.locale}/email-confirmation`);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      language.confirmation,
+    await expect(page).toHaveURL(`/${language.locale}/login`);
+    await expect(page.getByRole("main").getByRole("alert")).toHaveText(
+      language.error,
     );
+    await expect(
+      page.getByLabel(language.password, { exact: true }),
+    ).toHaveValue("");
     await expect(page.locator("html")).toHaveAttribute("lang", language.locale);
   });
 }

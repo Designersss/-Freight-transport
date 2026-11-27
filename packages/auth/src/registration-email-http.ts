@@ -9,14 +9,17 @@ import {
   registrationEmailStart,
 } from "./contracts.js";
 import type { AuthMailer } from "./email.js";
-import { reserveMailRequest } from "./mail-rate-limit.js";
+import {
+  reserveMailRequest,
+  reserveRegistrationRequest,
+} from "./mail-rate-limit.js";
+import { usernameOwner } from "./registration.js";
 import { registrationContext } from "./registration-context.js";
 import {
   issueRegistrationEmailProof,
   readRegistrationEmailProof,
 } from "./registration-email-proof.js";
 import { registrationEmailProofHash } from "./registration-email-token.js";
-import { usernameOwner } from "./registration.js";
 
 async function emailOwner(pool: Pool, email: string) {
   const result = await pool.query<{ id: string }>(
@@ -89,6 +92,13 @@ export async function handleEmailRegistration(
     if (path === "/registration/email/read") {
       const parsed = registrationEmailRead.safeParse(raw);
       if (!parsed.success) return fail(400, "INVALID_REQUEST");
+      const retry = await reserveRegistrationRequest(
+        pool,
+        config.AUTH_SECRET,
+        "read",
+        request.headers.get("x-movaro-client-ip"),
+      );
+      if (retry !== null) return limited(String(retry));
       const email = await readRegistrationEmailProof(pool, parsed.data.token);
       if (!email) return fail(400, "INVALID_REQUEST");
       if (await emailOwner(pool, email))
@@ -100,6 +110,13 @@ export async function handleEmailRegistration(
     if (path !== "/registration/email/complete") return fail(404, "NOT_FOUND");
     const parsed = registrationEmailComplete.safeParse(raw);
     if (!parsed.success) return fail(400, "INVALID_REQUEST");
+    const retry = await reserveRegistrationRequest(
+      pool,
+      config.AUTH_SECRET,
+      "complete",
+      request.headers.get("x-movaro-client-ip"),
+    );
+    if (retry !== null) return limited(String(retry));
     const { token, password, registration } = parsed.data;
     const proofHash = registrationEmailProofHash(token);
     const email = await readRegistrationEmailProof(pool, token);

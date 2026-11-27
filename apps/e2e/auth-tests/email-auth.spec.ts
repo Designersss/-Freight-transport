@@ -89,7 +89,9 @@ test("real signup, email ownership, login and session revocation", async ({
     await other.goto("http://127.0.0.1:3110/ru/signup");
     await expect(other.getByLabel("Пароль", { exact: true })).toHaveCount(0);
     await other.getByLabel("Электронная почта").fill(email);
-    await other.getByRole("button", { name: "Продолжить", exact: true }).click();
+    await other
+      .getByRole("button", { name: "Продолжить", exact: true })
+      .click();
     await expect(other.getByRole("heading", { level: 1 })).toHaveText(
       "Подтверждение почты",
     );
