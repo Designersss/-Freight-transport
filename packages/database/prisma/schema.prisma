@@ -58,6 +58,7 @@ model User {
   image             String?
   username          String?      @unique(map: "user_username_uidx")
   registrationDraft String?
+  usernameChangedAt DateTime?    @map("username_changed_at") @db.Timestamptz(6)
   createdAt         DateTime     @default(now()) @db.Timestamptz(6)
   updatedAt         DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
   accounts          Account[]

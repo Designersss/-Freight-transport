@@ -592,6 +592,110 @@ test("registration draft survives verification and reserves one username", async
     assert.equal(relogin.status, 200);
     assert.equal((await profileRows()).rowCount, 1);
 
+    const settingsPath = "/username/settings";
+    const getSettings = () => call(settingsPath, undefined, cookie);
+    const change = (name) => call(settingsPath, { username: name }, cookie);
+    assert.equal((await call(settingsPath)).status, 401);
+    assert.equal(
+      (await call(settingsPath, { username: "unauthorized" })).status,
+      401,
+    );
+    const initial = await getSettings();
+    assert.equal(initial.status, 200);
+    assert.deepEqual(await initial.json(), { username, nextChangeAt: null });
+    const noop = await change(username.toUpperCase());
+    assert.equal(noop.status, 200);
+    assert.deepEqual(await noop.json(), { username, nextChangeAt: null });
+
+    const occupied = `occupied_${randomBytes(8).toString("hex")}`;
+    await pool.query(
+      'INSERT INTO "user" (id, name, email, username) VALUES ($1, $2, $3, $4)',
+      [
+        randomBytes(16).toString("hex"),
+        "Other",
+        `${occupied}@example.test`,
+        occupied,
+      ],
+    );
+    const conflictChange = await change(occupied);
+    assert.equal(conflictChange.status, 409);
+    assert.deepEqual(await conflictChange.json(), { code: "USERNAME_TAKEN" });
+    assert.deepEqual(await (await getSettings()).json(), {
+      username,
+      nextChangeAt: null,
+    });
+    const invalidChange = await call(
+      settingsPath,
+      { username: "valid_name", userId: "other" },
+      cookie,
+    );
+    assert.equal(invalidChange.status, 400);
+
+    const alternatives = [`${username}a`, `${username}b`];
+    const changes = await Promise.all(alternatives.map(change));
+    assert.deepEqual(changes.map(({ status }) => status).sort(), [200, 409]);
+    const successful = changes.find(({ status }) => status === 200);
+    const blocked = changes.find(({ status }) => status === 409);
+    assert.ok(successful);
+    assert.ok(blocked);
+    const updated = await successful.json();
+    assert.ok(alternatives.includes(updated.username));
+    const savedChange = await pool.query(
+      'SELECT username_changed_at, username FROM "user" WHERE id = $1',
+      [user.id],
+    );
+    assert.equal(savedChange.rows[0].username, updated.username);
+    assert.equal(
+      Date.parse(updated.nextChangeAt) -
+        savedChange.rows[0].username_changed_at.getTime(),
+      168 * 60 * 60 * 1000,
+    );
+    assert.deepEqual(await blocked.json(), {
+      code: "USERNAME_CHANGE_COOLDOWN",
+      nextChangeAt: updated.nextChangeAt,
+    });
+    assert.deepEqual(await (await getSettings()).json(), updated);
+    assert.deepEqual(await (await change(updated.username)).json(), updated);
+    const deniedChange = await change(username);
+    assert.equal(deniedChange.status, 409);
+    assert.deepEqual(await deniedChange.json(), {
+      code: "USERNAME_CHANGE_COOLDOWN",
+      nextChangeAt: updated.nextChangeAt,
+    });
+
+    // Adjust only the isolated test user's clock state, not the application.
+    await pool.query(
+      `UPDATE "user" SET username_changed_at = clock_timestamp() - interval '168 hours'
+       WHERE id = $1`,
+      [user.id],
+    );
+    const eligible = await getSettings();
+    assert.equal(eligible.status, 200);
+    assert.deepEqual(await eligible.json(), {
+      username: updated.username,
+      nextChangeAt: null,
+    });
+    const afterCooldown = await change(username);
+    assert.equal(afterCooldown.status, 200);
+    assert.equal((await afterCooldown.json()).username, username);
+    const retained = await call("/profile", undefined, cookie);
+    assert.deepEqual(await retained.json(), { ...profile, driverAge: null });
+    assert.equal((await profileRows()).rowCount, 1);
+
+    await pool.query(
+      "UPDATE user_profiles SET status = 'DEACTIVATED' WHERE user_id = $1",
+      [user.id],
+    );
+    assert.equal((await getSettings()).status, 403);
+    assert.equal((await change(username)).status, 403);
+    await pool.query(
+      "UPDATE user_profiles SET status = 'ACTIVE' WHERE user_id = $1",
+      [user.id],
+    );
+    assert.equal((await call("/sign-out", {}, cookie)).status, 200);
+    assert.equal((await getSettings()).status, 401);
+    assert.equal((await change(username)).status, 401);
+
     const rateDigest = createHmac("sha256", config.AUTH_SECRET)
       .update("192.0.2.50")
       .digest("hex");

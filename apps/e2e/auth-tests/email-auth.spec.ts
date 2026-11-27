@@ -161,6 +161,19 @@ test("real signup, email verification, login and session revocation", async ({
     driverAge: null,
     companyName: null,
   });
+  const settings = await page.request.get("/api/auth/username/settings");
+  expect(settings.status()).toBe(200);
+  expect(await settings.json()).toEqual({
+    username: null,
+    nextChangeAt: null,
+  });
+  const username = `driver_${randomBytes(8).toString("hex")}`;
+  const assigned = await page.request.post("/api/auth/username/settings", {
+    headers: { origin: new URL(page.url()).origin },
+    data: { username },
+  });
+  expect(assigned.status()).toBe(200);
+  expect(await assigned.json()).toEqual({ username, nextChangeAt: null });
   await page.reload();
   await expect(page.getByRole("main").getByText("Водитель")).toBeVisible();
   await expect(

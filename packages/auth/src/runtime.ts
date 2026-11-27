@@ -11,6 +11,7 @@ import { reserveMailRequest } from "./mail-rate-limit.js";
 import { handleProfile } from "./profile.js";
 import { completeRegistration, usernameOwner } from "./registration.js";
 import { createSmtpMailer } from "./smtp-mailer.js";
+import { handleUsernameSettings } from "./username-settings.js";
 import { handleUsername } from "./username.js";
 
 export { type AuthConfig, parseAuthConfig } from "./config.js";
@@ -55,6 +56,8 @@ export function createAuthHttpRuntime(
       if (path === "/profile")
         return handleProfile(request, config, auth, pool);
       if (path === "/username") return handleUsername(request, config, pool);
+      if (path === "/username/settings")
+        return handleUsernameSettings(request, config, auth, pool);
       const headers = new Headers(request.headers);
       let body: string | undefined;
       let username: string | undefined;
