@@ -50,6 +50,8 @@ test("keyboard skip link reaches main content and public page has no detected WC
   await page.keyboard.press("Enter");
   await expect(page.getByRole("main")).toBeFocused();
   await expectNoHorizontalOverflow(page);
+  const login = page.getByRole("link", { name: "Вход", exact: true });
+  await expect(login).toHaveCSS("transition-property", "none");
   await expectAccessible(page);
   await page.getByRole("button", { name: "Светлая тема" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");

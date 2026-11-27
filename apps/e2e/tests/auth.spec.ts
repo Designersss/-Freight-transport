@@ -27,6 +27,7 @@ test("login form validates locally and supports both languages and themes", asyn
   await expect(page.getByText("Проверьте длину пароля.")).toBeVisible();
   expect(requests).toBe(0);
   await expectNoHorizontalOverflow(page);
+  await expect(page).toHaveTitle("MOVARO");
   await expectAccessible(page);
   await page.getByRole("button", { name: "Светлая тема" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
@@ -34,6 +35,9 @@ test("login form validates locally and supports both languages and themes", asyn
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Sign in to MOVARO",
   );
+  await expect(page).toHaveURL(/\/en\/login$/);
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page).toHaveTitle("MOVARO");
   await expectAccessible(page);
 });
 
