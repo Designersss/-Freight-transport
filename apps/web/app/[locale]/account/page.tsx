@@ -16,6 +16,7 @@ export default async function Page({
     <Account
       locale={locale}
       telegramLinkError={query.telegram === "link-error"}
+      enterCabinet={query.onboarding === "1"}
     />
   );
 }

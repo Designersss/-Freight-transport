@@ -6,6 +6,7 @@ import { Button, Skeleton } from "@freight/ui";
 import { Link, useRouter } from "@freight/ui/navigation";
 import { useEffect, useState } from "react";
 import type { z } from "zod";
+import { cabinetPaths } from "../../lib/cabinet-paths";
 import { AuthPanel } from "./auth-panel";
 import { EmailChangeSettings } from "./email-change-settings";
 import { PasswordSettings } from "./password-settings";
@@ -20,9 +21,11 @@ import { UsernameSettings } from "./username-settings";
 export function Account({
   locale,
   telegramLinkError = false,
+  enterCabinet = false,
 }: {
   locale: Locale;
   telegramLinkError?: boolean;
+  enterCabinet?: boolean;
 }) {
   const t = messages[locale].auth;
   const router = useRouter();
@@ -71,7 +74,12 @@ export function Account({
         if (!result.ok) throw new Error("Profile unavailable");
         const saved: unknown = await result.json();
         if (controller.signal.aborted) return;
-        setProfile(saved === null ? null : publicProfile.parse(saved));
+        const stored = saved === null ? null : publicProfile.parse(saved);
+        if (enterCabinet && stored) {
+          router.replace(cabinetPaths[stored.role], { locale });
+          return;
+        }
+        setProfile(stored);
         setProfileLoaded(true);
       } catch {
         if (!controller.signal.aborted) setError(true);
@@ -81,7 +89,7 @@ export function Account({
     }
     void load();
     return () => controller.abort();
-  }, [locale, router]);
+  }, [enterCabinet, locale, router]);
   async function logout() {
     setBusy(true);
     setError(false);
@@ -109,6 +117,7 @@ export function Account({
       <SignupWizard
         locale={locale}
         telegram
+        enterCabinet={enterCabinet}
         onLogout={logout}
         logoutBusy={busy}
         logoutError={error}
@@ -131,7 +140,11 @@ export function Account({
           {needsProfile && (
             <ProfileForm
               locale={locale}
-              onComplete={setProfile}
+              onComplete={(completed) => {
+                if (enterCabinet)
+                  router.replace(cabinetPaths[completed.role], { locale });
+                else setProfile(completed);
+              }}
               onExpired={() => {
                 setSession(null);
                 router.replace("/login", { locale });
@@ -147,6 +160,11 @@ export function Account({
                 {session.user.email ?? t.telegramIdentity}
               </p>
               <p className="mt-2 text-sm">{t.roles[profile.role]}</p>
+              <Button asChild variant="outline" className="mt-3 w-full">
+                <Link href={cabinetPaths[profile.role]} prefetch={false}>
+                  {t.cabinetOpen}
+                </Link>
+              </Button>
             </div>
           )}
           {profileLoaded && profile && (

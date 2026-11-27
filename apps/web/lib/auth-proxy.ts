@@ -154,12 +154,19 @@ export async function forwardAuth(
         destination.username ||
         destination.password ||
         destination.hash ||
-        !["/ru/account", "/en/account", "/ru/login", "/en/login"].includes(
-          destination.pathname,
-        ) ||
+        ![
+          "/ru/account",
+          "/en/account",
+          "/ru/cabinet",
+          "/en/cabinet",
+          "/ru/login",
+          "/en/login",
+        ].includes(destination.pathname) ||
         (destination.pathname.endsWith("/account")
           ? !["", "?telegram=link-error"].includes(destination.search)
-          : destination.search !== "?telegram=error")
+          : destination.pathname.endsWith("/cabinet")
+            ? Boolean(destination.search)
+            : destination.search !== "?telegram=error")
       )
         return authFailure(502);
       for (const cookie of result.headers.getSetCookie())

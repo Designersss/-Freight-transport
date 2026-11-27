@@ -178,7 +178,7 @@ export function AuthForm({
         return;
       }
       if (mode === "login") {
-        router.replace("/account", { locale });
+        router.replace("/cabinet", { locale });
         return;
       }
       if (mode === "reset") {

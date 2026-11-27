@@ -241,7 +241,7 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
     flow = await begin(true);
     token = mint();
     const first = await callback(flow);
-    assert.equal(first.headers.get("location"), `${origin}/en/account`);
+    assert.equal(first.headers.get("location"), `${origin}/en/cabinet`);
     const created = await session(first);
     assert.ok(created?.user.id);
     assert.equal(created.user.emailVerified, false);

@@ -59,3 +59,5 @@ Telegram UI: добавлены контролируемые тесты capabili
 Telegram settings: controlled EN/light desktop/mobile Chromium сценарий проверяет server permissions, callback error, первоначальную привязку, постоянный статус без кнопки отвязки и отказ внешнего redirect. Результаты не подтверждены; RU/dark и реальный OAuth требуют приёмки.
 
 Email change: controlled tests cover settings form, unchanged old address, stale-session error, RU/EN fragment confirmation, explicit POST only, second-stage success, sign-in link and invalid missing fragment. Real SMTP HTTP scenario separately registered in auth compatibility; actual browser/mail roundtrip and dark/light matrix not yet confirmed.
+
+Cabinets: real browser driver sign-in now redirects to /ru/cabinet/driver, direct visits to owner/dispatcher show denied without role content, settings link opens /ru/account, logout blocks direct driver cabinet access. Server role matrix is covered separately in cabinet-access integration fixture. Results and RU/EN dark/light visual matrix not confirmed.

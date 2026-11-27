@@ -151,6 +151,22 @@ test("real signup, email verification, login and session revocation", async ({
   await page.getByLabel("Электронная почта").fill(email);
   await page.getByLabel("Пароль", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Войти", exact: true }).click();
+  await expect(page).toHaveURL("/ru/cabinet/driver");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Кабинет водителя",
+  );
+  for (const other of ["company-owner", "dispatcher"]) {
+    await page.goto(`/ru/cabinet/${other}`);
+    await expect(page.getByRole("alert")).toContainText(
+      "У вас нет доступа к этому кабинету.",
+    );
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "Личный кабинет",
+    );
+  }
+  await page.goto("/ru/cabinet");
+  await expect(page).toHaveURL("/ru/cabinet/driver");
+  await page.getByRole("link", { name: "Настройки аккаунта" }).click();
   await expect(page).toHaveURL("/ru/account");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Ваш аккаунт",
@@ -309,5 +325,7 @@ test("real signup, email verification, login and session revocation", async ({
   expect(revoked.status()).toBe(200);
   expect((await revoked.json()) === null).toBe(true);
   await page.goto("/ru/account");
+  await expect(page).toHaveURL("/ru/login");
+  await page.goto("/ru/cabinet/driver");
   await expect(page).toHaveURL("/ru/login");
 });

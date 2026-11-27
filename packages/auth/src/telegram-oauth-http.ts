@@ -145,7 +145,7 @@ export async function handleTelegramOAuth(
         return fail(409, "AUTH_REQUEST_FAILED");
       }
       const account = new URL(
-        `/${payload.locale}/account`,
+        `/${payload.locale}/${link ? "account" : "cabinet"}`,
         config.AUTH_WEB_ORIGIN,
       ).href;
       const response = await telegramLinkContext.run(identity, () =>
@@ -201,7 +201,12 @@ export async function handleTelegramOAuth(
     )
       return redirect(loginError("ru"));
     for (const locale of ["ru", "en"]) {
-      if (target.pathname === `/${locale}/account` && !target.search) {
+      if (
+        [`/${locale}/account`, `/${locale}/cabinet`].includes(
+          target.pathname,
+        ) &&
+        !target.search
+      ) {
         for (const cookie of response.headers.getSetCookie())
           headers.append("set-cookie", cookie);
         return redirect(target);

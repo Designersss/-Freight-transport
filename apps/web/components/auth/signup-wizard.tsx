@@ -64,12 +64,14 @@ function post(path: string, data: unknown, signal?: AbortSignal) {
 export function SignupWizard({
   locale,
   telegram = false,
+  enterCabinet = false,
   onLogout,
   logoutBusy = false,
   logoutError = false,
 }: {
   locale: Locale;
   telegram?: boolean;
+  enterCabinet?: boolean;
   onLogout?: () => void;
   logoutBusy?: boolean;
   logoutError?: boolean;
@@ -293,7 +295,8 @@ export function SignupWizard({
         return;
       }
       if (telegram) {
-        window.location.reload();
+        if (enterCabinet) router.replace("/cabinet", { locale });
+        else window.location.reload();
         return;
       }
       credentials.resetField("password");
