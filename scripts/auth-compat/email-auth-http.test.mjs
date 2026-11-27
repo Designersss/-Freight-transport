@@ -790,7 +790,10 @@ test("registration draft survives verification and reserves one username", async
       assert.equal(result.status, 200);
       assert.equal(await result.json(), null);
     }
-    assert.equal((await call("/profile", undefined, rotatedCookie)).status, 200);
+    assert.equal(
+      (await call("/profile", undefined, rotatedCookie)).status,
+      200,
+    );
     assert.equal((await call("/sign-out", {}, rotatedCookie)).status, 200);
     assert.equal((await getSettings()).status, 401);
     const oldLogin = await call(

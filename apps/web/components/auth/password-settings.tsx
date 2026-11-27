@@ -148,7 +148,9 @@ export function PasswordSettings({ locale }: { locale: Locale }) {
                 id={name}
                 type="password"
                 autoComplete={
-                  name === "currentPassword" ? "current-password" : "new-password"
+                  name === "currentPassword"
+                    ? "current-password"
+                    : "new-password"
                 }
                 minLength={PASSWORD_MIN_LENGTH}
                 maxLength={PASSWORD_MAX_LENGTH}

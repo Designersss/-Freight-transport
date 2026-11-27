@@ -224,7 +224,9 @@ test("real signup, email verification, login and session revocation", async ({
     page.getByText("Пароль изменён. Другие сеансы завершены."),
   ).toBeVisible();
   await expect(page.getByLabel("Текущий пароль")).toHaveValue("");
-  await expect(page.getByLabel("Новый пароль", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("Новый пароль", { exact: true })).toHaveValue(
+    "",
+  );
   const previous = await request.get("/api/auth/get-session", {
     headers: { cookie },
   });
