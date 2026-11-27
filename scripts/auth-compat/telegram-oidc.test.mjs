@@ -20,6 +20,7 @@ import {
   TELEGRAM_ISSUER,
 } from "../../packages/auth/dist/telegram-provider.js";
 import { handleTelegramRegistration } from "../../packages/auth/dist/telegram-registration-http.js";
+import { handleTelegramSettings } from "../../packages/auth/dist/telegram-settings-http.js";
 import {
   internalSession,
   sessionAccess,
@@ -364,37 +365,36 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
       [linkedSession.session.id],
     );
     assert.equal(provenance.rows[0].accountId, newSubject);
-    const emailIdentity = internalSession.parse(await session(emailLogin));
-    const { unlinkTelegram } = await import(
-      "../../packages/auth/dist/telegram-settings.js"
-    );
-    assert.equal(
-      await unlinkTelegram(pool, {
-        userId: emailUser,
-        sessionId: linkedSession.session.id,
+    const refused = await handleTelegramSettings(
+      new Request(`${origin}${base}/telegram/settings`, {
+        method: "POST",
+        headers: {
+          origin,
+          cookie: emailCookie,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ action: "unlink" }),
       }),
-      "session-not-fresh",
+      authConfig,
+      auth,
+      pool,
     );
-    assert.equal(
-      await unlinkTelegram(pool, {
-        userId: emailUser,
-        sessionId: emailIdentity.session.id,
+    assert.equal(refused.status, 405);
+    const raw = await auth.handler(
+      new Request(`${origin}${base}/unlink-account`, {
+        method: "POST",
+        headers: {
+          origin,
+          cookie: emailCookie,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          accountId: provenance.rows[0].telegramAccountId,
+        }),
       }),
-      "unlinked",
     );
-    assert.equal(await session(viaTelegram), null);
-    await assert.rejects(
-      pool.query(
-        'INSERT INTO "session" (id, "userId", token, "expiresAt", "telegramAccountId") VALUES ($1, $2, $3, clock_timestamp() + interval \'1 hour\', $4)',
-        [
-          randomBytes(16).toString("hex"),
-          emailUser,
-          randomBytes(32).toString("hex"),
-          provenance.rows[0].telegramAccountId,
-        ],
-      ),
-      (error) => error.code === "23514",
-    );
+    assert.equal(raw.status, 403);
+    assert.equal((await session(viaTelegram)).user.id, emailUser);
 
     await assert.rejects(
       pool.query(

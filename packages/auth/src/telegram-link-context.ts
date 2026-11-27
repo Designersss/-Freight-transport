@@ -24,6 +24,8 @@ export const telegramLoginContext = new AsyncLocalStorage<{
 }>();
 
 export const prepareTelegramLink = createAuthMiddleware(async (ctx) => {
+  if (ctx.path === "/unlink-account")
+    throw new APIError("FORBIDDEN", { code: "AUTH_REQUEST_FAILED" });
   if (ctx.path !== "/link-social") return;
   const identity = telegramLinkContext.getStore();
   if (

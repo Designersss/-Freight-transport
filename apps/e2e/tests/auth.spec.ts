@@ -7,7 +7,6 @@ test.beforeEach(async ({ page }) => {
       json: {
         linked: false,
         canLink: false,
-        canUnlink: false,
         requiresFreshSession: false,
       },
     }),
@@ -854,13 +853,11 @@ test("Telegram onboarding reuses role, profile and username steps without creden
   await expect(page).toHaveURL(/\/en\/account$/);
 });
 
-test("Telegram settings reflect server permissions and confirm disconnect", async ({
+test("Telegram settings allow one permanent connection", async ({
   page,
 }) => {
-  let linked = true;
+  let linked = false;
   let fresh = false;
-  let writes = 0;
-  let sessionReads = 0;
   await page.route("**/api/auth/get-session", (route) =>
     route.fulfill({
       json: {
@@ -891,24 +888,18 @@ test("Telegram settings reflect server permissions and confirm disconnect", asyn
   await page.route("**/api/auth/username/settings", (route) =>
     route.fulfill({ json: { username: "test_driver", nextChangeAt: null } }),
   );
-  await page.route("**/api/auth/sessions", (route) => {
-    sessionReads++;
-    return route.fulfill({ json: { sessions: [], hasMore: false } });
-  });
+  await page.route("**/api/auth/sessions", (route) =>
+    route.fulfill({ json: { sessions: [], hasMore: false } }),
+  );
   await page.route("**/api/auth/telegram/settings", (route) => {
-    if (route.request().method() === "GET")
-      return route.fulfill({
-        json: {
-          linked,
-          canLink: !linked,
-          canUnlink: linked,
-          requiresFreshSession: !fresh,
-        },
-      });
-    expect(route.request().postDataJSON()).toEqual({ action: "unlink" });
-    writes++;
-    linked = false;
-    return route.fulfill({ json: { success: true } });
+    expect(route.request().method()).toBe("GET");
+    return route.fulfill({
+      json: {
+        linked,
+        canLink: !linked,
+        requiresFreshSession: !linked && !fresh,
+      },
+    });
   });
   await page.route("**/api/auth/telegram/start", (route) => {
     expect(route.request().postDataJSON()).toEqual({
@@ -920,27 +911,24 @@ test("Telegram settings reflect server permissions and confirm disconnect", asyn
   await page.goto("/en/account?telegram=link-error");
   await page.getByRole("button", { name: "Light theme" }).click();
   const settings = page.getByRole("region", { name: "Telegram", exact: true });
-  const disconnect = settings.getByRole("button", {
-    name: "Disconnect Telegram",
-  });
+  const connect = settings.getByRole("button", { name: "Connect Telegram" });
   await expect(settings.getByRole("alert")).toBeVisible();
-  await expect(disconnect).toBeDisabled();
+  await expect(connect).toBeDisabled();
   fresh = true;
   await settings.getByRole("button", { name: "Refresh status" }).click();
-  await expect(disconnect).toBeEnabled();
-  await disconnect.click();
-  await settings.getByRole("button", { name: "Cancel", exact: true }).click();
-  expect(writes).toBe(0);
-  await disconnect.click();
-  await settings.getByRole("button", { name: "Confirm", exact: true }).click();
-  await expect(settings.getByRole("status")).toHaveText(
-    "Telegram disconnected. Other sessions ended.",
-  );
-  expect(writes).toBe(1);
-  await expect.poll(() => sessionReads).toBeGreaterThanOrEqual(2);
-  await settings.getByRole("button", { name: "Connect Telegram" }).click();
+  await expect(connect).toBeEnabled();
+  await connect.click();
   await expect(settings.getByRole("alert")).toBeVisible();
   await expect(page).toHaveURL(/\/en\/account/);
+  linked = true;
+  await settings.getByRole("button", { name: "Refresh status" }).click();
+  await expect(
+    settings.getByText("Your Telegram connection cannot be changed or removed."),
+  ).toBeVisible();
+  await expect(connect).toHaveCount(0);
+  await expect(
+    settings.getByRole("button", { name: "Disconnect Telegram" }),
+  ).toHaveCount(0);
   await expectNoHorizontalOverflow(page);
   await expectAccessible(page);
 });

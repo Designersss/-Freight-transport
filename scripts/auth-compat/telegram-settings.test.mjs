@@ -2,12 +2,9 @@ import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { test } from "node:test";
 import pg from "pg";
-import {
-  readTelegramSettings,
-  unlinkTelegram,
-} from "../../packages/auth/dist/telegram-settings.js";
+import { readTelegramSettings } from "../../packages/auth/dist/telegram-settings.js";
 
-test("Telegram unlink keeps a credential, checks freshness and revokes other sessions", async () => {
+test("Telegram binding is permanent and requires a live initiating session", async () => {
   const databaseUrl = process.env.AUTH_COMPAT_DATABASE_URL;
   assert.ok(databaseUrl);
   const target = new URL(databaseUrl);
@@ -15,7 +12,7 @@ test("Telegram unlink keeps a credential, checks freshness and revokes other ses
   assert.equal(target.pathname, "/freight_auth_compat");
   const pool = new pg.Pool({ connectionString: databaseUrl });
 
-  async function createIdentity(credential) {
+  async function createIdentity(credential, linked = true) {
     const userId = randomUUID();
     const sessionId = randomUUID();
     const otherSessionId = randomUUID();
@@ -49,126 +46,124 @@ test("Telegram unlink keeps a credential, checks freshness and revokes other ses
         [id, userId, randomUUID()],
       );
     }
-    await pool.query(
-      'INSERT INTO "account" (id, "userId", "providerId", "accountId", "linkSessionId", "linkRevision") VALUES ($1, $2, $3, $4, $5, $6)',
-      [
-        randomUUID(),
-        userId,
-        "telegram",
-        subject,
-        credential ? sessionId : null,
-        credential ? 0 : null,
-      ],
-    );
+    if (linked) {
+      await pool.query(
+        'INSERT INTO "account" (id, "userId", "providerId", "accountId", "linkSessionId", "linkRevision") VALUES ($1, $2, $3, $4, $5, $6)',
+        [
+          randomUUID(),
+          userId,
+          "telegram",
+          subject,
+          credential ? sessionId : null,
+          credential ? 0 : null,
+        ],
+      );
+    }
     return { userId, sessionId, otherSessionId };
   }
 
   try {
-    const owner = await createIdentity(true);
+    const owner = await createIdentity(true, false);
     const telegramOnly = await createIdentity(false);
+    assert.deepEqual(await readTelegramSettings(pool, owner), {
+      linked: false,
+      credential: true,
+      fresh: true,
+      revision: 0,
+    });
+    assert.equal(
+      (await readTelegramSettings(pool, telegramOnly))?.linked,
+      true,
+    );
+    assert.equal(
+      await readTelegramSettings(pool, {
+        ...owner,
+        sessionId: telegramOnly.sessionId,
+      }),
+      null,
+    );
+    const rejectedBinding = (error) =>
+      error.code === "23514" &&
+      error.constraint === "account_telegram_link_guard";
+    const insertLink = (identity, sessionId, revision) =>
+      pool.query(
+        'INSERT INTO "account" (id, "userId", "providerId", "accountId", "linkSessionId", "linkRevision") VALUES ($1, $2, $3, $4, $5, $6)',
+        [
+          randomUUID(),
+          identity.userId,
+          "telegram",
+          randomUUID(),
+          sessionId,
+          revision,
+        ],
+      );
+    await assert.rejects(
+      insertLink(owner, telegramOnly.sessionId, 0),
+      rejectedBinding,
+    );
+    await assert.rejects(insertLink(owner, null, 0), rejectedBinding);
+    await pool.query(
+      `UPDATE "session" SET "createdAt" = clock_timestamp() - interval '11 minutes' WHERE id = $1`,
+      [owner.sessionId],
+    );
+    assert.equal((await readTelegramSettings(pool, owner))?.fresh, false);
+    await assert.rejects(insertLink(owner, owner.sessionId, 0), rejectedBinding);
+    await pool.query(
+      'UPDATE "session" SET "createdAt" = clock_timestamp() WHERE id = $1',
+      [owner.sessionId],
+    );
+    const writes = await Promise.allSettled([
+      insertLink(owner, owner.sessionId, 0),
+      insertLink(owner, owner.sessionId, 0),
+    ]);
+    assert.equal(writes.filter((row) => row.status === "fulfilled").length, 1);
+    const rejected = writes.find((row) => row.status === "rejected");
+    assert.ok(rejectedBinding(rejected.reason));
     assert.deepEqual(await readTelegramSettings(pool, owner), {
       linked: true,
       credential: true,
       fresh: true,
       revision: 1,
     });
-    assert.equal(await unlinkTelegram(pool, telegramOnly), "last-method");
-    assert.equal(
-      (await readTelegramSettings(pool, telegramOnly))?.linked,
-      true,
-    );
-    const foreignSession = { ...owner, sessionId: telegramOnly.sessionId };
-    assert.equal(await unlinkTelegram(pool, foreignSession), "denied");
-    await pool.query(
-      `UPDATE "session" SET "createdAt" = clock_timestamp() - interval '11 minutes' WHERE id = $1`,
-      [owner.sessionId],
-    );
-    assert.equal(await unlinkTelegram(pool, owner), "session-not-fresh");
-    assert.equal((await readTelegramSettings(pool, owner))?.linked, true);
-    await pool.query(
-      'UPDATE "session" SET "createdAt" = clock_timestamp() WHERE id = $1',
-      [owner.sessionId],
-    );
-    await pool.query(
-      "UPDATE user_profiles SET status = 'DEACTIVATED' WHERE user_id = $1",
-      [owner.userId],
-    );
-    assert.equal(await unlinkTelegram(pool, owner), "denied");
-    await pool.query(
-      "UPDATE user_profiles SET status = 'ACTIVE' WHERE user_id = $1",
-      [owner.userId],
-    );
-    assert.deepEqual(
-      await Promise.all([
-        unlinkTelegram(pool, owner),
-        unlinkTelegram(pool, owner),
-      ]),
-      ["unlinked", "unlinked"],
-    );
-    assert.deepEqual(await readTelegramSettings(pool, owner), {
-      linked: false,
-      credential: true,
-      fresh: true,
-      revision: 3,
-    });
-    const accounts = await pool.query(
-      'SELECT "providerId" FROM "account" WHERE "userId" = $1',
-      [owner.userId],
-    );
-    assert.deepEqual(accounts.rows, [{ providerId: "credential" }]);
-    const sessions = await pool.query(
-      'SELECT id FROM "session" WHERE "userId" = $1',
-      [owner.userId],
-    );
-    assert.deepEqual(sessions.rows, [{ id: owner.sessionId }]);
-    assert.equal(
-      (await readTelegramSettings(pool, telegramOnly))?.linked,
-      true,
-    );
-    const candidate = randomUUID();
-    const insertLink = (sessionId, revision, accountId = randomUUID()) =>
-      pool.query(
-        'INSERT INTO "account" (id, "userId", "providerId", "accountId", "linkSessionId", "linkRevision") VALUES ($1, $2, $3, $4, $5, $6)',
-        [accountId, owner.userId, "telegram", candidate, sessionId, revision],
-      );
-    const rejectedBinding = (error) =>
+    const permanent = (error) =>
       error.code === "23514" &&
-      error.constraint === "account_telegram_link_guard";
-    await assert.rejects(insertLink(owner.sessionId, 1), rejectedBinding);
+      error.constraint === "account_telegram_permanent";
+    for (const identity of [owner, telegramOnly]) {
+      await assert.rejects(
+        pool.query(
+          'DELETE FROM "account" WHERE "userId" = $1 AND "providerId" = $2',
+          [identity.userId, "telegram"],
+        ),
+        permanent,
+      );
+      await assert.rejects(
+        pool.query(
+          'UPDATE "account" SET "accountId" = $2 WHERE "userId" = $1 AND "providerId" = $3',
+          [identity.userId, randomUUID(), "telegram"],
+        ),
+        permanent,
+      );
+    }
     await assert.rejects(
-      insertLink(telegramOnly.sessionId, 3),
-      rejectedBinding,
+      pool.query(
+        'UPDATE "account" SET "userId" = $2 WHERE "userId" = $1 AND "providerId" = $3',
+        [owner.userId, telegramOnly.userId, "telegram"],
+      ),
+      permanent,
     );
-    await assert.rejects(insertLink(null, 3), rejectedBinding);
-
-    // Independent connections race with the same revision; only one wins.
-    const writes = await Promise.allSettled([
-      insertLink(owner.sessionId, 3),
-      insertLink(owner.sessionId, 3),
-    ]);
-    assert.equal(writes.filter((row) => row.status === "fulfilled").length, 1);
-    const rejected = writes.find((row) => row.status === "rejected");
-    assert.ok(rejectedBinding(rejected.reason));
-    const afterLink = await readTelegramSettings(pool, owner);
-    assert.equal(afterLink.revision, 4);
-    assert.equal(afterLink.linked, true);
-    assert.equal(await unlinkTelegram(pool, owner), "unlinked");
-    await assert.rejects(insertLink(owner.sessionId, 3), rejectedBinding);
-
-    // Revoke the initiating session while holding the same user row lock
-    // required by the INSERT trigger; the pending write must fail closed.
+    const revoked = await createIdentity(true, false);
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
       await client.query('SELECT id FROM "user" WHERE id = $1 FOR UPDATE', [
-        owner.userId,
+        revoked.userId,
       ]);
       const pending = assert.rejects(
-        insertLink(owner.sessionId, 5),
+        insertLink(revoked, revoked.sessionId, 0),
         rejectedBinding,
       );
       await client.query('DELETE FROM "session" WHERE id = $1', [
-        owner.sessionId,
+        revoked.sessionId,
       ]);
       await client.query("COMMIT");
       await pending;
@@ -178,7 +173,7 @@ test("Telegram unlink keeps a credential, checks freshness and revokes other ses
     } finally {
       client.release();
     }
-    assert.equal(await unlinkTelegram(pool, owner), "denied");
+    assert.equal(await readTelegramSettings(pool, revoked), null);
   } finally {
     await pool.end();
   }

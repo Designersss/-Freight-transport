@@ -11,35 +11,28 @@ import {
 } from "@freight/ui";
 import { useRouter } from "@freight/ui/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { z } from "zod";
+import type { z } from "zod";
 import { startTelegramOAuth } from "../../lib/telegram-oauth";
 
 type Settings = z.infer<typeof publicTelegramSettings>;
 const endpoint = "/api/auth/telegram/settings";
-const successResponse = z.object({ success: z.literal(true) });
-const errorResponse = z.object({ code: z.string() });
 
 export function TelegramSettings({
   locale,
   callbackError,
-  onUnlinked,
 }: {
   locale: Locale;
   callbackError: boolean;
-  onUnlinked: () => void;
 }) {
   const t = messages[locale].auth;
   const router = useRouter();
   const [data, setData] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [confirm, setConfirm] = useState(false);
   const [failure, setFailure] = useState(
     callbackError ? t.telegramLinkFailed : "",
   );
-  const [notice, setNotice] = useState("");
   const request = useRef<AbortController | null>(null);
-  const trigger = useRef<HTMLButtonElement>(null);
 
   const handleFailure = useCallback(
     (status: number, code: string | undefined, fallback: string) => {
@@ -55,13 +48,11 @@ export function TelegramSettings({
         return;
       }
       setFailure(
-        code === "LAST_AUTH_METHOD"
-          ? t.telegramOnlyMethod
-          : status === 429
-            ? t.limited
-            : status === 403
-              ? t.profileDenied
-              : fallback,
+        status === 429
+          ? t.limited
+          : status === 403
+            ? t.profileDenied
+            : fallback,
       );
     },
     [locale, router, t],
@@ -103,26 +94,19 @@ export function TelegramSettings({
     };
   }, [load]);
 
-  async function act(action: "link" | "unlink" | "refresh") {
+  async function act(action: "link" | "refresh") {
     if (request.current) return;
-    if (
-      action !== "refresh" &&
-      (!data ||
-        data.requiresFreshSession ||
-        (action === "link" ? !data.canLink : !data.canUnlink))
-    )
+    if (action === "link" && (!data?.canLink || data.requiresFreshSession))
       return;
-    if (action === "unlink" && !confirm) return;
     const controller = new AbortController();
     request.current = controller;
     setBusy(true);
     setFailure("");
-    setNotice("");
     let redirecting = false;
     try {
       if (action === "refresh") {
         await load(controller.signal);
-      } else if (action === "link") {
+      } else {
         const result = await startTelegramOAuth(
           "link",
           locale,
@@ -135,48 +119,24 @@ export function TelegramSettings({
         }
         window.location.assign(result.url);
         redirecting = true;
-      } else {
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          cache: "no-store",
-          redirect: "error",
-          signal: controller.signal,
-          body: JSON.stringify({ action: "unlink" }),
-        });
-        if (controller.signal.aborted) return;
-        const body: unknown = await response.json().catch(() => null);
-        if (controller.signal.aborted) return;
-        if (!response.ok) {
-          const parsed = errorResponse.safeParse(body);
-          handleFailure(
-            response.status,
-            parsed.success ? parsed.data.code : undefined,
-            t.telegramDisconnectFailed,
-          );
-          return;
-        }
-        successResponse.parse(body);
-        onUnlinked();
-        setNotice(t.telegramDisconnected);
-        await load(controller.signal);
       }
     } catch {
       if (!controller.signal.aborted)
         setFailure(
-          action === "link" ? t.telegramLinkFailed : t.telegramDisconnectFailed,
+          action === "link"
+            ? t.telegramLinkFailed
+            : t.telegramSettingsUnavailable,
         );
     } finally {
       if (!controller.signal.aborted && !redirecting) {
         setBusy(false);
-        setConfirm(false);
         request.current = null;
       }
     }
   }
 
   // With no enabled provider or existing connection there is nothing to manage.
-  if (data && !data.linked && !data.canLink && !failure && !notice) return null;
+  if (data && !data.linked && !data.canLink && !failure) return null;
   return (
     <section
       aria-labelledby="telegram-settings-title"
@@ -192,14 +152,13 @@ export function TelegramSettings({
           <AlertDescription>{failure}</AlertDescription>
         </Alert>
       )}
-      {notice && <p role="status">{notice}</p>}
       {data && (
         <>
           <p className="text-muted-foreground">
             {data.linked ? t.telegramLinked : t.telegramNotLinked}
           </p>
-          {data.linked && !data.canUnlink && (
-            <p className="text-muted-foreground">{t.telegramOnlyMethod}</p>
+          {data.linked && (
+            <p className="text-muted-foreground">{t.telegramPermanent}</p>
           )}
           {data.requiresFreshSession && !failure && (
             <p className="text-muted-foreground">{t.telegramFreshRequired}</p>
@@ -213,45 +172,12 @@ export function TelegramSettings({
               {busy ? t.submitting : t.telegramConnect}
             </Button>
           )}
-          {data.canUnlink && (
-            <Button
-              ref={trigger}
-              variant="outline"
-              disabled={busy || data.requiresFreshSession}
-              aria-expanded={confirm}
-              onClick={() => setConfirm((value) => !value)}
-            >
-              {t.telegramDisconnect}
-            </Button>
-          )}
         </>
-      )}
-      {confirm && (
-        <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
-          <p role="status">{t.telegramConfirmDisconnect}</p>
-          <Button
-            variant="destructive"
-            disabled={busy}
-            onClick={() => void act("unlink")}
-          >
-            {busy ? t.submitting : t.confirmAction}
-          </Button>
-          <Button
-            variant="outline"
-            disabled={busy}
-            onClick={() => {
-              setConfirm(false);
-              trigger.current?.focus();
-            }}
-          >
-            {t.cancelAction}
-          </Button>
-        </div>
       )}
       {!loading && (
         <Button
           variant="outline"
-          disabled={busy || confirm}
+          disabled={busy}
           onClick={() => void act("refresh")}
         >
           {t.telegramRefresh}

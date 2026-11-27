@@ -57,7 +57,11 @@ export function TelegramButton({
     onPendingChange(true);
     let redirecting = false;
     try {
-      const result = await startTelegramOAuth(intent, locale, controller.signal);
+      const result = await startTelegramOAuth(
+        intent,
+        locale,
+        controller.signal,
+      );
       if (controller.signal.aborted) return;
       if (result.kind === "error") {
         setFailure(result.status === 429 ? t.limited : t.telegramError);

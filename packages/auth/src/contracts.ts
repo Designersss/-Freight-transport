@@ -89,12 +89,7 @@ export const publicActiveSessions = z.object({
 export const publicTelegramSettings = z.object({
   linked: z.boolean(),
   canLink: z.boolean(),
-  canUnlink: z.boolean(),
   requiresFreshSession: z.boolean(),
-});
-
-export const telegramSettingsAction = z.strictObject({
-  action: z.literal("unlink"),
 });
 
 export const usernameChangeInput = z.strictObject({ username: usernameInput });

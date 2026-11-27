@@ -176,7 +176,6 @@ export function Account({
               <TelegramSettings
                 locale={locale}
                 callbackError={telegramLinkError}
-                onUnlinked={() => setSessionRevision((value) => value + 1)}
               />
               <SessionSettings key={sessionRevision} locale={locale} />
             </>

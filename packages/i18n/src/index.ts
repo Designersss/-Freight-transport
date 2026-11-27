@@ -76,21 +76,14 @@ const ru = {
     telegramIdentity: "Аккаунт Telegram",
     telegramSettingsTitle: "Telegram",
     telegramLinked: "Подключён",
+    telegramPermanent: "Привязку Telegram нельзя изменить или удалить.",
     telegramNotLinked: "Не подключён",
     telegramConnect: "Привязать Telegram",
-    telegramDisconnect: "Отвязать Telegram",
-    telegramOnlyMethod:
-      "Telegram — единственный способ входа. Отвязка недоступна.",
     telegramFreshRequired:
-      "Для изменения привязки выйдите и снова войдите через email и пароль.",
-    telegramConfirmDisconnect:
-      "Telegram больше не будет способом входа в этот аккаунт. Остальные активные сеансы завершатся.",
-    telegramDisconnected: "Telegram отвязан. Остальные сеансы завершены.",
+      "Для привязки Telegram выйдите и снова войдите через email и пароль.",
     telegramLinkFailed:
       "Не удалось привязать Telegram. Проверьте, не подключён ли он к другому аккаунту, и попробуйте снова.",
     telegramSettingsUnavailable: "Не удалось загрузить настройки Telegram.",
-    telegramDisconnectFailed:
-      "Не удалось отвязать Telegram. Попробуйте ещё раз.",
     telegramRefresh: "Обновить статус",
     telegramError: "Не удалось войти через Telegram. Попробуйте ещё раз.",
     signupAction: "Создать аккаунт",
@@ -265,20 +258,14 @@ const en: typeof ru = {
     telegramIdentity: "Telegram account",
     telegramSettingsTitle: "Telegram",
     telegramLinked: "Connected",
+    telegramPermanent: "Your Telegram connection cannot be changed or removed.",
     telegramNotLinked: "Not connected",
     telegramConnect: "Connect Telegram",
-    telegramDisconnect: "Disconnect Telegram",
-    telegramOnlyMethod:
-      "Telegram is your only sign-in method. It cannot be disconnected.",
     telegramFreshRequired:
-      "Sign out and sign in again with your email and password to change this connection.",
-    telegramConfirmDisconnect:
-      "Telegram will no longer be a sign-in method for this account. Your other sessions will end.",
-    telegramDisconnected: "Telegram disconnected. Other sessions ended.",
+      "Sign out and sign in again with your email and password to connect Telegram.",
     telegramLinkFailed:
       "Unable to connect Telegram. Check whether it is linked to another account and try again.",
     telegramSettingsUnavailable: "Unable to load Telegram settings.",
-    telegramDisconnectFailed: "Unable to disconnect Telegram. Try again.",
     telegramRefresh: "Refresh status",
     telegramError: "Unable to sign in with Telegram. Try again.",
     signupAction: "Create account",
