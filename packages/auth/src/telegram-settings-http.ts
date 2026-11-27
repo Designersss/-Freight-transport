@@ -18,8 +18,7 @@ export async function handleTelegramSettings(
   const fail = (status: number, code: string) =>
     Response.json({ code }, { status, headers });
 
-  if (request.method !== "GET")
-    return fail(405, "METHOD_NOT_ALLOWED");
+  if (request.method !== "GET") return fail(405, "METHOD_NOT_ALLOWED");
   if (new URL(request.url).search) return fail(400, "INVALID_REQUEST");
   try {
     const session = await readVerifiedSession(

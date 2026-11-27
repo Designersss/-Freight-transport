@@ -853,9 +853,7 @@ test("Telegram onboarding reuses role, profile and username steps without creden
   await expect(page).toHaveURL(/\/en\/account$/);
 });
 
-test("Telegram settings allow one permanent connection", async ({
-  page,
-}) => {
+test("Telegram settings allow one permanent connection", async ({ page }) => {
   let linked = false;
   let fresh = false;
   await page.route("**/api/auth/get-session", (route) =>
@@ -923,7 +921,9 @@ test("Telegram settings allow one permanent connection", async ({
   linked = true;
   await settings.getByRole("button", { name: "Refresh status" }).click();
   await expect(
-    settings.getByText("Your Telegram connection cannot be changed or removed."),
+    settings.getByText(
+      "Your Telegram connection cannot be changed or removed.",
+    ),
   ).toBeVisible();
   await expect(connect).toHaveCount(0);
   await expect(

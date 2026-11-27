@@ -65,6 +65,7 @@ model User {
   accounts          Account[]
   sessions          Session[]
   profile           UserProfile?
+  pendingEmailChange PendingEmailChange?
 
   @@map("user")
 }
@@ -106,9 +107,27 @@ model Session {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  pendingEmailChanges PendingEmailChange[]
+
   @@index([userId], map: "session_userId_idx")
   @@index([telegramAccountId], map: "session_telegram_account_idx")
   @@map("session")
+}
+
+model PendingEmailChange {
+  userId     String   @id @map("user_id")
+  sessionId  String   @map("session_id")
+  oldEmail   String   @map("old_email")
+  newEmail   String   @map("new_email")
+  tokenHash  String   @unique(map: "pending_email_change_token_hash_uidx") @map("token_hash")
+  stage      String
+  locale     String
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(6)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session    Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId], map: "pending_email_change_session_idx")
+  @@map("pending_email_change")
 }
 
 model Verification {

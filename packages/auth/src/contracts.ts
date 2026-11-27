@@ -86,6 +86,15 @@ export const publicActiveSessions = z.object({
   hasMore: z.boolean(),
 });
 
+export const emailChangeInput = z.strictObject({
+  newEmail: email,
+  locale,
+});
+
+export const emailChangeTokenInput = z.strictObject({
+  token: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+});
+
 export const publicTelegramSettings = z.object({
   linked: z.boolean(),
   canLink: z.boolean(),

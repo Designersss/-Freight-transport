@@ -107,7 +107,10 @@ test("Telegram binding is permanent and requires a live initiating session", asy
       [owner.sessionId],
     );
     assert.equal((await readTelegramSettings(pool, owner))?.fresh, false);
-    await assert.rejects(insertLink(owner, owner.sessionId, 0), rejectedBinding);
+    await assert.rejects(
+      insertLink(owner, owner.sessionId, 0),
+      rejectedBinding,
+    );
     await pool.query(
       'UPDATE "session" SET "createdAt" = clock_timestamp() WHERE id = $1',
       [owner.sessionId],
