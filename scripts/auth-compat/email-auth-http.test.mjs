@@ -450,10 +450,7 @@ test("registration draft survives verification and reserves one username", async
         "192.0.2.51",
       ),
     ]);
-    assert.deepEqual(
-      competing.map(({ status }) => status).sort(),
-      [200, 409],
-    );
+    assert.deepEqual(competing.map(({ status }) => status).sort(), [200, 409]);
     const winner = competing[0].status === 200 ? email : otherEmail;
     const conflict = competing.find(({ status }) => status === 409);
     assert.ok(conflict);
@@ -472,7 +469,9 @@ test("registration draft survives verification and reserves one username", async
     assert.equal(user.emailVerified, false);
     assert.deepEqual(JSON.parse(user.registrationDraft), profile);
     const profileRows = () =>
-      pool.query("SELECT role FROM user_profiles WHERE user_id = $1", [user.id]);
+      pool.query("SELECT role FROM user_profiles WHERE user_id = $1", [
+        user.id,
+      ]);
     assert.equal((await profileRows()).rowCount, 0);
     const credentials = { email: winner, password };
     const unverified = await call("/sign-in/email", credentials);
