@@ -221,7 +221,6 @@ export function SignupWizard({ locale }: { locale: Locale }) {
     }
     const payload = authBodies["/sign-up/email"].safeParse({
       ...account,
-      name: details.firstName,
       locale,
       registration: { profile: details, username: name.data },
     });

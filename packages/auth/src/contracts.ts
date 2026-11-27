@@ -85,9 +85,8 @@ export const authBodies = {
   "/sign-up/email": z.strictObject({
     email,
     password,
-    name: z.string().trim().min(1).max(200),
     locale,
-    registration: registrationInput.optional(),
+    registration: registrationInput,
   }),
   "/sign-in/email": z.strictObject({
     email,

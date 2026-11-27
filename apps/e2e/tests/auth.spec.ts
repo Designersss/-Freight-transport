@@ -103,6 +103,7 @@ test("registration wizard preserves profile after conflict and network failure",
   await page.route("**/api/auth/sign-up/email", async (route) => {
     attempts++;
     const data = route.request().postDataJSON();
+    expect(data).not.toHaveProperty("name");
     expect(data.registration.profile).toEqual({
       firstName: "Test",
       lastName: "User",

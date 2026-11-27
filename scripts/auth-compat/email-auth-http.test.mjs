@@ -87,6 +87,33 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     const get = (url, cookie) =>
       fastify.inject({ method: "GET", url, headers: cookie ? { cookie } : {} });
     const creds = { email, password };
+    const profile = {
+      firstName: "Test",
+      lastName: "Driver",
+      role: "DRIVER",
+      birthDate: "1998-05-15",
+    };
+    const signup = {
+      ...creds,
+      registration: {
+        profile,
+        username: `driver_${randomBytes(8).toString("hex")}`,
+      },
+    };
+    for (const invalid of [
+      creds,
+      { ...creds, name: "Test" },
+      { ...signup, name: "Test" },
+      { ...signup, registration: { profile } },
+      { ...signup, registration: { username: signup.registration.username } },
+    ]) {
+      assert.equal((await post("/sign-up/email", invalid)).statusCode, 400);
+    }
+    const beforeSignup = await pool.query(
+      'SELECT id FROM "user" WHERE email = $1',
+      [email],
+    );
+    assert.equal(beforeSignup.rowCount, 0);
     for (const invalidPassword of ["12345", "a".repeat(129)]) {
       assert.equal(
         (await post("/sign-in/email", { email, password: invalidPassword }))
@@ -96,9 +123,8 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       assert.equal(
         (
           await post("/sign-up/email", {
-            email,
+            ...signup,
             password: invalidPassword,
-            name: "Test",
           })
         ).statusCode,
         400,
@@ -112,8 +138,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     assert.equal(
       (
         await post("/sign-up/email", {
-          ...creds,
-          name: "Test",
+          ...signup,
           role: "PLATFORM_ADMIN",
         })
       ).statusCode,
@@ -122,9 +147,8 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     assert.equal(
       (
         await post("/sign-up/email", {
-          ...creds,
+          ...signup,
           email: "someone@telegram.invalid",
-          name: "Test",
         })
       ).statusCode,
       400,
@@ -133,7 +157,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       (
         await post(
           "/sign-up/email",
-          { ...creds, name: "Test" },
+          signup,
           { origin: "https://untrusted.invalid" },
         )
       ).statusCode,
@@ -143,10 +167,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       (await post("/update-user", { role: "PLATFORM_ADMIN" })).statusCode,
       404,
     );
-    assert.equal(
-      (await post("/sign-up/email", { ...creds, name: "Test" })).statusCode,
-      200,
-    );
+    assert.equal((await post("/sign-up/email", signup)).statusCode, 200);
     const unverified = await post("/sign-in/email", creds);
     assert.equal(unverified.statusCode, 403);
     assert.equal(unverified.json().code, "EMAIL_NOT_VERIFIED");
@@ -203,17 +224,19 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     assert.equal(session.json().user.emailVerified, true);
     assert.equal(session.json().session.token, undefined);
     const profilePath = `${base}/profile`;
-    const profile = {
-      firstName: "Test",
-      lastName: "Driver",
-      role: "DRIVER",
-      birthDate: "1998-05-15",
-    };
     assert.equal((await get(profilePath)).statusCode, 401);
     assert.equal((await post("/profile", profile)).statusCode, 401);
-    const missingProfile = await get(profilePath, cookie);
-    assert.equal(missingProfile.statusCode, 200);
-    assert.equal(missingProfile.json(), null);
+    const saved = { ...profile, companyName: null };
+    const read = await get(profilePath, cookie);
+    assert.equal(read.statusCode, 200);
+    assert.deepEqual(read.json(), saved);
+    assert.equal(session.json().user.name, "Test Driver");
+    const settings = await get(`${base}/username/settings`, cookie);
+    assert.equal(settings.statusCode, 200);
+    assert.deepEqual(settings.json(), {
+      username: signup.registration.username,
+      nextChangeAt: null,
+    });
     assert.equal(
       (await get(`${profilePath}?userId=another-user`, cookie)).statusCode,
       400,
@@ -252,22 +275,8 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     ]);
     assert.deepEqual(
       competing.map(({ statusCode }) => statusCode).sort(),
-      [201, 409],
+      [409, 409],
     );
-    const created = competing.find(({ statusCode }) => statusCode === 201);
-    assert.ok(created);
-    const saved = created.json();
-    assert.ok(["DRIVER", "DISPATCHER"].includes(saved.role));
-    assert.deepEqual(saved, {
-      firstName: "Test",
-      lastName: "Driver",
-      role: saved.role,
-      birthDate: profile.birthDate,
-      companyName: null,
-    });
-    const read = await get(profilePath, cookie);
-    assert.equal(read.statusCode, 200);
-    assert.deepEqual(read.json(), saved);
     assert.equal(
       (
         await post(
@@ -424,7 +433,7 @@ test("registration draft survives verification and reserves one username", async
       }),
     );
   const registration = { profile, username };
-  const signup = { email, password, name: "Test", registration };
+  const signup = { email, password, registration };
   try {
     for (const invalid of [
       { ...registration, username: "admin" },
@@ -570,8 +579,12 @@ test("registration draft survives verification and reserves one username", async
     assert.equal(verified.status, 302);
     assert.equal(verified.headers.get("set-cookie"), null);
     assert.equal((await profileRows()).rowCount, 0);
-    const login = await call("/sign-in/email", credentials);
+    const [login, simultaneousLogin] = await Promise.all([
+      call("/sign-in/email", credentials),
+      call("/sign-in/email", credentials, undefined, "192.0.2.54"),
+    ]);
     assert.equal(login.status, 200);
+    assert.equal(simultaneousLogin.status, 200);
     const cookie = login.headers
       .getSetCookie()
       .map((value) => value.split(";")[0])

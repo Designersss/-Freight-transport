@@ -83,7 +83,7 @@ export function createAuthHttpRuntime(
           ...parsed.data,
         };
         const payload: Record<string, unknown> = fields;
-        if (path === "/sign-up/email" && payload.registration !== undefined) {
+        if (path === "/sign-up/email") {
           const registration = registrationInput.parse(payload.registration);
           delete payload.registration;
           username = registration.username;
