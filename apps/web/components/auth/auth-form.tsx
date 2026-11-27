@@ -59,7 +59,7 @@ export function AuthForm({
     register,
     handleSubmit,
     setError,
-    reset,
+    resetField,
     formState: { errors, isSubmitting },
   } = useForm<Values>({
     defaultValues: { name: "", email: "", password: "", newPassword: "" },
@@ -218,7 +218,8 @@ export function AuthForm({
     } catch {
       setFailure(t.unavailable);
     } finally {
-      reset();
+      if (mode === "login" || mode === "signup") resetField("password");
+      if (mode === "reset") resetField("newPassword");
       inFlight.current = false;
     }
   }

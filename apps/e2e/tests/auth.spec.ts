@@ -61,3 +61,56 @@ test("registration, recovery and invalid reset link are navigable", async ({
   await expectNoHorizontalOverflow(page);
   await expectAccessible(page);
 });
+
+test("login preserves email and clears password after invalid credentials", async ({
+  page,
+}) => {
+  await page.route("**/api/auth/sign-in/email", (route) =>
+    route.fulfill({ status: 401, json: { code: "INVALID_CREDENTIALS" } }),
+  );
+  await page.goto("/ru/login");
+  const email = page.getByLabel("Электронная почта");
+  const password = page.getByLabel("Пароль", { exact: true });
+  const submit = page.getByRole("button", { name: "Войти", exact: true });
+  await email.fill("user@example.test");
+  await password.fill("test-password");
+  await submit.click();
+  await expect(page.getByRole("alert")).toHaveText(
+    "Неверная электронная почта или пароль.",
+  );
+  await expect(email).toHaveValue("user@example.test");
+  await expect(password).toHaveValue("");
+  await expect(submit).toBeEnabled();
+  await expect(page).toHaveURL(/\/ru\/login$/);
+  await expect(page).toHaveTitle("MOVARO");
+  await expectNoHorizontalOverflow(page);
+  await expectAccessible(page);
+});
+
+test("registration preserves name and email after a network failure", async ({
+  page,
+}) => {
+  await page.route("**/api/auth/sign-up/email", (route) => route.abort());
+  await page.goto("/en/signup");
+  await page.getByRole("button", { name: "Light theme" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  const name = page.getByLabel("Name", { exact: true });
+  const email = page.getByLabel("Email address");
+  const password = page.getByLabel("Password", { exact: true });
+  const submit = page.getByRole("button", { name: "Create account" });
+  await name.fill("Test User");
+  await email.fill("user@example.test");
+  await password.fill("test-password");
+  await submit.click();
+  await expect(page.getByRole("alert")).toHaveText(
+    "Authentication is unavailable. Try again later.",
+  );
+  await expect(name).toHaveValue("Test User");
+  await expect(email).toHaveValue("user@example.test");
+  await expect(password).toHaveValue("");
+  await expect(submit).toBeEnabled();
+  await expect(page).toHaveURL(/\/en\/signup$/);
+  await expect(page).toHaveTitle("MOVARO");
+  await expectNoHorizontalOverflow(page);
+  await expectAccessible(page);
+});
