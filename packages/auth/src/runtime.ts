@@ -19,7 +19,11 @@ import { handleUsername } from "./username.js";
 import { handleUsernameSettings } from "./username-settings.js";
 import { readVerifiedSession } from "./verified-session.js";
 
-export { MAX_PROFILE_PHOTO_BYTES, parseStorageConfig, type StorageConfig } from "@freight/storage";
+export {
+  MAX_PROFILE_PHOTO_BYTES,
+  parseStorageConfig,
+  type StorageConfig,
+} from "@freight/storage";
 export { type AuthConfig, parseAuthConfig } from "./config.js";
 
 export interface AuthHttpRuntime {

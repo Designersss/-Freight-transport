@@ -282,6 +282,15 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
         .statusCode,
       403,
     );
+    assert.equal(
+      (await uploadPhoto(Buffer.alloc(2 * 1024 * 1024 + 1))).statusCode,
+      413,
+    );
+    assert.equal(
+      (await uploadPhoto("not an image", { "content-type": "text/plain" }))
+        .statusCode,
+      415,
+    );
     assert.equal((await uploadPhoto(Buffer.from([0]))).statusCode, 400);
     assert.equal(await readKey(), null);
     const uploaded = await uploadPhoto(png);
@@ -305,6 +314,16 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     assert.equal((await uploadPhoto(png)).statusCode, 200);
     const secondKey = await readKey();
     assert.notEqual(firstKey, secondKey);
+    assert.equal(
+      (
+        await fastify.inject({
+          method: "DELETE",
+          url: photoPath,
+          headers: { cookie, origin: "https://untrusted.invalid" },
+        })
+      ).statusCode,
+      403,
+    );
     const removed = await fastify.inject({
       method: "DELETE",
       url: photoPath,

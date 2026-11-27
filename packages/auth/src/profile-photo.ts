@@ -53,12 +53,18 @@ export async function handleProfilePhoto(
   if (!["GET", "POST", "DELETE"].includes(method))
     return fail(405, "METHOD_NOT_ALLOWED");
   if (new URL(request.url).search) return fail(400, "INVALID_REQUEST");
-  if (method !== "GET" && request.headers.get("origin") !== config.AUTH_WEB_ORIGIN)
+  if (
+    method !== "GET" &&
+    request.headers.get("origin") !== config.AUTH_WEB_ORIGIN
+  )
     return fail(403, "INVALID_ORIGIN");
-  if (method === "DELETE" && request.body)
-    return fail(400, "INVALID_REQUEST");
+  if (method === "DELETE" && request.body) return fail(400, "INVALID_REQUEST");
   const contentType = request.headers.get("content-type");
-  if (method === "POST" && contentType !== "image/jpeg" && contentType !== "image/png")
+  if (
+    method === "POST" &&
+    contentType !== "image/jpeg" &&
+    contentType !== "image/png"
+  )
     return fail(415, "INVALID_REQUEST");
 
   try {
@@ -107,7 +113,8 @@ export async function handleProfilePhoto(
     await storage.putProfilePhoto(bytes, contentType, key);
     const changed = await changeProfilePhoto(pool, session, key);
     if (changed === "forbidden") return fail(403, "AUTH_REQUEST_FAILED");
-    if (changed === "reservation-expired") return fail(409, "AUTH_REQUEST_FAILED");
+    if (changed === "reservation-expired")
+      return fail(409, "AUTH_REQUEST_FAILED");
     return Response.json({ success: true }, { headers });
   } catch (error) {
     if (error instanceof InvalidProfilePhotoError)

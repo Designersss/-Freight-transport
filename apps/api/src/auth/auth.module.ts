@@ -13,7 +13,11 @@ import {
 export class AuthService implements OnModuleDestroy {
   private readonly runtime: AuthHttpRuntime;
 
-  constructor(config: AuthConfig, databaseUrl: string, storage?: StorageConfig) {
+  constructor(
+    config: AuthConfig,
+    databaseUrl: string,
+    storage?: StorageConfig,
+  ) {
     this.runtime = createAuthHttpRuntime(config, databaseUrl, storage);
   }
 

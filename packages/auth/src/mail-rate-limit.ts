@@ -58,8 +58,16 @@ export function reservePhotoRequest(
   return reserveBuckets(
     pool,
     [
-      { key: `photo:${action}:global`, seconds: 60, max: action === "read" ? 600 : 60 },
-      { key: `photo:${action}:user:${digest}`, seconds: 60, max: action === "read" ? 60 : 10 },
+      {
+        key: `photo:${action}:global`,
+        seconds: 60,
+        max: action === "read" ? 600 : 60,
+      },
+      {
+        key: `photo:${action}:user:${digest}`,
+        seconds: 60,
+        max: action === "read" ? 60 : 10,
+      },
     ],
     "photo",
   );

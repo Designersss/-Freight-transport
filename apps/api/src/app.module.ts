@@ -17,7 +17,9 @@ export class AppModule {
       module: AppModule,
       imports: [
         HealthModule.register(databaseModule),
-        ...(auth ? [AuthModule.register(auth, config.DATABASE_URL, storage)] : []),
+        ...(auth
+          ? [AuthModule.register(auth, config.DATABASE_URL, storage)]
+          : []),
       ],
     };
   }

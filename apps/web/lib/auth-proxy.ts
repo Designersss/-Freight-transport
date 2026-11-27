@@ -67,7 +67,9 @@ export async function forwardAuth(
     : method === "POST"
       ? paths.has(path)
       : method === "GET" &&
-        ["get-session", "profile", "username/settings", "sessions"].includes(path);
+        ["get-session", "profile", "username/settings", "sessions"].includes(
+          path,
+        );
   if (!allowed) return authFailure(404);
   if (new URL(request.url).search) return authFailure(400);
   try {
@@ -95,10 +97,18 @@ export async function forwardAuth(
     if (method !== "GET") headers.set("origin", web);
     if (method === "POST") {
       const type = request.headers.get("content-type")?.split(";")[0];
-      if (photo ? type !== "image/jpeg" && type !== "image/png" : type !== "application/json")
+      if (
+        !type ||
+        (photo
+          ? type !== "image/jpeg" && type !== "image/png"
+          : type !== "application/json")
+      )
         return authFailure(415);
       try {
-        const bytes = await boundedBody(request, photo ? maxPhotoBody : maxBody);
+        const bytes = await boundedBody(
+          request,
+          photo ? maxPhotoBody : maxBody,
+        );
         body = photo ? new Uint8Array(bytes) : bytes.toString("utf8");
       } catch {
         return authFailure(400);
@@ -119,7 +129,10 @@ export async function forwardAuth(
       "x-content-type-options": "nosniff",
     });
     const type = result.headers.get("content-type");
-    if (type?.startsWith("application/json") || (photo && result.ok && type === "image/jpeg"))
+    if (
+      type?.startsWith("application/json") ||
+      (photo && result.ok && type === "image/jpeg")
+    )
       output.set("content-type", type);
     else return authFailure(502);
     for (const cookie of result.headers.getSetCookie())
