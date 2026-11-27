@@ -50,6 +50,47 @@ try {
       timeout: 120_000,
     },
   );
+  const browserDatabase = "freight_auth_browser";
+  const created = await container.exec([
+    "createdb",
+    "-U",
+    "freight",
+    browserDatabase,
+  ]);
+  if (created.exitCode !== 0)
+    throw new Error("Cannot create isolated browser auth database");
+  const browserUrl = new URL(url);
+  browserUrl.pathname = `/${browserDatabase}`;
+  execFileSync("pnpm", ["db:deploy"], {
+    env: { ...process.env, DATABASE_URL: browserUrl.href },
+    stdio: "inherit",
+    timeout: 120_000,
+  });
+  const browserEnv = { ...process.env };
+  delete browserEnv.SMTP_USER;
+  delete browserEnv.SMTP_PASSWORD;
+  execFileSync(
+    "pnpm",
+    [
+      "--filter",
+      "@freight/e2e",
+      "exec",
+      "playwright",
+      "test",
+      "--config",
+      "playwright.auth.config.ts",
+    ],
+    {
+      env: {
+        ...browserEnv,
+        AUTH_BROWSER_DATABASE_URL: browserUrl.href,
+        AUTH_BROWSER_SMTP_PORT: String(mailpit.getMappedPort(1025)),
+        AUTH_BROWSER_MAILPIT_PORT: String(mailpit.getMappedPort(8025)),
+      },
+      stdio: "inherit",
+      timeout: 240_000,
+    },
+  );
 } finally {
   try {
     await mailpit?.stop();

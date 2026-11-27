@@ -22,3 +22,18 @@ pnpm test:e2e
 ## CI runner compatibility
 
 Run 45881174837 прошёл frozen install, OpenAPI, lint, typecheck, unit и build, но не установил Chromium: ubuntu-latest использовал Ubuntu 26.04, которую Playwright 1.60.0 не поддерживает. Закрепляем ubuntu-24.04 для всего quality job, не исключая браузерные, лицензионные или интеграционные проверки. Источники: https://github.com/microsoft/playwright/blob/v1.60.0/packages/playwright-core/src/server/registry/nativeDeps.ts ; https://github.com/actions/runner-images . Повторный Linux CI обязателен.
+
+## RD-04 — реальная email-авторизация в браузере
+
+Отдельная конфигурация playwright.auth.config.ts запускается обязательным шагом Better Auth and SSE integration with PostgreSQL Testcontainers. Использует временный PostgreSQL с отдельной БД freight_auth_browser, Mailpit v1.34.0 и реальные Web/API на loopback-портах 3110/4110. Случайные тестовые учётные данные, SMTP только локально; production не активируется. Playwright не переиспользует запущенные серверы, trace, screenshot и video отключены для этого сценария из-за одноразовых ссылок и cookies. После тестов Testcontainers удаляет временные контейнеры. Обычные desktop/mobile E2E и интеграционные тесты сохранены.
+
+Сценарий Chromium desktop, RU: регистрация, отказ входа до подтверждения email, получение настоящего письма через Mailpit API, переход по ссылке, вход, выход, повторное использование старой cookie и отказ доступа к account. Отдельно проверяется отсутствие сессии после регистрации и подтверждения почты. Это не полная матрица UI или тест всех ролей.
+
+Локально после frozen install, сборки и установки Chromium:
+
+```bash
+npm --prefix scripts/auth-compat ci --ignore-scripts --no-audit --no-fund
+node scripts/auth-compat/testcontainers.mjs
+```
+
+Требуется локальный Docker и свободные порты 3110/4110. Не подключать production БД или SMTP. Источники: https://playwright.dev/docs/test-webserver ; https://playwright.dev/docs/api/class-apirequestcontext ; https://mailpit.axllent.org/docs/api-v1/ ; https://node.testcontainers.org/features/containers/ .

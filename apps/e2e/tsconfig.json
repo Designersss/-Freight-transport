@@ -7,5 +7,10 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["playwright.config.ts", "tests/**/*.ts"]
+  "include": [
+    "playwright.config.ts",
+    "playwright.auth.config.ts",
+    "tests/**/*.ts",
+    "auth-tests/**/*.ts"
+  ]
 }
