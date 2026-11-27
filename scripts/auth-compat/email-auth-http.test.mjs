@@ -147,6 +147,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     assert.equal(unverified.statusCode, 403);
     assert.equal(unverified.json().code, "EMAIL_NOT_VERIFIED");
     assert.equal(unverified.headers["set-cookie"], undefined);
+    assert.equal((await get(`${base}/profile`)).statusCode, 401);
     const blockedMail = await post("/send-verification-email", {
       email: email.toUpperCase(),
     });
@@ -197,6 +198,99 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     assert.equal(session.statusCode, 200);
     assert.equal(session.json().user.emailVerified, true);
     assert.equal(session.json().session.token, undefined);
+    const profilePath = `${base}/profile`;
+    const profile = {
+      firstName: "Test",
+      lastName: "Driver",
+      role: "DRIVER",
+    };
+    assert.equal((await get(profilePath)).statusCode, 401);
+    assert.equal((await post("/profile", profile)).statusCode, 401);
+    const missingProfile = await get(profilePath, cookie);
+    assert.equal(missingProfile.statusCode, 200);
+    assert.equal(missingProfile.json(), null);
+    assert.equal(
+      (await get(`${profilePath}?userId=another-user`, cookie)).statusCode,
+      400,
+    );
+    for (const invalidProfile of [
+      { ...profile, role: "PLATFORM_ADMIN" },
+      { ...profile, firstName: " " },
+      { ...profile, driverAge: 0 },
+      { ...profile, role: "COMPANY_OWNER", driverAge: 30 },
+      { ...profile, userId: "another-user" },
+      { ...profile, status: "ACTIVE" },
+    ]) {
+      assert.equal(
+        (await post("/profile", invalidProfile, { cookie })).statusCode,
+        400,
+      );
+    }
+    assert.equal(
+      (
+        await post("/profile", profile, {
+          cookie,
+          origin: "https://untrusted.invalid",
+        })
+      ).statusCode,
+      403,
+    );
+    const competing = await Promise.all([
+      post("/profile", profile, { cookie }),
+      post("/profile", { ...profile, role: "DISPATCHER" }, { cookie }),
+    ]);
+    assert.deepEqual(
+      competing.map(({ statusCode }) => statusCode).sort(),
+      [201, 409],
+    );
+    const created = competing.find(({ statusCode }) => statusCode === 201);
+    assert.ok(created);
+    const saved = created.json();
+    assert.ok(["DRIVER", "DISPATCHER"].includes(saved.role));
+    assert.deepEqual(saved, {
+      firstName: "Test",
+      lastName: "Driver",
+      role: saved.role,
+      driverAge: null,
+    });
+    const read = await get(profilePath, cookie);
+    assert.equal(read.statusCode, 200);
+    assert.deepEqual(read.json(), saved);
+    assert.equal(
+      (await post("/profile", { ...profile, role: "COMPANY_OWNER" }, { cookie }))
+        .statusCode,
+      409,
+    );
+    assert.deepEqual((await get(profilePath, cookie)).json(), saved);
+    const userId = session.json().user.id;
+    await pool.query(
+      'UPDATE "user" SET "emailVerified" = false WHERE id = $1',
+      [userId],
+    );
+    try {
+      assert.equal((await get(profilePath, cookie)).statusCode, 403);
+    } finally {
+      await pool.query(
+        'UPDATE "user" SET "emailVerified" = true WHERE id = $1',
+        [userId],
+      );
+    }
+    await pool.query(
+      "UPDATE user_profiles SET status = 'DEACTIVATED' WHERE user_id = $1",
+      [userId],
+    );
+    try {
+      assert.equal((await get(profilePath, cookie)).statusCode, 403);
+      assert.equal(
+        (await post("/profile", profile, { cookie })).statusCode,
+        403,
+      );
+    } finally {
+      await pool.query(
+        "UPDATE user_profiles SET status = 'ACTIVE' WHERE user_id = $1",
+        [userId],
+      );
+    }
     assert.equal(
       (await post("/request-password-reset", { email })).statusCode,
       200,
@@ -257,6 +351,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     const logout = await post("/sign-out", {}, { cookie: newCookie });
     assert.equal(logout.statusCode, 200);
     assert.equal((await get(`${base}/get-session`, newCookie)).json(), null);
+    assert.equal((await get(profilePath, newCookie)).statusCode, 401);
   } finally {
     try {
       await app?.close();

@@ -38,3 +38,23 @@ export const publicSession = z.object({
   }),
   session: z.object({ expiresAt: z.string() }),
 });
+
+const publicRole = z.enum(["COMPANY_OWNER", "DISPATCHER", "DRIVER"]);
+const profileName = z.string().trim().min(1).max(200);
+const driverAge = z.number().int().positive().max(2147483647);
+
+export const profileInput = z
+  .strictObject({
+    firstName: profileName,
+    lastName: profileName,
+    role: publicRole,
+    driverAge: driverAge.optional(),
+  })
+  .refine((value) => value.role === "DRIVER" || value.driverAge === undefined);
+
+export const publicProfile = z.object({
+  firstName: profileName,
+  lastName: profileName,
+  role: publicRole,
+  driverAge: driverAge.nullable(),
+});

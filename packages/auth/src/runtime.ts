@@ -4,6 +4,7 @@ import { type AuthConfig, parseAuthConfig } from "./config.js";
 import { authBodies as bodies, publicSession } from "./contracts.js";
 import { isDeliverableEmail } from "./email.js";
 import { reserveMailRequest } from "./mail-rate-limit.js";
+import { handleProfile } from "./profile.js";
 import { createSmtpMailer } from "./smtp-mailer.js";
 
 export { type AuthConfig, parseAuthConfig } from "./config.js";
@@ -45,6 +46,8 @@ export function createAuthHttpRuntime(
         return failure(404, "NOT_FOUND");
       }
       const path = url.pathname.slice(AUTH_BASE_PATH.length);
+      if (path === "/profile")
+        return handleProfile(request, config, auth, pool);
       const headers = new Headers(request.headers);
       let body: string | undefined;
       if (request.method === "POST") {
