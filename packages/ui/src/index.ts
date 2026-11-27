@@ -2,6 +2,7 @@ export { AppShell } from "./app-shell";
 export { Alert, AlertDescription, AlertTitle } from "./components/alert";
 export { Badge, badgeVariants } from "./components/badge";
 export { Button, buttonVariants } from "./components/button";
+export { Calendar } from "./components/calendar";
 export {
   Card,
   CardAction,
@@ -11,7 +12,6 @@ export {
   CardHeader,
   CardTitle,
 } from "./components/card";
-export { Calendar } from "./components/calendar";
 export { DatePicker } from "./components/date-picker";
 export {
   Empty,

@@ -258,9 +258,9 @@ for (const variant of [
     const calendar = page.getByRole("dialog", { name: variant.openCalendar });
     await expect(calendar.getByLabel(variant.month)).toHaveValue("4");
     await expect(calendar.getByLabel(variant.year)).toHaveValue("1998");
-    await expect(
-      calendar.locator('[aria-selected="true"] button'),
-    ).toHaveText("15");
+    await expect(calendar.locator('[aria-selected="true"] button')).toHaveText(
+      "15",
+    );
     await page.keyboard.press("Escape");
     await expect(calendar).toHaveCount(0);
     await expect(trigger).toBeFocused();

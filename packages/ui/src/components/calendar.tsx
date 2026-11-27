@@ -7,9 +7,27 @@ import {
   ChevronRightIcon,
 } from "lucide-react";
 import { type ComponentProps, useEffect, useRef } from "react";
-import { type DayButton, DayPicker, type DayPickerProps } from "react-day-picker";
+import {
+  type DayButton,
+  DayPicker,
+  type DayPickerProps,
+} from "react-day-picker";
 import { cn } from "../lib/utils";
 import { Button, buttonVariants } from "./button";
+
+function CalendarChevron({
+  orientation,
+  className,
+}: ComponentProps<typeof import("react-day-picker").Chevron>) {
+  const Icon =
+    orientation === "left"
+      ? ChevronLeftIcon
+      : orientation === "right"
+        ? ChevronRightIcon
+        : ChevronDownIcon;
+
+  return <Icon className={cn("size-4", className)} aria-hidden="true" />;
+}
 
 function CalendarDayButton({
   className,
@@ -73,15 +91,7 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        Chevron: ({ orientation, className }) => {
-          const Icon =
-            orientation === "left"
-              ? ChevronLeftIcon
-              : orientation === "right"
-                ? ChevronRightIcon
-                : ChevronDownIcon;
-          return <Icon className={cn("size-4", className)} aria-hidden="true" />;
-        },
+        Chevron: CalendarChevron,
         DayButton: CalendarDayButton,
         ...components,
       }}
