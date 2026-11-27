@@ -16,13 +16,21 @@ export const telegramAccountCondition = `NOT u."emailVerified"
 const emailAccountCondition = `u."emailVerified" = true
   AND u.email NOT LIKE '%.invalid'`;
 
-export const eligibleAccount = `FROM "user" u
+const activeSessionAccount = `FROM "user" u
   JOIN user_profiles p ON p.user_id = u.id
   JOIN "session" s ON s."userId" = u.id
   WHERE u.id = $1 AND s.id = $2 AND s."expiresAt" > clock_timestamp()
-    AND p.status = 'ACTIVE' AND p.role <> 'PLATFORM_ADMIN'
+    AND p.status = 'ACTIVE' AND p.role <> 'PLATFORM_ADMIN'`;
+
+export const eligibleAccount = `${activeSessionAccount}
     AND ( (${emailAccountCondition})
       OR (u.username IS NOT NULL AND ${telegramAccountCondition}) )`;
+
+// Photo settings require a complete public account with verified real email,
+// regardless of whether the current login was email or linked Telegram.
+export const eligibleEmailAccount = `${activeSessionAccount}
+    AND ${emailAccountCondition}
+    AND u.username IS NOT NULL AND NOT s."adminSession"`;
 
 export async function canUsePublicSession(
   pool: Pool,

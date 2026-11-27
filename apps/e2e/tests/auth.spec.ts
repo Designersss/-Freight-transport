@@ -796,6 +796,7 @@ test("Telegram onboarding reuses role, profile and username steps without creden
   page,
 }) => {
   let completed = false;
+  let photoRequests = 0;
   const profile = {
     firstName: "Test",
     lastName: "Driver",
@@ -840,9 +841,10 @@ test("Telegram onboarding reuses role, profile and username steps without creden
     completed = true;
     return route.fulfill({ json: { success: true } });
   });
-  await page.route("**/api/auth/profile/photo", (route) =>
-    route.fulfill({ status: 404, json: { code: "NOT_FOUND" } }),
-  );
+  await page.route("**/api/auth/profile/photo", (route) => {
+    photoRequests++;
+    return route.fulfill({ status: 403, json: { code: "AUTH_REQUEST_FAILED" } });
+  });
   await page.route("**/api/auth/username/settings", (route) =>
     route.fulfill({ json: { username: "test_driver", nextChangeAt: null } }),
   );
@@ -871,7 +873,14 @@ test("Telegram onboarding reuses role, profile and username steps without creden
     page.getByText("Telegram account", { exact: true }),
   ).toBeVisible();
   await expect(page.getByLabel("Current password")).toHaveCount(0);
+  await expect(page.locator("#profile-photo-title")).toHaveCount(0);
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  expect(photoRequests).toBe(0);
   await expect(page).toHaveURL(/\/en\/account$/);
+  await page.reload();
+  await expect(page.getByText("Telegram account", { exact: true })).toBeVisible();
+  await expect(page.locator("#profile-photo-title")).toHaveCount(0);
+  expect(photoRequests).toBe(0);
 });
 
 test("Telegram settings allow one permanent connection", async ({ page }) => {

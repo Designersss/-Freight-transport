@@ -114,6 +114,9 @@ export function Account({
   }
   const needsProfile = session && profileLoaded && !profile;
   const telegramOnly = session?.user.email === null;
+  const canManagePhoto = Boolean(
+    session?.user.email && session.user.emailVerified,
+  );
   if (needsProfile && telegramOnly) {
     return (
       <SignupWizard
@@ -170,7 +173,7 @@ export function Account({
               </Button>
             </div>
           )}
-          {profileLoaded && profile && (
+          {profileLoaded && profile && canManagePhoto && (
             <ProfilePhotoSettings
               key={session.user.id}
               locale={locale}

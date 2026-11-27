@@ -14,6 +14,7 @@ import { genericOAuth } from "better-auth/plugins";
 import pg from "pg";
 import { createAuthOptions } from "../../packages/auth/dist/auth.js";
 import { parseAuthConfig } from "../../packages/auth/dist/config.js";
+import { handleProfilePhoto } from "../../packages/auth/dist/profile-photo.js";
 import { handleTelegramOAuth } from "../../packages/auth/dist/telegram-oauth-http.js";
 import {
   createTelegramProvider,
@@ -281,6 +282,47 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
     );
     assert.equal(complete.status, 200);
     assert.equal(await sessionAccess(pool, authConfig, identity), "active");
+    // Authorization must precede all storage operations. This test double
+    // fails on any access; the real S3 success flow is exercised elsewhere.
+    const noStorageAccess = {
+      async getProfilePhoto() {
+        assert.fail("Unexpected photo read");
+      },
+      async putProfilePhoto() {
+        assert.fail("Unexpected photo write");
+      },
+    };
+    const photoRequest = (sessionCookie, method) =>
+      handleProfilePhoto(
+        new Request(`${origin}${base}/profile/photo`, {
+          method,
+          headers: {
+            cookie: sessionCookie,
+            origin,
+            ...(method === "POST" ? { "content-type": "image/png" } : {}),
+          },
+          ...(method === "POST" ? { body: new Uint8Array([0]) } : {}),
+        }),
+        authConfig,
+        auth,
+        pool,
+        noStorageAccess,
+      );
+    for (const method of ["GET", "POST", "DELETE"]) {
+      const denied = await photoRequest(cookie(first), method);
+      assert.equal(denied.status, 403);
+      assert.deepEqual(await denied.json(), { code: "AUTH_REQUEST_FAILED" });
+    }
+    const photoState = await pool.query(
+      "SELECT photo_key FROM user_profiles WHERE user_id = $1",
+      [created.user.id],
+    );
+    assert.equal(photoState.rows[0].photo_key, null);
+    const photoReservations = await pool.query(
+      "SELECT key FROM profile_photo_cleanup WHERE owner_id = $1",
+      [created.user.id],
+    );
+    assert.equal(photoReservations.rowCount, 0);
     await reject(flow); // Consumed state cannot be replayed.
 
     const previousToken = token;
@@ -360,6 +402,11 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
     assert.equal(linkedSession.user.email, email);
     assert.equal(linkedSession.user.emailVerified, true);
     assert.equal(linkedSession.user.name, "Email Driver");
+    // A linked Telegram login is still eligible if the account's real email
+    // is verified. No photo yet is 404, not an authorization denial.
+    const photo = await photoRequest(cookie(viaTelegram), "GET");
+    assert.equal(photo.status, 404);
+    assert.deepEqual(await photo.json(), { code: "NOT_FOUND" });
     const provenance = await pool.query(
       'SELECT s."telegramAccountId", a."accountId" FROM "session" s JOIN "account" a ON a.id = s."telegramAccountId" WHERE s.id = $1',
       [linkedSession.session.id],

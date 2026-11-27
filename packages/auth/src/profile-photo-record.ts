@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Pool } from "pg";
-import { eligibleAccount } from "./active-account.js";
+import { eligibleEmailAccount } from "./active-account.js";
 
 export interface PhotoSession {
   userId: string;
@@ -14,7 +14,7 @@ export async function readProfilePhotoKey(
   session: PhotoSession,
 ): Promise<string | null | undefined> {
   const result = await pool.query<{ photo_key: string | null }>(
-    `SELECT p.photo_key ${eligibleAccount}`,
+    `SELECT p.photo_key ${eligibleEmailAccount}`,
     [session.userId, session.sessionId],
   );
   return result.rows[0]?.photo_key;
@@ -29,7 +29,7 @@ export async function reserveProfilePhotoKey(
   const result = await pool.query(
     `INSERT INTO profile_photo_cleanup (key, owner_id, available_at)
      SELECT $3, u.id, clock_timestamp() + interval '10 minutes'
-     ${eligibleAccount}
+     ${eligibleEmailAccount}
      RETURNING key`,
     [session.userId, session.sessionId, key],
   );
@@ -48,13 +48,13 @@ export async function changeProfilePhoto(
   try {
     await client.query("BEGIN");
     const locked = await client.query(
-      `SELECT u.id ${eligibleAccount} FOR UPDATE OF u, p, s`,
+      `SELECT u.id ${eligibleEmailAccount} FOR UPDATE OF u, p, s`,
       identity,
     );
     const current = locked.rowCount
       ? (
           await client.query<{ photo_key: string | null }>(
-            `SELECT p.photo_key ${eligibleAccount}`,
+            `SELECT p.photo_key ${eligibleEmailAccount}`,
             identity,
           )
         ).rows[0]

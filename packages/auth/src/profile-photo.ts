@@ -76,6 +76,7 @@ export async function handleProfilePhoto(
       pool,
     );
     if (verified instanceof Response) return verified;
+    if (verified.access !== "email") return fail(403, "AUTH_REQUEST_FAILED");
     const session = {
       userId: verified.user.id,
       sessionId: verified.session.id,

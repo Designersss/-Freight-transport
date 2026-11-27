@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { test } from "node:test";
 import pg from "pg";
 import {
@@ -24,13 +24,23 @@ test("profile photo reservations, replacement and durable cleanup", async () => 
   const pool = new pg.Pool({ connectionString: databaseUrl });
   const database = createDatabaseClient(databaseUrl);
 
-  async function createAccount() {
+  async function createAccount(telegramOnly = false) {
     const userId = randomUUID();
     const sessionId = randomUUID();
+    const subject = randomUUID();
+    const email = telegramOnly
+      ? `${createHash("sha256").update(subject).digest("hex")}@telegram.invalid`
+      : `${userId}@example.test`;
+    const username = `photo_${userId.replaceAll("-", "").slice(0, 20)}`;
     await pool.query(
-      'INSERT INTO "user" (id, name, email, "emailVerified") VALUES ($1, $2, $3, true)',
-      [userId, "Photo test", `${userId}@example.test`],
+      'INSERT INTO "user" (id, name, email, "emailVerified", username) VALUES ($1, $2, $3, $4, $5)',
+      [userId, "Photo test", email, !telegramOnly, username],
     );
+    if (telegramOnly)
+      await pool.query(
+        'INSERT INTO "account" (id, "userId", "providerId", "accountId") VALUES ($1, $2, $3, $4)',
+        [randomUUID(), userId, "telegram", subject],
+      );
     await pool.query(
       `INSERT INTO user_profiles (user_id, first_name, last_name, role, birth_date)
        VALUES ($1, 'Photo', 'Test', 'DRIVER', '1996-02-29')`,
@@ -47,10 +57,14 @@ test("profile photo reservations, replacement and durable cleanup", async () => 
   try {
     const owner = await createAccount();
     const other = await createAccount();
+    const telegram = await createAccount(true);
     const invalid = { ...owner, sessionId: other.sessionId };
     assert.equal(await readProfilePhotoKey(pool, invalid), undefined);
     assert.equal(await reserveProfilePhotoKey(pool, invalid), null);
     assert.equal(await readProfilePhotoKey(pool, owner), null);
+    assert.equal(await readProfilePhotoKey(pool, telegram), undefined);
+    assert.equal(await reserveProfilePhotoKey(pool, telegram), null);
+    assert.equal(await changeProfilePhoto(pool, telegram, null), "forbidden");
 
     const first = await reserveProfilePhotoKey(pool, owner);
     assert.ok(first);
@@ -58,6 +72,7 @@ test("profile photo reservations, replacement and durable cleanup", async () => 
       await changeProfilePhoto(pool, other, first),
       "reservation-expired",
     );
+    assert.equal(await changeProfilePhoto(pool, telegram, first), "forbidden");
     assert.equal(await changeProfilePhoto(pool, owner, first), "updated");
     assert.equal(await readProfilePhotoKey(pool, owner), first);
     assert.equal(await readProfilePhotoKey(pool, other), null);
@@ -194,6 +209,42 @@ test("profile photo reservations, replacement and durable cleanup", async () => 
     assert.equal(removed.key, current);
     assert.equal(await completeProfilePhotoCleanup(database, removed), true);
     assert.equal(await database.profilePhotoCleanup.count(), 0);
+
+    // Loss of email verification between reservation and attachment must
+    // preserve the cleanup candidate and deny access to the profile photo.
+    const reserved = await reserveProfilePhotoKey(pool, restored);
+    assert.ok(reserved);
+    await pool.query(
+      'UPDATE "user" SET "emailVerified" = false WHERE id = $1',
+      [owner.userId],
+    );
+    try {
+      assert.equal(await readProfilePhotoKey(pool, restored), undefined);
+      assert.equal(await reserveProfilePhotoKey(pool, restored), null);
+      assert.equal(
+        await changeProfilePhoto(pool, restored, reserved),
+        "forbidden",
+      );
+      assert.equal(await changeProfilePhoto(pool, restored, null), "forbidden");
+      const cleanup = await database.profilePhotoCleanup.findUnique({
+        where: { key: reserved },
+      });
+      assert.equal(cleanup?.ownerId, owner.userId);
+      assert.equal(
+        (
+          await database.userProfile.findUniqueOrThrow({
+            where: { userId: owner.userId },
+          })
+        ).photoKey,
+        null,
+      );
+    } finally {
+      await pool.query(
+        'UPDATE "user" SET "emailVerified" = true WHERE id = $1',
+        [owner.userId],
+      );
+      await database.profilePhotoCleanup.delete({ where: { key: reserved } });
+    }
   } finally {
     await database.$disconnect();
     await pool.end();
