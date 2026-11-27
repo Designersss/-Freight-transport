@@ -56,9 +56,12 @@ test("email change HTTP sends two real SMTP messages and consumes links only by 
         item.To.some((to) => to.Address === recipient),
       );
       if (entry) {
-        const response = await fetch(`${mailOrigin}/api/v1/message/${entry.ID}`, {
-          signal: AbortSignal.timeout(3000),
-        });
+        const response = await fetch(
+          `${mailOrigin}/api/v1/message/${entry.ID}`,
+          {
+            signal: AbortSignal.timeout(3000),
+          },
+        );
         const { Text } = await response.json();
         const raw = Text.match(/https?:\/\/[^\s]+/)?.[0];
         if (raw?.includes("/email-change-confirmation")) {

@@ -7,6 +7,7 @@ import { Link, useRouter } from "@freight/ui/navigation";
 import { useEffect, useState } from "react";
 import type { z } from "zod";
 import { AuthPanel } from "./auth-panel";
+import { EmailChangeSettings } from "./email-change-settings";
 import { PasswordSettings } from "./password-settings";
 import { ProfileForm } from "./profile-form";
 import { ProfilePhotoSettings } from "./profile-photo-settings";
@@ -167,6 +168,13 @@ export function Account({
           {profileLoaded && profile && <UsernameSettings locale={locale} />}
           {profileLoaded && profile && (
             <>
+              {session.user.email !== null && (
+                <EmailChangeSettings
+                  key={session.user.email}
+                  locale={locale}
+                  currentEmail={session.user.email}
+                />
+              )}
               {!telegramOnly && (
                 <PasswordSettings
                   locale={locale}

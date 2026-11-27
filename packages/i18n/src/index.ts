@@ -58,6 +58,30 @@ const ru = {
     retry: "Повторить",
     name: "Имя",
     email: "Электронная почта",
+    emailChangeTitle: "Смена электронной почты",
+    emailChangeNew: "Новая электронная почта",
+    emailChangeAction: "Сменить почту",
+    emailChangeDescription:
+      "Подтвердите смену через старую и новую почту. До этого текущий адрес останется действующим.",
+    emailChangeSame: "Укажите адрес, отличный от текущего.",
+    emailChangeOldSent:
+      "Письмо отправлено на текущую почту. Откройте его и подтвердите запрос.",
+    emailChangeFresh:
+      "Для смены почты выйдите и снова войдите через email и пароль.",
+    emailChangeConfirmTitle: "Подтверждение смены почты",
+    emailChangeConfirmDescription:
+      "Подтвердите действие, только если вы сами запросили смену электронной почты.",
+    emailChangeConfirmAction: "Подтвердить смену почты",
+    emailChangeNext:
+      "Запрос подтверждён. Проверьте новую почту и подтвердите адрес по второй ссылке.",
+    emailChangeDone:
+      "Электронная почта изменена. Войдите с новым адресом. Все прежние сеансы завершены.",
+    emailChangeInvalid:
+      "Ссылка недействительна или истекла. Начните смену почты заново в настройках.",
+    emailChangeRetry:
+      "Не удалось завершить действие. Попробуйте позже или начните смену почты заново.",
+    emailChangeBackAccount: "Вернуться в аккаунт",
+    emailChangeRestart: "Начать заново в настройках",
     password: "Пароль",
     newPassword: "Новый пароль",
     changePasswordTitle: "Смена пароля",
@@ -240,6 +264,30 @@ const en: typeof ru = {
     retry: "Try again",
     name: "Name",
     email: "Email address",
+    emailChangeTitle: "Change email address",
+    emailChangeNew: "New email address",
+    emailChangeAction: "Change email",
+    emailChangeDescription:
+      "Confirm the change through both your current and new inboxes. Your current address remains active until then.",
+    emailChangeSame: "Enter an address different from your current email.",
+    emailChangeOldSent:
+      "We sent a message to your current email. Open it and confirm the request.",
+    emailChangeFresh:
+      "Sign out and sign in again with your email and password to change your email.",
+    emailChangeConfirmTitle: "Confirm email change",
+    emailChangeConfirmDescription:
+      "Confirm only if you requested an email address change.",
+    emailChangeConfirmAction: "Confirm email change",
+    emailChangeNext:
+      "Request confirmed. Check your new inbox and confirm the address using the second link.",
+    emailChangeDone:
+      "Email changed. Sign in with your new address. All previous sessions have ended.",
+    emailChangeInvalid:
+      "This link is invalid or expired. Start a new email change request in settings.",
+    emailChangeRetry:
+      "Unable to complete the action. Try later or start a new email change request.",
+    emailChangeBackAccount: "Back to account",
+    emailChangeRestart: "Start again in settings",
     password: "Password",
     newPassword: "New password",
     changePasswordTitle: "Change password",

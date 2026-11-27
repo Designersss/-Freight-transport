@@ -189,8 +189,7 @@ export async function confirmEmailChange(
 // A delivery failure invalidates only its own outstanding token, never a
 // concurrently superseding request. No retry can reuse a consumed link.
 export async function discardEmailChangeDelivery(pool: Pool, token: string) {
-  await pool.query(
-    "DELETE FROM pending_email_change WHERE token_hash = $1",
-    [digest(token)],
-  );
+  await pool.query("DELETE FROM pending_email_change WHERE token_hash = $1", [
+    digest(token),
+  ]);
 }

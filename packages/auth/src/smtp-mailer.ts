@@ -30,8 +30,7 @@ export function createSmtpMailer(config: AuthConfig): AuthMailer {
         throw new Error("Invalid auth mail recipient");
       }
       const link = new URL(url);
-      const change =
-        kind === "email-change-old" || kind === "email-change-new";
+      const change = kind === "email-change-old" || kind === "email-change-new";
       const changeLink =
         link.origin === config.AUTH_WEB_ORIGIN &&
         /^\/(ru|en)\/email-change-confirmation$/.test(link.pathname) &&
@@ -43,11 +42,7 @@ export function createSmtpMailer(config: AuthConfig): AuthMailer {
         (kind === "verify-email"
           ? link.pathname === "/api/v1/auth/verify-email"
           : /^\/api\/v1\/auth\/reset-password\/[^/]+$/.test(link.pathname));
-      if (
-        link.username ||
-        link.password ||
-        !(change ? changeLink : authLink)
-      ) {
+      if (link.username || link.password || !(change ? changeLink : authLink)) {
         throw new Error("Invalid auth mail URL");
       }
       const verification = kind === "verify-email";

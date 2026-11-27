@@ -57,3 +57,5 @@ RD-04 персональные данные: EN/light контролируемы
 Telegram UI: добавлены контролируемые тесты capability/start (EN login, RU signup) и Telegram-only onboarding (EN), без внешнего запроса к Telegram, desktop/mobile Chromium. Проверяют отсутствие email/password/photo на шагах, suggestion/registration payload, активный профиль после reload, отказ внешнего redirect. Реальный browser OAuth callback и полная матрица тем/локалей пока не подтверждены.
 
 Telegram settings: controlled EN/light desktop/mobile Chromium сценарий проверяет server permissions, callback error, первоначальную привязку, постоянный статус без кнопки отвязки и отказ внешнего redirect. Результаты не подтверждены; RU/dark и реальный OAuth требуют приёмки.
+
+Email change: controlled tests cover settings form, unchanged old address, stale-session error, RU/EN fragment confirmation, explicit POST only, second-stage success, sign-in link and invalid missing fragment. Real SMTP HTTP scenario separately registered in auth compatibility; actual browser/mail roundtrip and dark/light matrix not yet confirmed.
