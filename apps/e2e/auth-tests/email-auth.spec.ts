@@ -83,9 +83,19 @@ test("real signup, email verification, login and session revocation", async ({
   });
   expect(available.status()).toBe(200);
   expect(await available.json()).toEqual({ available: true });
-  await page.getByLabel("Имя", { exact: true }).fill("Test User");
   await page.getByLabel("Электронная почта").fill(email);
   await page.getByLabel("Пароль", { exact: true }).fill(password);
+  const next = page.getByRole("button", { name: "Продолжить", exact: true });
+  await next.click();
+  await page.getByRole("button", { name: "Водитель", exact: true }).click();
+  await page.getByLabel("Имя", { exact: true }).fill("Test");
+  await page.getByLabel("Фамилия", { exact: true }).fill("Driver");
+  await page.getByLabel("Дата рождения").fill("15.05.1998");
+  await next.click();
+  const initialUsername = page.getByLabel("Username", { exact: true });
+  await expect(initialUsername).toHaveValue("test_driver");
+  const registeredUsername = `driver_${randomBytes(8).toString("hex")}`;
+  await initialUsername.fill(registeredUsername);
   const [signup] = await Promise.all([
     page.waitForResponse(
       (response) =>
@@ -142,14 +152,6 @@ test("real signup, email verification, login and session revocation", async ({
   await page.getByRole("button", { name: "Войти", exact: true }).click();
   await expect(page).toHaveURL("/ru/account");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Завершите регистрацию",
-  );
-  await page.getByLabel("Имя", { exact: true }).fill("Test");
-  await page.getByLabel("Фамилия", { exact: true }).fill("Driver");
-  await page.getByRole("button", { name: "Водитель", exact: true }).click();
-  await page.getByLabel("Дата рождения").fill("15.05.1998");
-  await page.getByRole("button", { name: "Завершить регистрацию" }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Ваш аккаунт",
   );
   const profile = await page.request.get("/api/auth/profile");
@@ -164,7 +166,7 @@ test("real signup, email verification, login and session revocation", async ({
   const settings = await page.request.get("/api/auth/username/settings");
   expect(settings.status()).toBe(200);
   expect(await settings.json()).toEqual({
-    username: null,
+    username: registeredUsername,
     nextChangeAt: null,
   });
   const username = `driver_${randomBytes(8).toString("hex")}`;
@@ -173,7 +175,9 @@ test("real signup, email verification, login and session revocation", async ({
     data: { username },
   });
   expect(assigned.status()).toBe(200);
-  expect(await assigned.json()).toEqual({ username, nextChangeAt: null });
+  const changed = await assigned.json();
+  expect(changed.username).toBe(username);
+  expect(Date.parse(changed.nextChangeAt)).toBeGreaterThan(Date.now());
   await page.reload();
   await expect(page.getByRole("main").getByText("Водитель")).toBeVisible();
   await expect(

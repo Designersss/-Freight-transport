@@ -21,16 +21,14 @@ import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AuthPanel } from "./auth-panel";
 
-export type AuthMode = "login" | "signup" | "forgot" | "reset" | "verification";
+export type AuthMode = "login" | "forgot" | "reset" | "verification";
 type Values = {
-  name: string;
   email: string;
   password: string;
   newPassword: string;
 };
 const endpoints = {
   login: "/sign-in/email",
-  signup: "/sign-up/email",
   forgot: "/request-password-reset",
   reset: "/reset-password",
   verification: "/send-verification-email",
@@ -61,25 +59,22 @@ export function AuthForm({
     resetField,
     formState: { errors, isSubmitting },
   } = useForm<Values>({
-    defaultValues: { name: "", email: "", password: "", newPassword: "" },
+    defaultValues: { email: "", password: "", newPassword: "" },
   });
   const title = {
     login: t.loginTitle,
-    signup: t.signupTitle,
     forgot: t.forgotTitle,
     reset: t.resetTitle,
     verification: t.verificationTitle,
   }[mode];
   const description = {
     login: t.loginDescription,
-    signup: t.signupDescription,
     forgot: t.forgotDescription,
     reset: t.resetDescription,
     verification: t.verificationDescription,
   }[mode];
   const action = {
     login: t.loginAction,
-    signup: t.signupAction,
     forgot: t.send,
     reset: t.resetAction,
     verification: t.resend,
@@ -91,13 +86,6 @@ export function AuthForm({
     type: string;
     autoComplete: string;
   }> = [];
-  if (mode === "signup")
-    fields.push({
-      name: "name",
-      label: t.name,
-      type: "text",
-      autoComplete: "name",
-    });
   if (mode !== "reset")
     fields.push({
       name: "email",
@@ -105,12 +93,12 @@ export function AuthForm({
       type: "email",
       autoComplete: "email",
     });
-  if (mode === "login" || mode === "signup")
+  if (mode === "login")
     fields.push({
       name: "password",
       label: t.password,
       type: "password",
-      autoComplete: mode === "login" ? "current-password" : "new-password",
+      autoComplete: "current-password",
     });
   if (mode === "reset")
     fields.push({
@@ -126,12 +114,6 @@ export function AuthForm({
     setNotice("");
     const payload = {
       login: { email: values.email, password: values.password },
-      signup: {
-        name: values.name,
-        email: values.email,
-        password: values.password,
-        locale,
-      },
       forgot: { email: values.email, locale },
       reset: { token, newPassword: values.newPassword },
       verification: { email: values.email, locale },
@@ -142,7 +124,6 @@ export function AuthForm({
         const key = issue.path[0];
         if (
           key === "email" ||
-          key === "name" ||
           key === "password" ||
           key === "newPassword"
         ) {
@@ -150,11 +131,7 @@ export function AuthForm({
             key,
             {
               message:
-                key === "email"
-                  ? t.invalidEmail
-                  : key === "name"
-                    ? t.invalidName
-                    : t.invalidPassword,
+                key === "email" ? t.invalidEmail : t.invalidPassword,
             },
             { shouldFocus: true },
           );
@@ -205,10 +182,6 @@ export function AuthForm({
         router.replace("/account", { locale });
         return;
       }
-      if (mode === "signup") {
-        router.replace("/email-confirmation", { locale });
-        return;
-      }
       if (mode === "reset") {
         router.replace(
           { pathname: "/login", query: { reset: "done" } },
@@ -220,7 +193,7 @@ export function AuthForm({
     } catch {
       setFailure(t.unavailable);
     } finally {
-      if (mode === "login" || mode === "signup") resetField("password");
+      if (mode === "login") resetField("password");
       if (mode === "reset") resetField("newPassword");
       inFlight.current = false;
     }
@@ -260,11 +233,7 @@ export function AuthForm({
                   type={field.type}
                   autoComplete={field.autoComplete}
                   maxLength={
-                    field.type === "password"
-                      ? PASSWORD_MAX_LENGTH
-                      : field.name === "name"
-                        ? 200
-                        : 254
+                    field.type === "password" ? PASSWORD_MAX_LENGTH : 254
                   }
                   minLength={
                     field.type === "password" ? PASSWORD_MIN_LENGTH : undefined
@@ -279,7 +248,7 @@ export function AuthForm({
                 <FieldError id={`${field.name}-error`}>
                   {errors[field.name]?.message}
                 </FieldError>
-                {(mode === "signup" || mode === "reset") &&
+                {mode === "reset" &&
                   field.type === "password" && (
                     <p className="text-xs text-muted-foreground">
                       {t.passwordHint}
