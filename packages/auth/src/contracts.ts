@@ -61,6 +61,15 @@ export const usernameInput = z
   .transform((value) => value.toLowerCase())
   .refine((value) => !["admin", "support", "movaro"].includes(value));
 
+export const usernameRequest = z.discriminatedUnion("action", [
+  z.strictObject({ action: z.literal("check"), username: usernameInput }),
+  z.strictObject({
+    action: z.literal("suggest"),
+    firstName: profileName,
+    lastName: profileName,
+  }),
+]);
+
 export const registrationInput = z.strictObject({
   profile: registrationProfileInput,
   username: usernameInput,

@@ -71,6 +71,18 @@ test("real signup, email verification, login and session revocation", async ({
   const password = randomBytes(24).toString("hex");
 
   await page.goto("/ru/signup");
+  const suggestion = await page.request.post("/api/auth/username", {
+    headers: { origin: new URL(page.url()).origin },
+    data: { action: "suggest", firstName: "Иван", lastName: "Петров" },
+  });
+  expect(suggestion.status()).toBe(200);
+  expect(await suggestion.json()).toEqual({ username: "ivan_petrov" });
+  const available = await page.request.post("/api/auth/username", {
+    headers: { origin: new URL(page.url()).origin },
+    data: { action: "check", username: "IVAN_PETROV" },
+  });
+  expect(available.status()).toBe(200);
+  expect(await available.json()).toEqual({ available: true });
   await page.getByLabel("Имя", { exact: true }).fill("Test User");
   await page.getByLabel("Электронная почта").fill(email);
   await page.getByLabel("Пароль", { exact: true }).fill(password);

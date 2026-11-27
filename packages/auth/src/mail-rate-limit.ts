@@ -12,7 +12,7 @@ interface Bucket {
 // Count valid requests, not account existence or SMTP outcomes. Separate
 // recipient buckets for verification and reset; one shared global budget.
 // All reservations commit atomically before any email or reset token creation.
-export async function reserveMailRequest(
+export function reserveMailRequest(
   pool: Pool,
   secret: string,
   action: MailAction,
@@ -28,6 +28,31 @@ export async function reserveMailRequest(
     { key: `${prefix}:minute`, seconds: 60, max: 1 },
     { key: `${prefix}:hour`, seconds: 3600, max: 5 },
   ];
+  return reserveBuckets(pool, buckets, false);
+}
+
+// Public username checks never consume the email delivery budget.
+export function reserveUsernameRequest(
+  pool: Pool,
+  secret: string,
+  ip: string,
+): Promise<number | null> {
+  const digest = createHmac("sha256", secret).update(ip).digest("hex");
+  return reserveBuckets(
+    pool,
+    [
+      { key: "username:global:minute", seconds: 60, max: 600 },
+      { key: `username:ip:${digest}`, seconds: 60, max: 60 },
+    ],
+    true,
+  );
+}
+
+async function reserveBuckets(
+  pool: Pool,
+  buckets: Bucket[],
+  usernameScope: boolean,
+): Promise<number | null> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -53,7 +78,8 @@ export async function reserveMailRequest(
     }
     // Global buckets serialize admitted requests, and expired state is bounded.
     await client.query(
-      "DELETE FROM auth_mail_rate_limits WHERE expires_at <= now()",
+      "DELETE FROM auth_mail_rate_limits WHERE expires_at <= now() AND (key LIKE 'username:%') = $1",
+      [usernameScope],
     );
     await client.query("COMMIT");
     return null;

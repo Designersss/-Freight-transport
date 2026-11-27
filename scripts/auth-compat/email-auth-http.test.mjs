@@ -437,6 +437,44 @@ test("registration draft survives verification and reserves one username", async
       });
       assert.equal(result.status, 400);
     }
+    const check = (name) =>
+      call("/username", { action: "check", username: name });
+    const suggestion = (firstName, lastName) =>
+      call("/username", { action: "suggest", firstName, lastName });
+    const foreign = await runtime.handle(
+      new Request(`${origin}${base}/username`, {
+        method: "POST",
+        headers: {
+          origin: "https://untrusted.invalid",
+          "content-type": "application/json",
+          "x-movaro-client-ip": "192.0.2.50",
+        },
+        body: JSON.stringify({ action: "check", username }),
+      }),
+    );
+    assert.equal(foreign.status, 403);
+    assert.equal((await call("/username")).status, 405);
+    const invalid = await call("/username", {
+      action: "check",
+      username,
+      userId: "other",
+    });
+    assert.equal(invalid.status, 400);
+    const available = await check(username.toUpperCase());
+    assert.equal(available.status, 200);
+    assert.deepEqual(await available.json(), { available: true });
+    assert.equal(available.headers.get("cache-control"), "no-store");
+    assert.equal((await check("admin")).status, 400);
+    const cyrillic = await suggestion("Иван", "Петров");
+    assert.equal(cyrillic.status, 200);
+    assert.deepEqual(await cyrillic.json(), { username: "ivan_petrov" });
+    const latin = await suggestion("Émile", "Dubois");
+    assert.equal(latin.status, 200);
+    assert.deepEqual(await latin.json(), { username: "emile_dubois" });
+    const fallback = await suggestion("王", "小明");
+    assert.equal(fallback.status, 200);
+    assert.match((await fallback.json()).username, /^[a-z][a-z0-9_]{2,31}$/);
+
     const competing = await Promise.all([
       call("/sign-up/email", signup),
       call(
@@ -466,6 +504,13 @@ test("registration draft survives verification and reserves one username", async
     assert.equal(stored.rowCount, 1);
     const user = stored.rows[0];
     assert.equal(user.username, username);
+    const taken = await check(username.toUpperCase());
+    assert.equal(taken.status, 200);
+    assert.deepEqual(await taken.json(), { available: false });
+    const [first, last] = username.split("_");
+    const next = await suggestion(first, last);
+    assert.equal(next.status, 200);
+    assert.deepEqual(await next.json(), { username: `${username}2` });
     assert.equal(user.emailVerified, false);
     assert.deepEqual(JSON.parse(user.registrationDraft), profile);
     const profileRows = () =>
@@ -546,6 +591,27 @@ test("registration draft survives verification and reserves one username", async
     const relogin = await call("/sign-in/email", credentials);
     assert.equal(relogin.status, 200);
     assert.equal((await profileRows()).rowCount, 1);
+
+    const rateDigest = createHmac("sha256", config.AUTH_SECRET)
+      .update("192.0.2.50")
+      .digest("hex");
+    await pool.query(
+      "UPDATE auth_mail_rate_limits SET count = 59, expires_at = now() + interval '1 minute' WHERE key = $1",
+      [`username:ip:${rateDigest}`],
+    );
+    const limited = await Promise.all([check(username), check(username)]);
+    assert.deepEqual(limited.map(({ status }) => status).sort(), [200, 429]);
+    const denied = limited.find(({ status }) => status === 429);
+    assert.ok(denied);
+    assert.ok(Number(denied.headers.get("retry-after")) > 0);
+    assert.deepEqual(await denied.json(), { code: "RATE_LIMITED" });
+    const otherIp = await call(
+      "/username",
+      { action: "check", username },
+      undefined,
+      "192.0.2.53",
+    );
+    assert.equal(otherIp.status, 200);
   } finally {
     try {
       await runtime.close();

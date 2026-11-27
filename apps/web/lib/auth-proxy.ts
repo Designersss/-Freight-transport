@@ -8,6 +8,7 @@ const paths = new Set([
   "request-password-reset",
   "reset-password",
   "profile",
+  "username",
 ]);
 const maxBody = 16_384;
 
