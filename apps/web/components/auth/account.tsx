@@ -9,6 +9,7 @@ import type { z } from "zod";
 import { AuthPanel } from "./auth-panel";
 import { PasswordSettings } from "./password-settings";
 import { ProfileForm } from "./profile-form";
+import { ProfilePhotoSettings } from "./profile-photo-settings";
 import { SessionSettings } from "./session-settings";
 import { UsernameSettings } from "./username-settings";
 
@@ -123,6 +124,14 @@ export function Account({ locale }: { locale: Locale }) {
               <p className="text-muted-foreground">{session.user.email}</p>
               <p className="mt-2 text-sm">{t.roles[profile.role]}</p>
             </div>
+          )}
+          {profileLoaded && profile && (
+            <ProfilePhotoSettings
+              key={session.user.id}
+              locale={locale}
+              firstName={profile.firstName}
+              lastName={profile.lastName}
+            />
           )}
           {profileLoaded && profile && <UsernameSettings locale={locale} />}
           {profileLoaded && profile && (

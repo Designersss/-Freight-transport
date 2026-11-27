@@ -535,6 +535,13 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     } finally {
       try {
         for (const key of photoKeys) await storage.deleteProfilePhoto(key);
+        await pool.query(
+          `DELETE FROM profile_photo_cleanup
+           WHERE key = ANY($1::text[]) OR owner_id IN (
+             SELECT id FROM "user" WHERE email = $2
+           )`,
+          [[...photoKeys], email],
+        );
       } finally {
         storage.close();
         await pool.end();

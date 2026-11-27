@@ -405,6 +405,9 @@ test("username settings handle validation, conflicts and server cooldown", async
       },
     }),
   );
+  await page.route("**/api/auth/profile/photo", (route) =>
+    route.fulfill({ status: 404, json: { code: "NOT_FOUND" } }),
+  );
   let posts = 0;
   let current: { username: string; nextChangeAt: string | null } = {
     username: "test_driver",
@@ -542,3 +545,125 @@ test("username settings handle validation, conflicts and server cooldown", async
   await expectAccessible(page);
   await expectNoHorizontalOverflow(page);
 });
+
+for (const variant of [
+  {
+    locale: "ru",
+    theme: "dark",
+    title: "Фотография профиля",
+    empty: "Без фотографии",
+    upload: "Загрузить фото",
+    replace: "Заменить фото",
+    remove: "Удалить фото",
+    invalid: "Выберите корректное изображение JPEG или PNG до 2 МБ.",
+    saved: "Фотография сохранена.",
+    removed: "Фотография удалена.",
+    cancel: "Отмена",
+    confirm: "Подтвердить",
+  },
+  {
+    locale: "en",
+    theme: "light",
+    title: "Profile photo",
+    empty: "No photo",
+    upload: "Upload photo",
+    replace: "Replace photo",
+    remove: "Remove photo",
+    invalid: "Choose a valid JPEG or PNG image up to 2 MB.",
+    saved: "Photo saved.",
+    removed: "Photo removed.",
+    cancel: "Cancel",
+    confirm: "Confirm",
+  },
+]) {
+  test(`profile photo settings: ${variant.locale}/${variant.theme}`, async ({
+    page,
+  }) => {
+    await page.route("**/api/auth/get-session", (route) =>
+      route.fulfill({
+        json: {
+          user: {
+            id: "photo-user",
+            name: "Test Driver",
+            email: "photo@example.test",
+            emailVerified: true,
+          },
+          session: { expiresAt: "2099-01-01T00:00:00Z" },
+        },
+      }),
+    );
+    await page.route("**/api/auth/profile", (route) =>
+      route.fulfill({
+        json: {
+          firstName: "Test",
+          lastName: "Driver",
+          role: "DRIVER",
+          birthDate: "1998-05-15",
+          companyName: null,
+        },
+      }),
+    );
+    await page.route("**/api/auth/username/settings", (route) =>
+      route.fulfill({ json: { username: "test_driver", nextChangeAt: null } }),
+    );
+    await page.route("**/api/auth/sessions", (route) =>
+      route.fulfill({ json: { sessions: [], hasMore: false } }),
+    );
+    const jpeg = Buffer.from(
+      "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAQABADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAX/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAABf/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AIABQa//2Q==",
+      "base64",
+    );
+    let present = false;
+    let writes = 0;
+    await page.route("**/api/auth/profile/photo", (route) => {
+      const method = route.request().method();
+      if (method === "GET") {
+        return present
+          ? route.fulfill({ contentType: "image/jpeg", body: jpeg })
+          : route.fulfill({ status: 404, json: { code: "NOT_FOUND" } });
+      }
+      writes++;
+      if (method === "POST") {
+        expect(route.request().headers()["content-type"]).toBe("image/jpeg");
+        expect(route.request().postDataBuffer()).toEqual(jpeg);
+        present = true;
+      } else {
+        expect(method).toBe("DELETE");
+        present = false;
+      }
+      return route.fulfill({ json: { success: true } });
+    });
+    await page.goto(`/${variant.locale}/account`);
+    if (variant.theme === "light")
+      await page.getByRole("button", { name: "Light theme" }).click();
+    const settings = page.getByRole("region", { name: variant.title });
+    await expect(settings.getByRole("img", { name: variant.empty })).toBeVisible();
+    const input = settings.locator('input[type="file"]');
+    await expect(settings.getByRole("button", { name: variant.upload })).toBeEnabled();
+    await input.setInputFiles({
+      name: "wrong.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from("invalid"),
+    });
+    await expect(settings.getByRole("alert")).toHaveText(variant.invalid);
+    expect(writes).toBe(0);
+    const file = { name: "photo.jpg", mimeType: "image/jpeg", buffer: jpeg };
+    await input.setInputFiles(file);
+    await expect(settings.getByRole("status")).toHaveText(variant.saved);
+    await expect(settings.getByRole("img", { name: variant.title })).toBeVisible();
+    await expect(settings.getByRole("button", { name: variant.replace })).toBeEnabled();
+    await input.setInputFiles(file);
+    await expect.poll(() => writes).toBe(2);
+    const remove = settings.getByRole("button", { name: variant.remove });
+    await remove.click();
+    await settings.getByRole("button", { name: variant.cancel }).click();
+    expect(writes).toBe(2);
+    await remove.click();
+    await settings.getByRole("button", { name: variant.confirm }).click();
+    await expect(settings.getByRole("status")).toHaveText(variant.removed);
+    await expect(settings.getByRole("img", { name: variant.empty })).toBeVisible();
+    expect(writes).toBe(3);
+    await expectNoHorizontalOverflow(page);
+    await expectAccessible(page);
+  });
+}

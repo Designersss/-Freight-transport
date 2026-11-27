@@ -18,7 +18,10 @@ import {
   validateFile,
   validateProfilePhoto,
 } from "./file-policy.js";
-import { normalizeProfilePhoto, ProfilePhotoBusyError } from "./profile-photo.js";
+import {
+  normalizeProfilePhoto,
+  ProfilePhotoBusyError,
+} from "./profile-photo.js";
 
 export class InvalidProfilePhotoError extends Error {
   constructor() {

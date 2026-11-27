@@ -164,6 +164,36 @@ test("real signup, email verification, login and session revocation", async ({
     birthDate: "1998-05-15",
     companyName: null,
   });
+  const photoSettings = page.getByRole("region", {
+    name: "Фотография профиля",
+  });
+  const photoInput = photoSettings.locator('input[type="file"]');
+  await expect(
+    photoSettings.getByRole("button", { name: "Загрузить фото" }),
+  ).toBeEnabled();
+  const png = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAGUlEQVR4nGPUiKpgIAUwkaR6VMOohiGlAQAvmQEab3goXgAAAABJRU5ErkJggg==",
+    "base64",
+  );
+  await photoInput.setInputFiles({
+    name: "photo.png",
+    mimeType: "image/png",
+    buffer: png,
+  });
+  await expect(photoSettings.getByText("Фотография сохранена.")).toBeVisible();
+  await expect(
+    photoSettings.getByRole("img", { name: "Фотография профиля" }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    photoSettings.getByRole("img", { name: "Фотография профиля" }),
+  ).toBeVisible();
+  await photoSettings.getByRole("button", { name: "Удалить фото" }).click();
+  await photoSettings.getByRole("button", { name: "Подтвердить" }).click();
+  await expect(photoSettings.getByText("Фотография удалена.")).toBeVisible();
+  await expect(
+    photoSettings.getByRole("img", { name: "Без фотографии" }),
+  ).toBeVisible();
   const settings = await page.request.get("/api/auth/username/settings");
   expect(settings.status()).toBe(200);
   expect(await settings.json()).toEqual({
