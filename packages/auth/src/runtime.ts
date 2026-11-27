@@ -177,10 +177,10 @@ export function createAuthHttpRuntime(
             new Headers({ "cache-control": "no-store" }),
           );
           if (session instanceof Response) return session;
-          const eligible = await pool.query(
-            `SELECT u.id ${eligibleAccount}`,
-            [session.user.id, session.session.id],
-          );
+          const eligible = await pool.query(`SELECT u.id ${eligibleAccount}`, [
+            session.user.id,
+            session.session.id,
+          ]);
           if (!eligible.rowCount) return failure(403, "AUTH_REQUEST_FAILED");
         }
         if (username && (await usernameOwner(pool, username)))
