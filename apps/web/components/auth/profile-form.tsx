@@ -6,6 +6,7 @@ import {
   Alert,
   AlertDescription,
   Button,
+  DatePicker,
   Field,
   FieldDescription,
   FieldError,
@@ -14,9 +15,10 @@ import {
   FieldLegend,
   FieldSet,
   Input,
+  parseDateInput,
 } from "@freight/ui";
 import { useRef, useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import type { z } from "zod";
 
 type Profile = z.infer<typeof publicProfile>;
@@ -69,7 +71,7 @@ export function ProfileForm({
       firstName: values.firstName,
       lastName: values.lastName,
       role: values.role,
-      birthDate: values.birthDate,
+      birthDate: parseDateInput(values.birthDate, locale) ?? "",
       ...(values.role === "COMPANY_OWNER"
         ? { companyName: values.companyName }
         : {}),
@@ -178,17 +180,25 @@ export function ProfileForm({
         </FieldSet>
         <Field data-invalid={Boolean(errors.birthDate)}>
           <FieldLabel htmlFor="birthDate">{t.birthDate}</FieldLabel>
-          <Input
-            id="birthDate"
-            type="date"
-            autoComplete="bday"
-            min="0001-01-01"
-            max={new Date().toISOString().slice(0, 10)}
-            required
-            aria-invalid={Boolean(errors.birthDate)}
-            aria-describedby={errors.birthDate ? "birth-date-error" : undefined}
-            disabled={isSubmitting}
-            {...register("birthDate")}
+          <Controller
+            control={control}
+            name="birthDate"
+            render={({ field }) => (
+              <DatePicker
+                {...field}
+                id="birthDate"
+                locale={locale}
+                autoComplete="bday"
+                min="0001-01-01"
+                max={new Date().toISOString().slice(0, 10)}
+                required
+                aria-invalid={Boolean(errors.birthDate)}
+                aria-describedby={
+                  errors.birthDate ? "birth-date-error" : undefined
+                }
+                disabled={isSubmitting}
+              />
+            )}
           />
           <FieldError id="birth-date-error">
             {errors.birthDate?.message}

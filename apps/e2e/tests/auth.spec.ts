@@ -162,6 +162,12 @@ for (const variant of [
     lastName: "Фамилия",
     driver: "Водитель",
     birthDate: "Дата рождения",
+    typedDate: "15.05.1998",
+    pickedDate: "16.05.1998",
+    invalidDate: "31.04.1998",
+    openCalendar: "Открыть календарь",
+    month: "Месяц",
+    year: "Год",
     invalidBirthDate: "Введите корректную дату рождения.",
     submit: "Завершить регистрацию",
     invalidRole: "Выберите роль.",
@@ -174,6 +180,12 @@ for (const variant of [
     lastName: "Last name",
     driver: "Driver",
     birthDate: "Date of birth",
+    typedDate: "05/15/1998",
+    pickedDate: "05/16/1998",
+    invalidDate: "04/31/1998",
+    openCalendar: "Open calendar",
+    month: "Month",
+    year: "Year",
     invalidBirthDate: "Enter a valid date of birth.",
     submit: "Complete registration",
     invalidRole: "Choose a role.",
@@ -201,6 +213,7 @@ for (const variant of [
         return route.fulfill({ json: null });
       }
       posts++;
+      expect(route.request().postDataJSON().birthDate).toBe("1998-05-16");
       return route.fulfill({
         status: 503,
         json: { code: "AUTH_REQUEST_FAILED" },
@@ -239,14 +252,39 @@ for (const variant of [
       page.getByText(variant.invalidBirthDate, { exact: true }),
     ).toBeVisible();
     expect(posts).toBe(0);
-    await birthDate.fill("1998-05-15");
+    await birthDate.fill(variant.typedDate);
+    const trigger = page.getByRole("button", { name: variant.openCalendar });
+    await trigger.click();
+    const calendar = page.getByRole("dialog", { name: variant.openCalendar });
+    await expect(calendar.getByLabel(variant.month)).toHaveValue("4");
+    await expect(calendar.getByLabel(variant.year)).toHaveValue("1998");
+    await expect(
+      calendar.locator('[aria-selected="true"] button'),
+    ).toHaveText("15");
+    await page.keyboard.press("Escape");
+    await expect(calendar).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+    await birthDate.fill(variant.invalidDate);
+    await submit.click();
+    await expect(
+      page.getByText(variant.invalidBirthDate, { exact: true }),
+    ).toBeVisible();
+    await expect(birthDate).toHaveValue(variant.invalidDate);
+    expect(posts).toBe(0);
+    await birthDate.fill(variant.typedDate);
+    await trigger.click();
+    await calendar
+      .getByRole("button", { name: /16 мая 1998|May 16, 1998/ })
+      .click();
+    await expect(calendar).toHaveCount(0);
+    await expect(birthDate).toHaveValue(variant.pickedDate);
     await submit.click();
     await expect(page.getByRole("main").getByRole("alert")).toBeVisible();
     await expect(submit).toBeEnabled();
     expect(posts).toBe(1);
     await expect(first).toHaveValue("Test");
     await expect(last).toHaveValue("Driver");
-    await expect(birthDate).toHaveValue("1998-05-15");
+    await expect(birthDate).toHaveValue(variant.pickedDate);
     await expect(driver).toHaveAttribute("aria-pressed", "true");
     await expect(page).toHaveTitle("MOVARO");
     await expectNoHorizontalOverflow(page);

@@ -8,6 +8,17 @@ export function isLocale(value: string): value is Locale {
 }
 
 const ru = {
+  datePicker: {
+    placeholder: "ДД.ММ.ГГГГ",
+    open: "Открыть календарь",
+    navigation: "Навигация по календарю",
+    month: "Месяц",
+    year: "Год",
+    previous: "Предыдущий месяц",
+    next: "Следующий месяц",
+    today: "Сегодня",
+    selected: "Выбрано",
+  },
   auth: {
     login: "Вход",
     loginTitle: "Войдите в MOVARO",
@@ -94,6 +105,17 @@ const ru = {
 };
 
 const en: typeof ru = {
+  datePicker: {
+    placeholder: "MM/DD/YYYY",
+    open: "Open calendar",
+    navigation: "Calendar navigation",
+    month: "Month",
+    year: "Year",
+    previous: "Previous month",
+    next: "Next month",
+    today: "Today",
+    selected: "Selected",
+  },
   auth: {
     login: "Sign in",
     loginTitle: "Sign in to MOVARO",

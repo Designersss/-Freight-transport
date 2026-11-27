@@ -147,7 +147,7 @@ test("real signup, email verification, login and session revocation", async ({
   await page.getByLabel("Имя", { exact: true }).fill("Test");
   await page.getByLabel("Фамилия", { exact: true }).fill("Driver");
   await page.getByRole("button", { name: "Водитель", exact: true }).click();
-  await page.getByLabel("Дата рождения").fill("1998-05-15");
+  await page.getByLabel("Дата рождения").fill("15.05.1998");
   await page.getByRole("button", { name: "Завершить регистрацию" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Ваш аккаунт",
