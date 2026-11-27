@@ -83,8 +83,8 @@ test("deactivation revokes sessions and preserves the user's identity", async ()
       .map((value) => value.split(";")[0])
       .join("; ");
     await pool.query(
-      `INSERT INTO "verification" (id, identifier, value, "resetEmail", "expiresAt")
-       VALUES ($1, $2, $3, $4, clock_timestamp() + interval '15 minutes')`,
+      `INSERT INTO "verification" (id, identifier, value, "resetEmail", "resetRevision", "expiresAt")
+       VALUES ($1, $2, $3, $4, 0, clock_timestamp() + interval '15 minutes')`,
       [randomUUID(), `reset-password:${randomUUID()}`, id, email],
     );
     await pool.query(
@@ -178,8 +178,8 @@ test("deactivation revokes sessions and preserves the user's identity", async ()
     );
     await assert.rejects(
       pool.query(
-        `INSERT INTO "verification" (id, identifier, value, "resetEmail", "expiresAt")
-         VALUES ($1, $2, $3, $4, clock_timestamp() + interval '15 minutes')`,
+        `INSERT INTO "verification" (id, identifier, value, "resetEmail", "resetRevision", "expiresAt")
+         VALUES ($1, $2, $3, $4, 0, clock_timestamp() + interval '15 minutes')`,
         [randomUUID(), `reset-password:${randomUUID()}`, id, email],
       ),
       (error) =>

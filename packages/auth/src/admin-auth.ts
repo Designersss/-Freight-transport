@@ -6,7 +6,10 @@ import { canUseAdminSession, readAdminPrincipal } from "./admin-principal.js";
 import type { EmailAuth } from "./auth.js";
 import type { AuthConfig } from "./config.js";
 import { adminLoginInput, adminSession } from "./contracts.js";
-import { credentialLoginProof, prepareCredentialLogin } from "./credential-login.js";
+import {
+  credentialLoginProof,
+  prepareCredentialLogin,
+} from "./credential-login.js";
 import { internalSession } from "./verified-session.js";
 
 const basePath = "/api/v1/auth/admin";

@@ -8,7 +8,10 @@ import {
 } from "./active-account.js";
 import { type AuthConfig, telegramEnabled } from "./config.js";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./contracts.js";
-import { credentialLoginProof, readCredentialProof } from "./credential-login.js";
+import {
+  credentialLoginProof,
+  readCredentialProof,
+} from "./credential-login.js";
 import { type AuthMailer, isDeliverableEmail } from "./email.js";
 import {
   createPublicBeforeHook,
@@ -96,7 +99,9 @@ export function createAuthOptions(
               proof.userId !== verification.value ||
               (await isRestrictedPublicEmail(database, proof.email))
             )
-              throw new APIError("BAD_REQUEST", { code: "AUTH_REQUEST_FAILED" });
+              throw new APIError("BAD_REQUEST", {
+                code: "AUTH_REQUEST_FAILED",
+              });
             return {
               data: { resetEmail: proof.email, resetRevision: proof.revision },
             };
@@ -111,7 +116,9 @@ export function createAuthOptions(
               context?.path === "/reset-password" &&
               account.providerId === "credential"
             )
-              throw new APIError("BAD_REQUEST", { code: "AUTH_REQUEST_FAILED" });
+              throw new APIError("BAD_REQUEST", {
+                code: "AUTH_REQUEST_FAILED",
+              });
             if (account.providerId !== "telegram") return;
             if (!telegramLinkContext.getStore()) return;
             const proof = await telegramLinkProof(account.userId);
@@ -127,7 +134,9 @@ export function createAuthOptions(
               (context?.path !== "/change-password" &&
                 context?.path !== "/reset-password")
             )
-              throw new APIError("BAD_REQUEST", { code: "AUTH_REQUEST_FAILED" });
+              throw new APIError("BAD_REQUEST", {
+                code: "AUTH_REQUEST_FAILED",
+              });
             return {
               data: {
                 rotationUserId: proof.userId,

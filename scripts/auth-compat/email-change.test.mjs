@@ -203,8 +203,8 @@ test("email change requires both inboxes, is one-time and preserves identity", a
     );
     await assert.rejects(
       pool.query(
-        `INSERT INTO "verification" (id, identifier, value, "resetEmail", "expiresAt")
-         VALUES ($1, $2, $3, $4, clock_timestamp() + interval '15 minutes')`,
+        `INSERT INTO "verification" (id, identifier, value, "resetEmail", "resetRevision", "expiresAt")
+         VALUES ($1, $2, $3, $4, 1, clock_timestamp() + interval '15 minutes')`,
         [randomUUID(), `reset-password:${randomUUID()}`, userId, email],
       ),
       (error) =>
@@ -213,8 +213,8 @@ test("email change requires both inboxes, is one-time and preserves identity", a
     );
     await assert.rejects(
       pool.query(
-        `INSERT INTO "session" (id, "userId", token, "emailLoginProof", "expiresAt")
-         VALUES ($1, $2, $3, $4, clock_timestamp() + interval '1 hour')`,
+        `INSERT INTO "session" (id, "userId", token, "emailLoginProof", "emailLoginRevision", "expiresAt")
+         VALUES ($1, $2, $3, $4, 1, clock_timestamp() + interval '1 hour')`,
         [randomUUID(), userId, randomUUID(), email],
       ),
       (error) =>

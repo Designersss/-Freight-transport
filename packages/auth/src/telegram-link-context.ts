@@ -34,10 +34,7 @@ export function createPublicBeforeHook(
   pool: Pool,
 ): NonNullable<NonNullable<BetterAuthOptions["hooks"]>["before"]> {
   return createAuthMiddleware(async (ctx) => {
-    if (
-      ctx.path === "/sign-in/email" ||
-      ctx.path === "/request-password-reset"
-    )
+    if (ctx.path === "/sign-in/email" || ctx.path === "/request-password-reset")
       return prepareCredentialLogin(pool, ctx.body?.email);
     if (ctx.path === "/change-password") {
       const session = await getSessionFromCtx(ctx, {
