@@ -28,7 +28,10 @@ const schema = z
     SMTP_USER: z.string().min(1).optional(),
     SMTP_PASSWORD: z.string().min(1).optional(),
     SMTP_FROM: z.email(),
-    AUTH_TELEGRAM_CLIENT_ID: z.string().regex(/^\d{1,32}$/).optional(),
+    AUTH_TELEGRAM_CLIENT_ID: z
+      .string()
+      .regex(/^\d{1,32}$/)
+      .optional(),
     AUTH_TELEGRAM_CLIENT_SECRET: z.string().min(1).max(512).optional(),
   })
   .superRefine((config, ctx) => {

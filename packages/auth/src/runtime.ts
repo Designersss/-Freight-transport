@@ -14,6 +14,7 @@ import { handleProfilePhoto } from "./profile-photo.js";
 import { completeRegistration, usernameOwner } from "./registration.js";
 import { handleSessionSettings } from "./session-settings.js";
 import { createSmtpMailer } from "./smtp-mailer.js";
+import { handleTelegramOAuth } from "./telegram-oauth-http.js";
 import { handleTelegramRegistration } from "./telegram-registration-http.js";
 import { handleUsername } from "./username.js";
 import { handleUsernameSettings } from "./username-settings.js";
@@ -71,6 +72,8 @@ export function createAuthHttpRuntime(
         return failure(404, "NOT_FOUND");
       }
       const path = url.pathname.slice(AUTH_BASE_PATH.length);
+      if (path === "/telegram/start" || path === "/telegram/callback")
+        return handleTelegramOAuth(request, config, auth, pool);
       if (path === "/telegram/registration")
         return handleTelegramRegistration(request, config, auth, pool);
       if (path === "/sessions")
@@ -295,8 +298,7 @@ export function createAuthHttpRuntime(
             return Response.json(null, { headers: outputHeaders });
           const session = internalSession.parse(result);
           const access = await sessionAccess(pool, config, session);
-          if (access === "denied")
-            return failure(403, "AUTH_REQUEST_FAILED");
+          if (access === "denied") return failure(403, "AUTH_REQUEST_FAILED");
           return Response.json(toPublicSession(session, access), {
             headers: outputHeaders,
           });

@@ -13,16 +13,17 @@ import { genericOAuth } from "better-auth/plugins";
 import pg from "pg";
 import { createAuthOptions } from "../../packages/auth/dist/auth.js";
 import { parseAuthConfig } from "../../packages/auth/dist/config.js";
+import { handleTelegramOAuth } from "../../packages/auth/dist/telegram-oauth-http.js";
+import {
+  createTelegramProvider,
+  TELEGRAM_ISSUER,
+} from "../../packages/auth/dist/telegram-provider.js";
 import { handleTelegramRegistration } from "../../packages/auth/dist/telegram-registration-http.js";
 import {
   internalSession,
   sessionAccess,
   toPublicSession,
 } from "../../packages/auth/dist/verified-session.js";
-import {
-  createTelegramProvider,
-  TELEGRAM_ISSUER,
-} from "../../packages/auth/dist/telegram-provider.js";
 
 const origin = "http://127.0.0.1:4000";
 const base = "/api/v1/auth";
@@ -123,7 +124,7 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
             // Only external network exchange is replaced. Better Auth still
             // performs the real callback, state, nonce, JWKS and DB operations.
             discoveryUrl: `${providerOrigin}/.well-known/openid-configuration`,
-            authorizationUrl: `${providerOrigin}/auth`,
+            redirectURI: `${origin}/api/auth/telegram/callback`,
             tokenUrl: `${providerOrigin}/token`,
             async getToken({ codeVerifier }) {
               assert.ok(codeVerifier);
@@ -144,16 +145,18 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
       .map((value) => value.split(";")[0])
       .join("; ");
   async function begin(requestSignUp = false) {
-    const response = await auth.handler(
-      new Request(`${origin}${base}/sign-in/social`, {
+    const response = await handleTelegramOAuth(
+      new Request(`${origin}${base}/telegram/start`, {
         method: "POST",
         headers: { origin, "content-type": "application/json" },
         body: JSON.stringify({
-          provider: "telegram",
-          requestSignUp,
-          callbackURL: `${origin}/dashboard`,
+          intent: requestSignUp ? "register" : "login",
+          locale: "en",
         }),
       }),
+      authConfig,
+      auth,
+      pool,
     );
     assert.equal(response.status, 200);
     const url = new URL((await response.json()).url);
@@ -168,12 +171,17 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
   async function callback(flow, state = flow.url.searchParams.get("state")) {
     const url = new URL(flow.url.searchParams.get("redirect_uri"));
     assert.equal(url.origin, origin);
+    assert.equal(url.pathname, "/api/auth/telegram/callback");
+    url.pathname = `${base}/telegram/callback`;
     url.searchParams.set("code", "synthetic-code");
     url.searchParams.set("state", state);
-    const result = await auth.handler(
+    const result = await handleTelegramOAuth(
       new Request(url, { headers: { cookie: flow.cookies } }),
+      authConfig,
+      auth,
+      pool,
     );
-    assert.equal(result.status, 302);
+    assert.equal(result.status, 303);
     return result;
   }
   async function session(response) {
@@ -187,7 +195,7 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
   }
   async function reject(flow, state) {
     const result = await callback(flow, state);
-    assert.match(result.headers.get("location") ?? "", /error=/);
+    assert.match(result.headers.get("location") ?? "", /\/login\?telegram=error$/);
     assert.equal(await session(result), null);
   }
 
@@ -221,7 +229,7 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
     flow = await begin(true);
     token = mint();
     const first = await callback(flow);
-    assert.equal(first.headers.get("location"), `${origin}/dashboard`);
+    assert.equal(first.headers.get("location"), `${origin}/en/account`);
     const created = await session(first);
     assert.ok(created?.user.id);
     assert.equal(created.user.emailVerified, false);
@@ -272,11 +280,17 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
     const again = await callback(flow);
     assert.equal((await session(again)).user.id, created.user.id);
     const accounts = await pool.query(
-      'SELECT "accountId", "userId" FROM "account" WHERE "providerId" = $1 AND "accountId" = $2',
+      'SELECT "accountId", "userId", "accessToken", "refreshToken", "idToken" FROM "account" WHERE "providerId" = $1 AND "accountId" = $2',
       ["telegram", subject],
     );
     assert.deepEqual(accounts.rows, [
-      { accountId: subject, userId: created.user.id },
+      {
+        accountId: subject,
+        userId: created.user.id,
+        accessToken: null,
+        refreshToken: null,
+        idToken: null,
+      },
     ]);
     await assert.rejects(
       pool.query(

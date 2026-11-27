@@ -52,10 +52,17 @@ export function createAuthOptions(
           plugins: [
             genericOAuth({
               config: [
-                createTelegramProvider(
-                  config.AUTH_TELEGRAM_CLIENT_ID,
-                  config.AUTH_TELEGRAM_CLIENT_SECRET,
-                ),
+                {
+                  ...createTelegramProvider(
+                    config.AUTH_TELEGRAM_CLIENT_ID,
+                    config.AUTH_TELEGRAM_CLIENT_SECRET,
+                  ),
+                  redirectURI: new URL(
+                    "/api/auth/telegram/callback",
+                    config.AUTH_WEB_ORIGIN,
+                  ).href,
+                  responseMode: "query",
+                },
               ],
             }),
           ],

@@ -73,10 +73,27 @@ export function reservePhotoRequest(
   );
 }
 
+export function reserveTelegramRequest(
+  pool: Pool,
+  action: "start" | "callback",
+): Promise<number | null> {
+  return reserveBuckets(
+    pool,
+    [
+      {
+        key: `telegram:${action}:global`,
+        seconds: 60,
+        max: action === "start" ? 120 : 240,
+      },
+    ],
+    "telegram",
+  );
+}
+
 async function reserveBuckets(
   pool: Pool,
   buckets: Bucket[],
-  scope: "mail" | "username" | "photo",
+  scope: "mail" | "username" | "photo" | "telegram",
 ): Promise<number | null> {
   const client = await pool.connect();
   try {
@@ -103,7 +120,7 @@ async function reserveBuckets(
     }
     // Global buckets serialize admitted requests, and expired state is bounded.
     await client.query(
-      "DELETE FROM auth_mail_rate_limits WHERE expires_at <= now() AND CASE WHEN key LIKE 'username:%' THEN 'username' WHEN key LIKE 'photo:%' THEN 'photo' ELSE 'mail' END = $1",
+      "DELETE FROM auth_mail_rate_limits WHERE expires_at <= now() AND CASE WHEN key LIKE 'username:%' THEN 'username' WHEN key LIKE 'photo:%' THEN 'photo' WHEN key LIKE 'telegram:%' THEN 'telegram' ELSE 'mail' END = $1",
       [scope],
     );
     await client.query("COMMIT");

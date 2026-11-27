@@ -11,6 +11,7 @@ const paths = new Set([
   "profile",
   "profile/settings",
   "telegram/registration",
+  "telegram/start",
   "username",
   "username/settings",
   "sessions",
@@ -64,6 +65,7 @@ export async function forwardAuth(
 ): Promise<Response> {
   const method = request.method;
   const photo = path === "profile/photo";
+  const callback = path === "telegram/callback" && method === "GET";
   const allowed = photo
     ? ["GET", "POST", "DELETE"].includes(method)
     : method === "POST"
@@ -72,8 +74,9 @@ export async function forwardAuth(
         ["get-session", "profile", "username/settings", "sessions"].includes(
           path,
         );
-  if (!allowed) return authFailure(404);
-  if (new URL(request.url).search) return authFailure(400);
+  if (!allowed && !callback) return authFailure(404);
+  const query = new URL(request.url).search;
+  if ((!callback && query) || query.length > 8192) return authFailure(400);
   try {
     const web = configuredOrigin(
       process.env.AUTH_WEB_ORIGIN,
@@ -117,11 +120,13 @@ export async function forwardAuth(
       }
       headers.set("content-type", type);
     }
-    const result = await fetch(new URL(`/api/v1/auth/${path}`, api), {
+    const target = new URL(`/api/v1/auth/${path}`, api);
+    if (callback) target.search = query;
+    const result = await fetch(target, {
       method,
       headers,
       ...(body === undefined ? {} : { body }),
-      redirect: "error",
+      redirect: callback ? "manual" : "error",
       cache: "no-store",
       signal: AbortSignal.timeout(photo ? 45_000 : 25_000),
     });
@@ -130,6 +135,28 @@ export async function forwardAuth(
       "referrer-policy": "no-referrer",
       "x-content-type-options": "nosniff",
     });
+    if (callback && result.status === 303) {
+      const location = result.headers.get("location");
+      if (!location) return authFailure(502);
+      const destination = new URL(location);
+      if (
+        destination.origin !== web ||
+        destination.username ||
+        destination.password ||
+        destination.hash ||
+        !["/ru/account", "/en/account", "/ru/login", "/en/login"].includes(
+          destination.pathname,
+        ) ||
+        (destination.pathname.endsWith("/account")
+          ? Boolean(destination.search)
+          : destination.search !== "?telegram=error")
+      )
+        return authFailure(502);
+      for (const cookie of result.headers.getSetCookie())
+        output.append("set-cookie", cookie);
+      output.set("location", destination.href);
+      return new Response(null, { status: 303, headers: output });
+    }
     const type = result.headers.get("content-type");
     if (
       type?.startsWith("application/json") ||
