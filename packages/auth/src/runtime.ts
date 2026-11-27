@@ -174,6 +174,7 @@ export function createAuthHttpRuntime(
                 ? "password-reset"
                 : "verification",
               payload.email,
+              headers.get("x-movaro-client-ip"),
             );
             if (retry !== null)
               return Response.json(

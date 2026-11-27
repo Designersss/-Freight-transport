@@ -22,7 +22,10 @@ const schema = z
     AUTH_BASE_URL: origin,
     AUTH_WEB_ORIGIN: origin,
     AUTH_SECRET: z.string().min(32),
-    AUTH_PROXY_SECRET: z.string().regex(/^[0-9a-f]{64}$/).optional(),
+    AUTH_PROXY_SECRET: z
+      .string()
+      .regex(/^[0-9a-f]{64}$/)
+      .optional(),
     AUTH_ADMIN_ORIGIN: origin.optional(),
     AUTH_ADMIN_SECRET: z.string().min(32).optional(),
     SMTP_HOST: z.string().trim().min(1),

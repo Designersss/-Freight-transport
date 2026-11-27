@@ -18,6 +18,25 @@ function normalizeIp(value: string): string | null {
   return [high >> 8, high & 255, low >> 8, low & 255].join(".");
 }
 
+// Match Better Auth's default IPv6 /64 rate-limit boundary. Missing or
+// invalid addresses share one conservative bucket, never an arbitrary key.
+export function rateLimitClient(value: string | null): string {
+  const ip = value ? normalizeIp(value) : null;
+  if (!ip) return "unknown";
+  if (isIP(ip) === 4) return ip;
+  const [head = "", tail = ""] = ip.split("::");
+  const prefix = head ? head.split(":") : [];
+  const suffix = tail ? tail.split(":") : [];
+  const expanded = ip.includes("::")
+    ? [
+        ...prefix,
+        ...Array.from({ length: 8 - prefix.length - suffix.length }, () => "0"),
+        ...suffix,
+      ]
+    : prefix;
+  return `${expanded.slice(0, 4).join(":")}::/64`;
+}
+
 // Only an ingress that overwrites both headers and knows the dedicated
 // server secret may assert the address. Never accept X-Forwarded-For.
 export function trustedProxyIp(

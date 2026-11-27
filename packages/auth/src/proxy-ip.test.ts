@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  forwardTrustedProxyIp,
   PROXY_IP_HEADER,
   PROXY_SECRET_HEADER,
-  forwardTrustedProxyIp,
+  rateLimitClient,
   trustedProxyIp,
 } from "./proxy-ip.ts";
 
@@ -57,6 +58,16 @@ describe("trusted auth proxy address", () => {
       assert.equal(forwardTrustedProxyIp(incoming, outgoing, secret), false);
       assert.deepEqual([...outgoing], []);
     }
+  });
+
+  it("groups IPv6 clients by /64 and preserves IPv4 identity", () => {
+    assert.equal(rateLimitClient("2001:db8:0:1::1"), "2001:db8:0:1::/64");
+    assert.equal(rateLimitClient("2001:0db8:0:1:abcd::2"), "2001:db8:0:1::/64");
+    assert.equal(rateLimitClient("2001:db8:0:2::1"), "2001:db8:0:2::/64");
+    assert.equal(rateLimitClient("::ffff:192.0.2.1"), "192.0.2.1");
+    assert.equal(rateLimitClient("192.0.2.1"), "192.0.2.1");
+    assert.equal(rateLimitClient("forged"), "unknown");
+    assert.equal(rateLimitClient(null), "unknown");
   });
 
   it("rejects multiple addresses, ports and scoped IPv6", () => {

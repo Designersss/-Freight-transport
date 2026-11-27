@@ -223,7 +223,7 @@ Quick Checks 46075274151: OpenAPI/client и сборка прошли, Biome с�
 
 ## Итоговое ревью — P1.02, срез 1: доверенная граница IP
 
-Quick Checks 46076529614: сборка/OpenAPI прошли; остался один formatter diff в credential-login.test.mjs (три участка). Исправлено по логу. 
+Quick Checks 46076529614: сборка/OpenAPI прошли; остался один formatter diff в credential-login.test.mjs (три участка). Исправлено по логу.
 
 Next.js 16.4.6 заполняет X-Forwarded-For из socket только при отсутствии входного заголовка; поэтому на него нельзя полагаться. Fastify 5.12.8 trustProxy=false закреплён явно. В прямом локальном режиме API по-прежнему использует request.ip; Web/Admin не пересылают входящие IP assertions. Опциональный AUTH_PROXY_SECRET (отдельный 64 hex, не AUTH_SECRET/AUTH_ADMIN_SECRET) включает строгое доверие к паре x-movaro-proxy-ip / x-movaro-proxy-secret. Общий server-side helper валидирует token через timingSafeEqual, принимает ровно один IP, нормализует IPv6 и IPv4-mapped IPv6. Включённый режим отклоняет отсутствующую или некорректную пару с 403, включая Web/Admin SSR и прямые API callbacks. Только проверенный IP передаётся в Better Auth/существующие лимиты, секрет не пересылается в auth handler и редактируется в Pino. Ни один публичный DTO/лимит не изменён.
 
@@ -234,3 +234,17 @@ Next.js 16.4.6 заполняет X-Forwarded-For из socket только пр�
 Источники: https://github.com/vercel/next.js/blob/v16.4.6/packages/next/src/server/base-server.ts ; https://github.com/fastify/fastify/blob/v5.12.8/docs/Reference/Server.md#trustproxy ; https://github.com/better-auth/better-auth/blob/v1.7.28/packages/better-auth/src/api/rate-limiter/index.ts .
 
 Изолированный dependency-free helper proxy-ip.ts и proxy-ip.test.ts скопированы в локальное временное окружение и выполнены через node --experimental-strip-types --test proxy-ip.test.ts (Node 22.16.0, не закреплённый Node 24): 5/5 pass. Это не заменяет проверку workspace, типов, Biome, Fastify/PostgreSQL и реального ingress.
+
+## Итоговое ревью — P1.02, срез 2: бюджеты почтовых запросов
+
+Quick Checks 46077458353: сборка/OpenAPI успешны, lint остановился на трёх замечаниях (docs/auth-rd04.md whitespace, config.ts format, proxy-ip.test.ts imports), typecheck skipped. Исправлены по точному логу.
+
+Общий потолок 60/min и 1000/day сохранён; внутри него отдельные предварительные бюджеты verification 30/min, 500/day; password-reset 20/min, 400/day; email-change 10/min, 100/day. Глобальные и action buckets выровнены по фиксированным UTC-окнам (date_bin), индивидуальные окна остаются с момента первого запроса. Для публичных verification/reset введён общий IP budget 10/min и 60/hour; почтовые квоты действуют одинаково независимо от существования аккаунта, а не только на успешный SMTP. Email change сохраняет прежнюю проверку сессии/токена и subject admission. IPv6 /64, IPv4 mapped normalization и общий unknown fallback применены к mail, username и email-change confirm. Все ограничения используют существующую атомарную транзакцию резервирования, откат при отказе любого bucket; SMTP выполняется после commit. Секреты и raw адреса не добавлены в ключи. Старые ephemeral global keys не используются и очищаются по истечении TTL существующим cleanup.
+
+Это стартовая техническая политика preview, не согласованный production throughput. Разделение защищает бюджет других действий при исчерпании одного типа, но не гарантирует доставку при распределённой атаке на соответствующий action, отказе SMTP или исчерпании общего лимита. Нужны baseline нагрузки, upstream abuse controls, мониторинг квот и проверка доверенного ingress до production. Фиксированные окна допускают burst на границе. Никаких новых зависимостей, миграций или изменения DTO.
+
+Добавлены /64 unit case и PostgreSQL regression на копии реально мигрированной таблицы в случайной отдельной test schema (cleanup только этой схемы): 12 конкурентных запросов одного источника, независимый IP, mapped alias, исчерпание verification без блокировки reset/change, per-recipient cap, daily rollback и общий ceiling. Реальный PG запуск ещё не подтверждён.
+
+Источники PostgreSQL 17: https://www.postgresql.org/docs/17/functions-datetime.html#FUNCTIONS-DATETIME-BIN ; https://www.postgresql.org/docs/17/sql-insert.html . Better Auth v1.7.28: https://github.com/better-auth/better-auth/blob/v1.7.28/packages/core/src/types/init-options.ts (ipv6Subnet default 64).
+
+Локально выполнен node --experimental-strip-types --test proxy-ip.test.ts на Node 22.16.0: 6/6 pass, включая /64. Git blob hashes локальных проверенных файлов совпадают с исходниками коммита: 501564f32ece7a6a5d42e69e632588ded4896858 и 8b8133a63a265697e78b5a2e00bc216ec8c573af. Это не workspace validation на закреплённом Node 24, Biome/TypeScript/PG не запущены локально.

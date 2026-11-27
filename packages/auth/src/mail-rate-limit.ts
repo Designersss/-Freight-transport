@@ -1,5 +1,6 @@
 import { createHmac } from "node:crypto";
 import type { Pool } from "pg";
+import { rateLimitClient } from "./proxy-ip.js";
 
 type MailAction = "verification" | "password-reset" | "email-change";
 
@@ -7,27 +8,64 @@ interface Bucket {
   key: string;
   seconds: number;
   max: number;
+  aligned?: true;
 }
 
-// Count valid requests, not account existence or SMTP outcomes. Separate
-// recipient buckets for verification and reset; one shared global budget.
-// All reservations commit atomically before any email or reset token creation.
+// Provisional preview budgets; the sum of action ceilings equals the
+// existing overall cap. Global windows share UTC boundaries, so one
+// purpose cannot spend another purpose's allocation in the same window.
+const mailBudgets = {
+  verification: { minute: 30, day: 500 },
+  "password-reset": { minute: 20, day: 400 },
+  "email-change": { minute: 10, day: 100 },
+} satisfies Record<MailAction, { minute: number; day: number }>;
+
+// Count valid requests regardless of account existence or SMTP outcome.
+// Per-source admission and per-recipient limits are charged atomically with
+// global budgets; rejected requests leave all bucket counts unchanged.
 export function reserveMailRequest(
   pool: Pool,
   secret: string,
   action: MailAction,
   email: string,
+  ip: string | null = null,
 ): Promise<number | null> {
   const digest = createHmac("sha256", secret)
     .update(email.trim().toLowerCase())
     .digest("hex");
   const prefix = `recipient:${action}:${digest}`;
+  const budget = mailBudgets[action];
   const buckets: Bucket[] = [
-    { key: "global:minute", seconds: 60, max: 60 },
-    { key: "global:day", seconds: 86400, max: 1000 },
+    { key: "mail:global:minute", seconds: 60, max: 60, aligned: true },
+    { key: "mail:global:day", seconds: 86400, max: 1000, aligned: true },
+    {
+      key: `mail:action:${action}:minute`,
+      seconds: 60,
+      max: budget.minute,
+      aligned: true,
+    },
+    {
+      key: `mail:action:${action}:day`,
+      seconds: 86400,
+      max: budget.day,
+      aligned: true,
+    },
+  ];
+  // Email change already requires a verified session or a live secret
+  // token and has its own user/IP admission controls.
+  if (action !== "email-change") {
+    const source = createHmac("sha256", secret)
+      .update(rateLimitClient(ip))
+      .digest("hex");
+    buckets.push(
+      { key: `mail:public:ip:${source}:minute`, seconds: 60, max: 10 },
+      { key: `mail:public:ip:${source}:hour`, seconds: 3600, max: 60 },
+    );
+  }
+  buckets.push(
     { key: `${prefix}:minute`, seconds: 60, max: 1 },
     { key: `${prefix}:hour`, seconds: 3600, max: 5 },
-  ];
+  );
   return reserveBuckets(pool, buckets, "mail");
 }
 
@@ -37,7 +75,9 @@ export function reserveUsernameRequest(
   secret: string,
   ip: string,
 ): Promise<number | null> {
-  const digest = createHmac("sha256", secret).update(ip).digest("hex");
+  const digest = createHmac("sha256", secret)
+    .update(rateLimitClient(ip))
+    .digest("hex");
   return reserveBuckets(
     pool,
     [
@@ -96,7 +136,9 @@ export function reserveEmailChangeRequest(
   action: "start" | "confirm",
   identity: string,
 ): Promise<number | null> {
-  const digest = createHmac("sha256", secret).update(identity).digest("hex");
+  const digest = createHmac("sha256", secret)
+    .update(action === "confirm" ? rateLimitClient(identity) : identity)
+    .digest("hex");
   return reserveBuckets(
     pool,
     [
@@ -122,13 +164,17 @@ async function reserveBuckets(
     for (const bucket of buckets) {
       const result = await client.query(
         `INSERT INTO auth_mail_rate_limits (key, count, expires_at)
-         VALUES ($1, 1, now() + $2 * interval '1 second')
+         VALUES ($1, 1,
+           CASE WHEN $4::boolean THEN
+             date_bin($2 * interval '1 second', now(), TIMESTAMPTZ '2000-01-01 00:00:00+00')
+               + $2 * interval '1 second'
+           ELSE now() + $2 * interval '1 second' END)
          ON CONFLICT (key) DO UPDATE SET
            count = CASE WHEN auth_mail_rate_limits.expires_at <= now() THEN 1 ELSE auth_mail_rate_limits.count + 1 END,
            expires_at = CASE WHEN auth_mail_rate_limits.expires_at <= now() THEN EXCLUDED.expires_at ELSE auth_mail_rate_limits.expires_at END
          WHERE auth_mail_rate_limits.expires_at <= now() OR auth_mail_rate_limits.count < $3
          RETURNING key`,
-        [bucket.key, bucket.seconds, bucket.max],
+        [bucket.key, bucket.seconds, bucket.max, bucket.aligned === true],
       );
       if (!result.rowCount) {
         const retry = await client.query<{ seconds: number }>(
