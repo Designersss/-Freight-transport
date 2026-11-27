@@ -6,4 +6,5 @@ export {
   type ProfilePhotoContentType,
   validateProfilePhoto,
 } from "./file-policy.js";
+export { ProfilePhotoBusyError } from "./profile-photo.js";
 export { PrivateStorage } from "./storage.js";

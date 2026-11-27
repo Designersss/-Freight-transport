@@ -1,4 +1,5 @@
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import sharp from "sharp";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createProfilePhotoKey } from "./file-policy.js";
 import {
@@ -91,18 +92,27 @@ describe("SeaweedFS private S3", () => {
   }, 30000);
 
   it("stores and retrieves a private profile photo", async () => {
-    // A real, synthetic 1x1 PNG.
-    const photo = Buffer.from(
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a66QAAAAASUVORK5CYII=",
-      "base64",
-    );
+    const photo = await sharp({
+      create: {
+        width: 800,
+        height: 400,
+        channels: 3,
+        background: "#375a7f",
+      },
+    })
+      .png()
+      .toBuffer();
     const uploaded = await storage.putProfilePhoto(photo, "image/png");
     try {
-      expect(uploaded.contentType).toBe("image/png");
-      expect(uploaded.size).toBe(photo.byteLength);
+      expect(uploaded.contentType).toBe("image/jpeg");
       const downloaded = await storage.getProfilePhoto(uploaded.key);
-      expect(Buffer.from(downloaded.bytes)).toEqual(photo);
-      expect(downloaded.contentType).toBe("image/png");
+      expect(downloaded.bytes.byteLength).toBe(uploaded.size);
+      expect(downloaded.contentType).toBe("image/jpeg");
+      const metadata = await sharp(downloaded.bytes).metadata();
+      expect(metadata.format).toBe("jpeg");
+      expect(metadata.width).toBe(512);
+      expect(metadata.height).toBe(256);
+      expect(metadata.exif).toBeUndefined();
       expect(uploaded.key).toMatch(/^profile-photos\//);
       await expect(storage.get(uploaded.key)).rejects.toThrow("key");
       await expect(storage.delete(uploaded.key)).rejects.toThrow("key");

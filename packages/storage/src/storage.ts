@@ -15,10 +15,10 @@ import {
   createProfilePhotoKey,
   MAX_FILE_BYTES,
   MAX_PROFILE_PHOTO_BYTES,
-  type ProfilePhotoContentType,
   validateFile,
   validateProfilePhoto,
 } from "./file-policy.js";
+import { normalizeProfilePhoto } from "./profile-photo.js";
 
 const REQUEST_TIMEOUT_MS = 15000;
 
@@ -79,13 +79,17 @@ export class PrivateStorage {
     contentType: string,
   ): Promise<{
     key: string;
-    contentType: ProfilePhotoContentType;
+    contentType: "image/jpeg";
     size: number;
   }> {
-    validateProfilePhoto(contentType, bytes);
+    const photo = await normalizeProfilePhoto(bytes, contentType);
     const key = createProfilePhotoKey();
-    await this.write(key, bytes, contentType);
-    return { key, contentType, size: bytes.byteLength };
+    await this.write(key, photo.bytes, photo.contentType);
+    return {
+      key,
+      contentType: photo.contentType,
+      size: photo.bytes.byteLength,
+    };
   }
 
   async get(
@@ -97,13 +101,15 @@ export class PrivateStorage {
 
   async getProfilePhoto(
     key: string,
-  ): Promise<{ bytes: Uint8Array; contentType: ProfilePhotoContentType }> {
+  ): Promise<{ bytes: Uint8Array; contentType: "image/jpeg" }> {
     assertProfilePhotoKey(key);
     const { bytes, contentType } = await this.read(
       key,
       MAX_PROFILE_PHOTO_BYTES,
     );
     validateProfilePhoto(contentType, bytes);
+    if (contentType !== "image/jpeg")
+      throw new Error("Unsupported stored profile photo content type");
     return { bytes, contentType };
   }
 
