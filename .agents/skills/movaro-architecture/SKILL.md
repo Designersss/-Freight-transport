@@ -1,4 +1,5 @@
 ---
+
 name: movaro-architecture
 description: Модульный монолит, границы доменов, SOLID/KISS/DRY, архитектурные решения и безопасная эволюция MOVARO.
 ---

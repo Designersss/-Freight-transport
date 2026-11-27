@@ -1,4 +1,5 @@
 ---
+
 name: movaro-security
 description: Better Auth, защита API, управление сессиями, роли и изоляция компаний, threat modeling OWASP.
 ---

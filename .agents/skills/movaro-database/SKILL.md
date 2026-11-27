@@ -1,4 +1,5 @@
 ---
+
 name: movaro-database
 description: PostgreSQL 17, Prisma 6, модели, миграции, транзакции, конкурентность, индексы и точные расчёты.
 ---

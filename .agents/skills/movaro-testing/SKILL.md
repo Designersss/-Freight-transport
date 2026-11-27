@@ -1,4 +1,5 @@
 ---
+
 name: movaro-testing
 description: Тестирование UI и бизнес-сценариев, TDD, диагностика дефектов, Storybook и Playwright без production-заглушек.
 ---

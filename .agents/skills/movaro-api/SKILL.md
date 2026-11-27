@@ -1,4 +1,5 @@
 ---
+
 name: movaro-api
 description: REST /api/v1, OpenAPI/Orval, типизированные контракты, ошибки, SSE и совместимость клиентов.
 ---

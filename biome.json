@@ -43,14 +43,6 @@
   },
   "overrides": [
     {
-      "includes": [".agents/skills/**/SKILL.md"],
-      "markdown": {
-        "parser": {
-          "frontmatter": true
-        }
-      }
-    },
-    {
       "includes": [
         "apps/api/src/app.module.ts",
         "apps/api/src/database/database.module.ts",

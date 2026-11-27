@@ -1,4 +1,5 @@
 ---
+
 name: movaro-integrations
 description: Telegram/grammY, webhook, SeaweedFS/S3, внешние сервисы, отказоустойчивость и безопасные адаптеры.
 ---

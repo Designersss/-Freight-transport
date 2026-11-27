@@ -1,4 +1,5 @@
 ---
+
 name: movaro-frontend
 description: Архитектура и реализация React, Next.js, shadcn/ui и типизированных интерфейсов MOVARO.
 ---

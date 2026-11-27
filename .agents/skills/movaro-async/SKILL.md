@@ -1,4 +1,5 @@
 ---
+
 name: movaro-async
 description: Фоновые задания, pg-boss, transactional outbox, идемпотентность, retry и надёжная доставка событий.
 ---

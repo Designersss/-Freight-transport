@@ -1,4 +1,5 @@
 ---
+
 name: movaro-devops
 description: Docker Compose, CI/CD, Pino, health/readiness, наблюдаемость, развёртывание и восстановление.
 ---

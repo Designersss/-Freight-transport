@@ -1,4 +1,5 @@
 ---
+
 name: movaro-backend
 description: Реализация NestJS/Fastify, DI, TypeScript, Zod, сервисов и ошибок серверной части.
 ---
