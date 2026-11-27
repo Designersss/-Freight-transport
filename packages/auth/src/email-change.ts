@@ -8,7 +8,7 @@ export const EMAIL_CHANGE_TTL_SECONDS = 15 * 60;
 
 type Locale = "ru" | "en";
 type Stage = "old" | "new";
-type Delivery = {
+export type EmailChangeDelivery = {
   kind: "deliver";
   stage: Stage;
   email: string;
@@ -16,7 +16,7 @@ type Delivery = {
   token: string;
 };
 type Failure = { kind: "denied" | "invalid" | "conflict" };
-type Result = Delivery | Failure | { kind: "completed" };
+type Result = EmailChangeDelivery | Failure | { kind: "completed" };
 
 interface Pending {
   user_id: string;
@@ -95,11 +95,8 @@ export async function beginEmailChange(
     const oldEmail = await lockOwner(client, identity, true);
     if (!oldEmail) return { kind: "denied" };
     if (oldEmail === newEmail) return { kind: "invalid" };
-    const occupied = await client.query(
-      'SELECT id FROM "user" WHERE email = $1',
-      [newEmail],
-    );
-    if (occupied.rowCount) return { kind: "conflict" };
+    // Do not disclose whether the destination already belongs to a user.
+    // The unique constraint is checked only after both inboxes are proven.
 
     const { token, hash } = issueToken();
     await client.query(
@@ -187,4 +184,13 @@ export async function confirmEmailChange(
     // The pending record is removed by the session FK cascade.
     return { kind: "completed" };
   });
+}
+
+// A delivery failure invalidates only its own outstanding token, never a
+// concurrently superseding request. No retry can reuse a consumed link.
+export async function discardEmailChangeDelivery(pool: Pool, token: string) {
+  await pool.query(
+    "DELETE FROM pending_email_change WHERE token_hash = $1",
+    [digest(token)],
+  );
 }

@@ -30,27 +30,47 @@ export function createSmtpMailer(config: AuthConfig): AuthMailer {
         throw new Error("Invalid auth mail recipient");
       }
       const link = new URL(url);
+      const change =
+        kind === "email-change-old" || kind === "email-change-new";
+      const changeLink =
+        link.origin === config.AUTH_WEB_ORIGIN &&
+        /^\/(ru|en)\/email-change-confirmation$/.test(link.pathname) &&
+        !link.search &&
+        /^#token=[A-Za-z0-9_-]{43}$/.test(link.hash);
+      const authLink =
+        link.origin === config.AUTH_BASE_URL &&
+        !link.hash &&
+        (kind === "verify-email"
+          ? link.pathname === "/api/v1/auth/verify-email"
+          : /^\/api\/v1\/auth\/reset-password\/[^/]+$/.test(link.pathname));
       if (
-        link.origin !== config.AUTH_BASE_URL ||
         link.username ||
         link.password ||
-        (kind === "verify-email"
-          ? link.pathname !== "/api/v1/auth/verify-email"
-          : !/^\/api\/v1\/auth\/reset-password\/[^/]+$/.test(link.pathname))
+        !(change ? changeLink : authLink)
       ) {
         throw new Error("Invalid auth mail URL");
       }
       const verification = kind === "verify-email";
+      const subject = change
+        ? kind === "email-change-old"
+          ? "MOVARO — Confirm email change / Подтвердите смену email"
+          : "MOVARO — Confirm new email / Подтвердите новый email"
+        : verification
+          ? "MOVARO — Confirm your email / Подтвердите email"
+          : "MOVARO — Reset password / Сброс пароля";
+      const instruction = change
+        ? kind === "email-change-old"
+          ? "Подтвердите запрос на смену email / Confirm your email change request (15 min):"
+          : "Подтвердите новый email / Confirm your new email (15 min):"
+        : verification
+          ? "Подтвердите email / Confirm your email:"
+          : "Установите новый пароль / Reset your password (15 min):";
       try {
         const result = await transport.sendMail({
           from: config.SMTP_FROM,
           to: email,
-          subject: verification
-            ? "MOVARO — Confirm your email / Подтвердите email"
-            : "MOVARO — Reset password / Сброс пароля",
-          text: verification
-            ? `Подтвердите email / Confirm your email:\n${link.href}\n\nЕсли вы не запрашивали письмо, проигнорируйте его. / If you did not request this message, ignore it.`
-            : `Установите новый пароль / Reset your password (15 min):\n${link.href}\n\nЕсли вы не запрашивали письмо, проигнорируйте его. / If you did not request this message, ignore it.`,
+          subject,
+          text: `${instruction}\n${link.href}\n\nЕсли вы не запрашивали письмо, проигнорируйте его. / If you did not request this message, ignore it.`,
           disableFileAccess: true,
           disableUrlAccess: true,
         });

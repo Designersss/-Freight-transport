@@ -8,6 +8,8 @@ const paths = new Set([
   "request-password-reset",
   "reset-password",
   "change-password",
+  "email/change",
+  "email/change/confirm",
   "profile",
   "profile/settings",
   "telegram/registration",

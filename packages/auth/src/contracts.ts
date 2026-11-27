@@ -95,6 +95,10 @@ export const emailChangeTokenInput = z.strictObject({
   token: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
 });
 
+export const emailChangeResponse = z.object({
+  stage: z.enum(["old-sent", "new-sent", "completed"]),
+});
+
 export const publicTelegramSettings = z.object({
   linked: z.boolean(),
   canLink: z.boolean(),

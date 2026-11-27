@@ -11,7 +11,11 @@ export function isDeliverableEmail(value: string): boolean {
   );
 }
 
-export type AuthMailKind = "verify-email" | "reset-password";
+export type AuthMailKind =
+  | "verify-email"
+  | "reset-password"
+  | "email-change-old"
+  | "email-change-new";
 
 export interface AuthMailer {
   send(kind: AuthMailKind, email: string, url: string): Promise<void>;

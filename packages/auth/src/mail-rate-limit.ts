@@ -1,7 +1,7 @@
 import { createHmac } from "node:crypto";
 import type { Pool } from "pg";
 
-type MailAction = "verification" | "password-reset";
+type MailAction = "verification" | "password-reset" | "email-change";
 
 interface Bucket {
   key: string;
@@ -90,10 +90,31 @@ export function reserveTelegramRequest(
   );
 }
 
+export function reserveEmailChangeRequest(
+  pool: Pool,
+  secret: string,
+  action: "start" | "confirm",
+  identity: string,
+): Promise<number | null> {
+  const digest = createHmac("sha256", secret).update(identity).digest("hex");
+  return reserveBuckets(
+    pool,
+    [
+      { key: `email-change:${action}:global`, seconds: 60, max: 120 },
+      {
+        key: `email-change:${action}:subject:${digest}`,
+        seconds: 60,
+        max: action === "start" ? 1 : 10,
+      },
+    ],
+    "email-change",
+  );
+}
+
 async function reserveBuckets(
   pool: Pool,
   buckets: Bucket[],
-  scope: "mail" | "username" | "photo" | "telegram",
+  scope: "mail" | "username" | "photo" | "telegram" | "email-change",
 ): Promise<number | null> {
   const client = await pool.connect();
   try {
@@ -120,7 +141,7 @@ async function reserveBuckets(
     }
     // Global buckets serialize admitted requests, and expired state is bounded.
     await client.query(
-      "DELETE FROM auth_mail_rate_limits WHERE expires_at <= now() AND CASE WHEN key LIKE 'username:%' THEN 'username' WHEN key LIKE 'photo:%' THEN 'photo' WHEN key LIKE 'telegram:%' THEN 'telegram' ELSE 'mail' END = $1",
+      "DELETE FROM auth_mail_rate_limits WHERE expires_at <= now() AND CASE WHEN key LIKE 'username:%' THEN 'username' WHEN key LIKE 'photo:%' THEN 'photo' WHEN key LIKE 'telegram:%' THEN 'telegram' WHEN key LIKE 'email-change:%' THEN 'email-change' ELSE 'mail' END = $1",
       [scope],
     );
     await client.query("COMMIT");

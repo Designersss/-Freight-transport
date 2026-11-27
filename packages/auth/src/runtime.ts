@@ -8,6 +8,7 @@ import {
   publicSession,
   registrationInput,
 } from "./contracts.js";
+import { handleEmailChange } from "./email-change-http.js";
 import { reserveMailRequest } from "./mail-rate-limit.js";
 import { handleProfile, handleProfileSettings } from "./profile.js";
 import { handleProfilePhoto } from "./profile-photo.js";
@@ -56,7 +57,8 @@ export function createAuthHttpRuntime(
     max: 5,
     connectionTimeoutMillis: 5000,
   });
-  const auth = createEmailAuth(config, pool, createSmtpMailer(config));
+  const mailer = createSmtpMailer(config);
+  const auth = createEmailAuth(config, pool, mailer);
   const storage = storageConfig ? new PrivateStorage(storageConfig) : null;
   const destination = (language: string, page: string) =>
     new URL(`/${language}${page}`, config.AUTH_WEB_ORIGIN).href;
@@ -73,6 +75,8 @@ export function createAuthHttpRuntime(
         return failure(404, "NOT_FOUND");
       }
       const path = url.pathname.slice(AUTH_BASE_PATH.length);
+      if (path === "/email/change" || path === "/email/change/confirm")
+        return handleEmailChange(request, config, auth, pool, mailer);
       if (path === "/telegram/status") {
         if (request.method !== "GET") return failure(405, "METHOD_NOT_ALLOWED");
         if (url.search) return failure(400, "INVALID_REQUEST");
