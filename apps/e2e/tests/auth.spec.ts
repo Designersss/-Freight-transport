@@ -152,3 +152,92 @@ for (const language of [
     await expect(page.locator("html")).toHaveAttribute("lang", language.locale);
   });
 }
+
+for (const variant of [
+  {
+    locale: "ru",
+    theme: "dark",
+    title: "Завершите регистрацию",
+    firstName: "Имя",
+    lastName: "Фамилия",
+    driver: "Водитель",
+    age: "Возраст (необязательно)",
+    submit: "Завершить регистрацию",
+    invalidRole: "Выберите роль.",
+  },
+  {
+    locale: "en",
+    theme: "light",
+    title: "Complete your registration",
+    firstName: "First name",
+    lastName: "Last name",
+    driver: "Driver",
+    age: "Age (optional)",
+    submit: "Complete registration",
+    invalidRole: "Choose a role.",
+  },
+]) {
+  test(`profile onboarding validates and preserves input: ${variant.locale}/${variant.theme}`, async ({
+    page,
+  }) => {
+    await page.route("**/api/auth/get-session", (route) =>
+      route.fulfill({
+        json: {
+          user: {
+            id: "test-user",
+            name: "Test User",
+            email: "user@example.test",
+            emailVerified: true,
+          },
+          session: { expiresAt: "2099-01-01T00:00:00Z" },
+        },
+      }),
+    );
+    let posts = 0;
+    await page.route("**/api/auth/profile", (route) => {
+      if (route.request().method() === "GET") {
+        return route.fulfill({ json: null });
+      }
+      posts++;
+      return route.fulfill({
+        status: 503,
+        json: { code: "AUTH_REQUEST_FAILED" },
+      });
+    });
+    await page.goto(`/${variant.locale}/account`);
+    if (variant.theme === "light")
+      await page.getByRole("button", { name: "Light theme" }).click();
+    await expect(page.locator("html")).toHaveAttribute(
+      "data-theme",
+      variant.theme,
+    );
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      variant.title,
+    );
+    const first = page.getByLabel(variant.firstName, { exact: true });
+    const last = page.getByLabel(variant.lastName, { exact: true });
+    const submit = page.getByRole("button", { name: variant.submit });
+    await first.fill("Test");
+    await last.fill("Driver");
+    await submit.click();
+    await expect(page.getByText(variant.invalidRole)).toBeVisible();
+    expect(posts).toBe(0);
+    const driver = page.getByRole("button", {
+      name: variant.driver,
+      exact: true,
+    });
+    await driver.click();
+    await expect(driver).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByLabel(variant.age)).toBeVisible();
+    await submit.click();
+    await expect(page.getByRole("main").getByRole("alert")).toBeVisible();
+    await expect(submit).toBeEnabled();
+    expect(posts).toBe(1);
+    await expect(first).toHaveValue("Test");
+    await expect(last).toHaveValue("Driver");
+    await expect(driver).toHaveAttribute("aria-pressed", "true");
+    await expect(page).toHaveTitle("MOVARO");
+    await expectNoHorizontalOverflow(page);
+    await expectAccessible(page);
+  });
+}

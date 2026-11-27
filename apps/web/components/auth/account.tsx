@@ -1,12 +1,13 @@
 "use client";
 
-import { publicSession } from "@freight/auth/contracts";
+import { publicProfile, publicSession } from "@freight/auth/contracts";
 import { type Locale, messages } from "@freight/i18n";
 import { Button, Skeleton } from "@freight/ui";
 import { Link, useRouter } from "@freight/ui/navigation";
 import { useEffect, useState } from "react";
 import type { z } from "zod";
 import { AuthPanel } from "./auth-panel";
+import { ProfileForm } from "./profile-form";
 
 export function Account({ locale }: { locale: Locale }) {
   const t = messages[locale].auth;
@@ -14,6 +15,10 @@ export function Account({ locale }: { locale: Locale }) {
   const [session, setSession] = useState<z.infer<typeof publicSession> | null>(
     null,
   );
+  const [profile, setProfile] = useState<z.infer<typeof publicProfile> | null>(
+    null,
+  );
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -32,7 +37,27 @@ export function Account({ locale }: { locale: Locale }) {
           router.replace("/login", { locale });
           return;
         }
-        setSession(publicSession.parse(data));
+        const current = publicSession.parse(data);
+        if (!current.user.emailVerified) {
+          router.replace("/email-confirmation", { locale });
+          return;
+        }
+        setSession(current);
+        const result = await fetch("/api/auth/profile", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted) return;
+        if (result.status === 401) {
+          setSession(null);
+          router.replace("/login", { locale });
+          return;
+        }
+        if (!result.ok) throw new Error("Profile unavailable");
+        const saved: unknown = await result.json();
+        if (controller.signal.aborted) return;
+        setProfile(saved === null ? null : publicProfile.parse(saved));
+        setProfileLoaded(true);
       } catch {
         if (!controller.signal.aborted) setError(true);
       } finally {
@@ -53,6 +78,8 @@ export function Account({ locale }: { locale: Locale }) {
       });
       if (!response.ok) throw new Error("Logout failed");
       setSession(null);
+      setProfile(null);
+      setProfileLoaded(false);
       router.replace("/login", { locale });
     } catch {
       setError(true);
@@ -60,10 +87,11 @@ export function Account({ locale }: { locale: Locale }) {
       setBusy(false);
     }
   }
+  const needsProfile = session && profileLoaded && !profile;
   return (
     <AuthPanel
-      title={t.accountTitle}
-      description={session ? t.accountDescription : ""}
+      title={needsProfile ? t.profileTitle : t.accountTitle}
+      description={needsProfile ? t.profileDescription : ""}
     >
       {loading && <Skeleton className="h-20 w-full" />}
       {error && (
@@ -73,11 +101,26 @@ export function Account({ locale }: { locale: Locale }) {
       )}
       {session ? (
         <div className="flex flex-col gap-4">
-          <div className="break-all rounded-lg border border-border p-3">
-            <p className="font-semibold">{session.user.name}</p>
-            <p className="text-muted-foreground">{session.user.email}</p>
-          </div>
-          <Button disabled={busy} onClick={logout} variant="outline">
+          {needsProfile && (
+            <ProfileForm
+              locale={locale}
+              onComplete={setProfile}
+              onExpired={() => {
+                setSession(null);
+                router.replace("/login", { locale });
+              }}
+            />
+          )}
+          {profileLoaded && profile && (
+            <div className="break-all rounded-lg border border-border p-3">
+              <p className="font-semibold">
+                {profile.firstName} {profile.lastName}
+              </p>
+              <p className="text-muted-foreground">{session.user.email}</p>
+              <p className="mt-2 text-sm">{t.roles[profile.role]}</p>
+            </div>
+          )}
+          <Button disabled={busy || loading} onClick={logout} variant="outline">
             {t.logout}
           </Button>
         </div>

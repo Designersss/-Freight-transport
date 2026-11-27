@@ -7,6 +7,7 @@ const paths = new Set([
   "send-verification-email",
   "request-password-reset",
   "reset-password",
+  "profile",
 ]);
 const maxBody = 16_384;
 
@@ -58,7 +59,7 @@ export async function forwardAuth(
   if (
     method === "POST"
       ? !paths.has(path)
-      : method !== "GET" || path !== "get-session"
+      : method !== "GET" || (path !== "get-session" && path !== "profile")
   )
     return authFailure(404);
   if (new URL(request.url).search) return authFailure(400);

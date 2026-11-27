@@ -43,3 +43,9 @@ node scripts/auth-compat/testcontainers.mjs
 CI 45986801409: 27 из 28 E2E прошли; desktop-тест таблицы завершился ошибкой Axe is already running. Storybook 10.6.9 автоматически запускает axe в afterEach, а Playwright отдельно вызывает expectAccessible. В тестовых URL устанавливаем globals=a11y.manual:!true, чтобы в этих preview только Playwright запускал аудит. Обычный Storybook сохраняет автоматический аудит и a11y.test=error. Правила, область проверки, assertions, число тестов и CI не меняются. Повторный запуск должен подтвердить устранение гонки.
 
 Источники: https://storybook.js.org/docs/writing-tests/accessibility-testing ; https://github.com/storybookjs/storybook/blob/v10.6.9/code/addons/a11y/src/preview.tsx ; https://github.com/storybookjs/storybook/blob/v10.6.9/code/core/src/preview-api/modules/preview-web/parseArgsParam.ts .
+
+## RD-04 — экран завершения регистрации
+
+После подтверждённого входа /account запрашивает серверный профиль. При null отображает обязательные имя/фамилию и одну из трёх публичных ролей; возраст виден только водителю и необязателен. POST через существующий auth bridge, роль берётся из ответа сервера. При 409 читаем существующий профиль, при 401 возвращаемся на вход; ошибки сохраняют введённые данные. После успешного создания показывается сохранённый профиль, повторное открытие читает БД. Бизнес-кабинеты ещё не открываются. Production gate сохранён.
+
+Существующий реальный email E2E дополнен заполнением профиля водителя без возраста, проверкой DTO и reload. Контролируемые UI-тесты RU/dark и EN/light в обоих Chromium проектах проверяют локальную валидацию и сохранение ввода при 503, axe и overflow. Оставшиеся комбинации тем/локалей и ручная визуальная приёмка ещё открыты.

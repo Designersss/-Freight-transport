@@ -129,6 +129,27 @@ test("real signup, email verification, login and session revocation", async ({
   await page.getByLabel("Пароль", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Войти", exact: true }).click();
   await expect(page).toHaveURL("/ru/account");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Завершите регистрацию",
+  );
+  await page.getByLabel("Имя", { exact: true }).fill("Test");
+  await page.getByLabel("Фамилия", { exact: true }).fill("Driver");
+  await page.getByRole("button", { name: "Водитель", exact: true }).click();
+  await expect(page.getByLabel("Возраст (необязательно)")).toBeVisible();
+  await page.getByRole("button", { name: "Завершить регистрацию" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Ваш аккаунт",
+  );
+  const profile = await page.request.get("/api/auth/profile");
+  expect(profile.status()).toBe(200);
+  expect(await profile.json()).toEqual({
+    firstName: "Test",
+    lastName: "Driver",
+    role: "DRIVER",
+    driverAge: null,
+  });
+  await page.reload();
+  await expect(page.getByRole("main").getByText("Водитель")).toBeVisible();
   await expect(
     page.getByRole("main").getByText(email, { exact: true }),
   ).toBeVisible();
