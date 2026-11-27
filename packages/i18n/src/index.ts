@@ -219,8 +219,11 @@ const ru = {
   },
   admin: {
     title: "Администрирование",
-    description:
-      "Доступ к управлению платформой будет предоставляться только авторизованным администраторам.",
+    role: "Глобальный администратор",
+    loginTitle: "Вход в администрирование",
+    loginDescription: "Войдите с административной учётной записью.",
+    loginFailed: "Не удалось войти. Проверьте данные и повторите попытку.",
+    logoutFailed: "Не удалось завершить сеанс. Повторите попытку.",
   },
 };
 
@@ -435,8 +438,11 @@ const en: typeof ru = {
   },
   admin: {
     title: "Administration",
-    description:
-      "Platform administration will be available only to authorized administrators.",
+    role: "Platform administrator",
+    loginTitle: "Administrator sign in",
+    loginDescription: "Sign in with your administrator account.",
+    loginFailed: "Unable to sign in. Check your details and try again.",
+    logoutFailed: "Unable to end your session. Try again.",
   },
 };
 

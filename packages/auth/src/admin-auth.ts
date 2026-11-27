@@ -95,7 +95,8 @@ export async function handleAdminAuth(
     let body: string | undefined;
     if (!read) {
       if (
-        request.headers.get("content-type")?.split(";")[0] !== "application/json"
+        request.headers.get("content-type")?.split(";")[0] !==
+        "application/json"
       )
         return fail(400, "INVALID_REQUEST");
       const raw: unknown = await request.json().catch(() => null);

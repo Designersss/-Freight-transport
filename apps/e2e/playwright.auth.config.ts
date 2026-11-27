@@ -16,6 +16,7 @@ if (
 
 const api = "http://127.0.0.1:4110";
 const web = "http://127.0.0.1:3110";
+const admin = "http://127.0.0.1:3111";
 
 export default defineConfig({
   testDir: "./auth-tests",
@@ -49,6 +50,8 @@ export default defineConfig({
         AUTH_BASE_URL: api,
         AUTH_WEB_ORIGIN: web,
         AUTH_SECRET: randomBytes(32).toString("hex"),
+        AUTH_ADMIN_ORIGIN: admin,
+        AUTH_ADMIN_SECRET: randomBytes(32).toString("hex"),
         SMTP_HOST: "127.0.0.1",
         SMTP_PORT: smtpPort,
         SMTP_SECURITY: "local",
@@ -66,6 +69,18 @@ export default defineConfig({
         AUTH_BASE_URL: api,
         AUTH_WEB_ORIGIN: web,
         MOVARO_AUTH_PREVIEW: "true",
+      },
+    },
+    {
+      command:
+        "pnpm --filter @freight/admin exec next dev --hostname 127.0.0.1 --port 3111",
+      cwd: root,
+      url: `${admin}/ru/login`,
+      reuseExistingServer: false,
+      timeout: 60_000,
+      env: {
+        AUTH_BASE_URL: api,
+        AUTH_ADMIN_ORIGIN: admin,
       },
     },
   ],

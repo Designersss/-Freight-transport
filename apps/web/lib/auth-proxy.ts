@@ -104,7 +104,11 @@ export async function forwardAuth(
     const encoding = request.headers.get("content-encoding");
     if (encoding && encoding !== "identity") return authFailure(415);
     const headers = new Headers();
-    const cookie = request.headers.get("cookie");
+    const cookie = (request.headers.get("cookie") ?? "")
+      .split(";")
+      .map((part) => part.trim())
+      .filter((part) => !/^(?:__Secure-)?movaro-admin\./u.test(part))
+      .join("; ");
     if (cookie) headers.set("cookie", cookie);
     const agent = request.headers.get("user-agent");
     if (agent) headers.set("user-agent", agent);
