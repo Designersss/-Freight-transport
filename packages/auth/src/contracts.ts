@@ -49,12 +49,25 @@ export const profileInput = z
     lastName: profileName,
     role: publicRole,
     driverAge: driverAge.optional(),
+    companyName: profileName.optional(),
   })
-  .refine((value) => value.role === "DRIVER" || value.driverAge === undefined);
+  .refine(
+    (value) => value.role !== "COMPANY_OWNER" || value.driverAge === undefined,
+  )
+  .refine(
+    (value) => value.role === "COMPANY_OWNER" || value.companyName === undefined,
+  );
+
+// Legacy profiles may lack a company name; new registration requires one.
+export const registrationProfileInput = profileInput.refine(
+  (value) => value.role !== "COMPANY_OWNER" || value.companyName !== undefined,
+  { path: ["companyName"] },
+);
 
 export const publicProfile = z.object({
   firstName: profileName,
   lastName: profileName,
   role: publicRole,
   driverAge: driverAge.nullable(),
+  companyName: profileName.nullable(),
 });

@@ -140,16 +140,17 @@ enum UserStatus {
 
 // Absence of a profile means onboarding is incomplete, not an authorized role.
 model UserProfile {
-  userId    String     @id @map("user_id")
-  firstName String     @map("first_name")
-  lastName  String     @map("last_name")
-  role      UserRole
-  status    UserStatus @default(ACTIVE)
-  driverAge Int?       @map("driver_age")
-  photoKey  String?    @map("photo_key")
-  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  user      User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  userId      String     @id @map("user_id")
+  firstName   String     @map("first_name")
+  lastName    String     @map("last_name")
+  role        UserRole
+  status      UserStatus @default(ACTIVE)
+  driverAge   Int?       @map("driver_age")
+  companyName String?    @map("company_name")
+  photoKey    String?    @map("photo_key")
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@map("user_profiles")
 }

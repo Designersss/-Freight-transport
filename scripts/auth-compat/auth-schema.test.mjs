@@ -3,6 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { test } from "node:test";
 import { betterAuth } from "better-auth";
 import pg from "pg";
+import { registrationProfileInput } from "../../packages/auth/dist/contracts.js";
 import { createDatabaseClient } from "../../packages/database/dist/index.js";
 import { assertAuthSchema } from "./assert-auth-schema.mjs";
 
@@ -16,6 +17,7 @@ test("Prisma auth migration enforces identity and profile integrity", async () =
   const database = createDatabaseClient(databaseUrl);
   const userId = randomUUID();
   const otherId = randomUUID();
+  const dispatcherId = randomUUID();
   const email = `${randomUUID()}@telegram.invalid`;
   const otherEmail = `${randomUUID()}@example.invalid`;
   const providerAccount = randomUUID();
@@ -41,6 +43,7 @@ test("Prisma auth migration enforces identity and profile integrity", async () =
     await assertAuthSchema(auth.options);
     await createUser(userId, email);
     await createUser(otherId, otherEmail);
+    await createUser(dispatcherId, `${randomUUID()}@example.test`);
     assert.equal(
       await database.userProfile.findUnique({ where: { userId } }),
       null,
@@ -93,14 +96,54 @@ test("Prisma auth migration enforces identity and profile integrity", async () =
       ),
       dbCode("23514"),
     );
-    await database.userProfile.create({
+    const owner = await database.userProfile.create({
       data: {
         userId: otherId,
         firstName: "Test",
         lastName: "Owner",
         role: "COMPANY_OWNER",
+        companyName: "Test Equipment",
       },
     });
+    assert.equal(owner.companyName, "Test Equipment");
+    const dispatcher = await database.userProfile.create({
+      data: {
+        userId: dispatcherId,
+        firstName: "Test",
+        lastName: "Dispatcher",
+        role: "DISPATCHER",
+        driverAge: 30,
+      },
+    });
+    assert.equal(dispatcher.driverAge, 30);
+    assert.equal(dispatcher.companyName, null);
+    await assert.rejects(
+      pool.query(
+        "UPDATE user_profiles SET company_name = ' ' WHERE user_id = $1",
+        [otherId],
+      ),
+      dbCode("23514"),
+    );
+    await assert.rejects(
+      pool.query(
+        "UPDATE user_profiles SET company_name = 'Other company' WHERE user_id = $1",
+        [dispatcherId],
+      ),
+      dbCode("23514"),
+    );
+    await assert.rejects(
+      pool.query("UPDATE user_profiles SET driver_age = 0 WHERE user_id = $1", [
+        dispatcherId,
+      ]),
+      dbCode("23514"),
+    );
+    await assert.rejects(
+      pool.query(
+        "UPDATE user_profiles SET company_name = $2 WHERE user_id = $1",
+        [otherId, "a".repeat(201)],
+      ),
+      dbCode("23514"),
+    );
     await assert.rejects(
       pool.query('DELETE FROM "user" WHERE id = $1', [userId]),
       dbCode("23503"),
@@ -115,5 +158,39 @@ test("Prisma auth migration enforces identity and profile integrity", async () =
   } finally {
     await database.$disconnect();
     await pool.end();
+  }
+});
+
+test("new registration requires role-specific profile data", () => {
+  const identity = { firstName: "Test", lastName: "User" };
+  const owner = { ...identity, role: "COMPANY_OWNER" };
+  const dispatcher = { ...identity, role: "DISPATCHER" };
+  const driver = { ...identity, role: "DRIVER" };
+
+  assert.equal(registrationProfileInput.safeParse(owner).success, false);
+  assert.equal(
+    registrationProfileInput.safeParse({
+      ...owner,
+      companyName: "Test Equipment",
+    }).success,
+    true,
+  );
+  for (const profile of [dispatcher, driver]) {
+    assert.equal(registrationProfileInput.safeParse(profile).success, true);
+    assert.equal(
+      registrationProfileInput.safeParse({ ...profile, driverAge: 30 }).success,
+      true,
+    );
+    assert.equal(
+      registrationProfileInput.safeParse({ ...profile, driverAge: -1 }).success,
+      false,
+    );
+    assert.equal(
+      registrationProfileInput.safeParse({
+        ...profile,
+        companyName: "Test Equipment",
+      }).success,
+      false,
+    );
   }
 });

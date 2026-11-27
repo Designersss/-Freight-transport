@@ -218,6 +218,9 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       { ...profile, firstName: " " },
       { ...profile, driverAge: 0 },
       { ...profile, role: "COMPANY_OWNER", driverAge: 30 },
+      { ...profile, companyName: "Other company" },
+      { ...profile, role: "DISPATCHER", companyName: "Other company" },
+      { ...profile, role: "COMPANY_OWNER", companyName: " " },
       { ...profile, userId: "another-user" },
       { ...profile, status: "ACTIVE" },
     ]) {
@@ -237,7 +240,11 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     );
     const competing = await Promise.all([
       post("/profile", profile, { cookie }),
-      post("/profile", { ...profile, role: "DISPATCHER" }, { cookie }),
+      post(
+        "/profile",
+        { ...profile, role: "DISPATCHER", driverAge: 30 },
+        { cookie },
+      ),
     ]);
     assert.deepEqual(
       competing.map(({ statusCode }) => statusCode).sort(),
@@ -251,7 +258,8 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       firstName: "Test",
       lastName: "Driver",
       role: saved.role,
-      driverAge: null,
+      driverAge: saved.role === "DISPATCHER" ? 30 : null,
+      companyName: null,
     });
     const read = await get(profilePath, cookie);
     assert.equal(read.statusCode, 200);

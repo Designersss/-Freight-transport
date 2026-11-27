@@ -147,6 +147,7 @@ test("real signup, email verification, login and session revocation", async ({
     lastName: "Driver",
     role: "DRIVER",
     driverAge: null,
+    companyName: null,
   });
   await page.reload();
   await expect(page.getByRole("main").getByText("Водитель")).toBeVisible();

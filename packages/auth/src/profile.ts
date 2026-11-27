@@ -11,7 +11,7 @@ const storedProfile = publicProfile.extend({
 });
 
 const columns =
-  'first_name AS "firstName", last_name AS "lastName", role, status, driver_age AS "driverAge"';
+  'first_name AS "firstName", last_name AS "lastName", role, status, driver_age AS "driverAge", company_name AS "companyName"';
 
 async function readProfile(pool: Pool, userId: string) {
   const result = await pool.query(
@@ -28,8 +28,8 @@ async function insertProfile(
   input: z.infer<typeof profileInput>,
 ) {
   const result = await pool.query(
-    `INSERT INTO user_profiles (user_id, first_name, last_name, role, driver_age)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO user_profiles (user_id, first_name, last_name, role, driver_age, company_name)
+     VALUES ($1, $2, $3, $4, $5, $6)
      ON CONFLICT (user_id) DO NOTHING
      RETURNING ${columns}`,
     [
@@ -38,6 +38,7 @@ async function insertProfile(
       input.lastName,
       input.role,
       input.driverAge ?? null,
+      input.companyName ?? null,
     ],
   );
   const row: unknown = result.rows[0];
