@@ -256,8 +256,12 @@ for (const variant of [
     const trigger = page.getByRole("button", { name: variant.openCalendar });
     await trigger.click();
     const calendar = page.getByRole("dialog", { name: variant.openCalendar });
-    await expect(calendar.getByLabel(variant.month)).toHaveValue("4");
-    await expect(calendar.getByLabel(variant.year)).toHaveValue("1998");
+    await expect(
+      calendar.getByRole("combobox", { name: variant.month, exact: true }),
+    ).toHaveValue("4");
+    await expect(
+      calendar.getByRole("combobox", { name: variant.year, exact: true }),
+    ).toHaveValue("1998");
     await expect(calendar.locator('[aria-selected="true"] button')).toHaveText(
       "15",
     );
