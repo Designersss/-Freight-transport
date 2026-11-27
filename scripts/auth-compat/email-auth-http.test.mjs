@@ -257,8 +257,13 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     assert.equal(read.statusCode, 200);
     assert.deepEqual(read.json(), saved);
     assert.equal(
-      (await post("/profile", { ...profile, role: "COMPANY_OWNER" }, { cookie }))
-        .statusCode,
+      (
+        await post(
+          "/profile",
+          { ...profile, role: "COMPANY_OWNER" },
+          { cookie },
+        )
+      ).statusCode,
       409,
     );
     assert.deepEqual((await get(profilePath, cookie)).json(), saved);
