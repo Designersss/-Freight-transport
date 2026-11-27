@@ -155,11 +155,9 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     );
     assert.equal(
       (
-        await post(
-          "/sign-up/email",
-          signup,
-          { origin: "https://untrusted.invalid" },
-        )
+        await post("/sign-up/email", signup, {
+          origin: "https://untrusted.invalid",
+        })
       ).statusCode,
       403,
     );
