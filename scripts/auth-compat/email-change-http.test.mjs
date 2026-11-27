@@ -143,7 +143,14 @@ test("email change HTTP sends two real SMTP messages and consumes links only by 
       password,
     });
     assert.equal(newLogin.status, 200);
-    assert.equal((await newLogin.json()).user.id, id);
+    assert.deepEqual(await newLogin.json(), { success: true });
+    const newCookie = newLogin.headers
+      .getSetCookie()
+      .map((value) => value.split(";")[0])
+      .join("; ");
+    const newSession = await call("/get-session", undefined, newCookie);
+    assert.equal(newSession.status, 200);
+    assert.equal((await newSession.json()).user.id, id);
   } finally {
     await runtime.close();
     await pool.end();

@@ -1032,7 +1032,9 @@ test("email settings validate the address and retain current email until confirm
   const input = settings.getByLabel("New email address");
   const action = settings.getByRole("button", { name: "Change email" });
   await action.click();
-  await expect(settings.getByText("Enter a valid email address.")).toBeVisible();
+  await expect(
+    settings.getByText("Enter a valid email address."),
+  ).toBeVisible();
   await input.fill("driver@example.test");
   await action.click();
   await expect(
@@ -1046,7 +1048,9 @@ test("email settings validate the address and retain current email until confirm
   );
   await expect(input).toHaveValue("new@example.test");
   await action.click();
-  await expect(settings.getByRole("status")).toContainText("your current email");
+  await expect(settings.getByRole("status")).toContainText(
+    "your current email",
+  );
   await expect(
     page.getByText("driver@example.test", { exact: true }),
   ).toBeVisible();

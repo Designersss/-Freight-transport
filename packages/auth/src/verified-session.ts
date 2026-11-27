@@ -5,6 +5,7 @@ import { AUTH_BASE_PATH, type EmailAuth } from "./auth.js";
 import { type AuthConfig, telegramEnabled } from "./config.js";
 import { publicSession } from "./contracts.js";
 import { isDeliverableEmail } from "./email.js";
+import { readPublicPrincipal } from "./public-principal.js";
 import { readTelegramAccess } from "./telegram-registration.js";
 
 export const internalSession = publicSession.extend({
@@ -102,5 +103,19 @@ export async function readVerifiedSession(
       { code: "AUTH_REQUEST_FAILED" },
       { status: 403, headers },
     );
+  // Onboarding handlers explicitly opt in; all other operations require
+  // a complete active profile and a live session at the database boundary.
+  if (!allowOnboarding) {
+    const principal = await readPublicPrincipal(
+      pool,
+      { userId: session.user.id, sessionId: session.session.id },
+      telegramEnabled(config),
+    );
+    if (!principal)
+      return Response.json(
+        { code: "AUTH_REQUEST_FAILED" },
+        { status: 403, headers },
+      );
+  }
   return { ...session, access };
 }

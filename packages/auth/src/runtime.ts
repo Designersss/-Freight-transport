@@ -2,6 +2,7 @@ import { PrivateStorage, type StorageConfig } from "@freight/storage";
 import { Pool } from "pg";
 import { eligibleAccount } from "./active-account.js";
 import { AUTH_BASE_PATH, createEmailAuth } from "./auth.js";
+import { cabinetRole, handleCabinet } from "./cabinet-http.js";
 import { type AuthConfig, parseAuthConfig, telegramEnabled } from "./config.js";
 import {
   authBodies as bodies,
@@ -75,6 +76,9 @@ export function createAuthHttpRuntime(
         return failure(404, "NOT_FOUND");
       }
       const path = url.pathname.slice(AUTH_BASE_PATH.length);
+      const requiredRole = cabinetRole(path);
+      if (requiredRole)
+        return handleCabinet(request, config, auth, pool, requiredRole);
       if (path === "/email/change" || path === "/email/change/confirm")
         return handleEmailChange(request, config, auth, pool, mailer);
       if (path === "/telegram/status") {

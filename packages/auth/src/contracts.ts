@@ -20,7 +20,7 @@ export const publicSession = z.object({
   session: z.object({ expiresAt: z.string() }),
 });
 
-const publicRole = z.enum(["COMPANY_OWNER", "DISPATCHER", "DRIVER"]);
+export const publicRole = z.enum(["COMPANY_OWNER", "DISPATCHER", "DRIVER"]);
 const profileName = z.string().trim().min(1).max(200);
 export const birthDateInput = z.iso
   .date()
@@ -44,6 +44,8 @@ export const profileInput = z
         : value.companyName === undefined,
     { path: ["companyName"] },
   );
+
+export const publicCabinet = z.object({ role: publicRole });
 
 export const profileSettingsInput = z.strictObject({
   firstName: profileName,

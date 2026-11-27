@@ -80,6 +80,9 @@ export async function forwardAuth(
           "sessions",
           "telegram/status",
           "telegram/settings",
+          "cabinet/company-owner",
+          "cabinet/dispatcher",
+          "cabinet/driver",
         ].includes(path);
   if (!allowed && !callback) return authFailure(404);
   const query = new URL(request.url).search;

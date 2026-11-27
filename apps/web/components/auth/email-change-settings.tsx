@@ -55,7 +55,11 @@ export function EmailChangeSettings({
       return;
     }
     if (parsed.data.newEmail === currentEmail.toLowerCase()) {
-      setError("newEmail", { message: t.emailChangeSame }, { shouldFocus: true });
+      setError(
+        "newEmail",
+        { message: t.emailChangeSame },
+        { shouldFocus: true },
+      );
       return;
     }
     const controller = new AbortController();
