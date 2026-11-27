@@ -903,7 +903,9 @@ test("registration draft survives verification and reserves one username", async
       "192.0.2.77",
     );
     assert.equal(blockedLogin.status, 401);
-    assert.deepEqual(await blockedLogin.json(), { code: "INVALID_CREDENTIALS" });
+    assert.deepEqual(await blockedLogin.json(), {
+      code: "INVALID_CREDENTIALS",
+    });
     assert.equal(blockedLogin.headers.get("set-cookie"), null);
     assert.equal(await sessionCount(), beforeBlockedLogin);
 
