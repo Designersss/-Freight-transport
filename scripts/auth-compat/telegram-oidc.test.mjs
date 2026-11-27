@@ -62,7 +62,8 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
   let nonce = "";
   let challenge = "";
   let token = "";
-  const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  const encode = (value) =>
+    Buffer.from(JSON.stringify(value)).toString("base64url");
   function mint(overrides = {}, key = privateKey) {
     const now = Math.floor(Date.now() / 1000);
     const input = [
@@ -245,7 +246,8 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
         ],
       ),
       (error) =>
-        error.code === "23505" && error.constraint === "account_telegram_user_uidx",
+        error.code === "23505" &&
+        error.constraint === "account_telegram_user_uidx",
     );
   } finally {
     try {
