@@ -16,8 +16,7 @@ import {
   FieldLabel,
   Input,
 } from "@freight/ui";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@freight/ui/navigation";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AuthPanel } from "./auth-panel";
@@ -179,7 +178,7 @@ export function AuthForm({
           : undefined;
       if (!result.ok) {
         if (mode === "login" && code === "EMAIL_NOT_VERIFIED") {
-          router.replace(`/${locale}/email-confirmation`);
+          router.replace("/email-confirmation", { locale });
           return;
         }
         setFailure(
@@ -203,15 +202,18 @@ export function AuthForm({
         return;
       }
       if (mode === "login") {
-        router.replace(`/${locale}/account`);
+        router.replace("/account", { locale });
         return;
       }
       if (mode === "signup") {
-        router.replace(`/${locale}/email-confirmation`);
+        router.replace("/email-confirmation", { locale });
         return;
       }
       if (mode === "reset") {
-        router.replace(`/${locale}/login?reset=done`);
+        router.replace(
+          { pathname: "/login", query: { reset: "done" } },
+          { locale },
+        );
         return;
       }
       setNotice(mode === "forgot" ? t.resetSent : t.sent);
@@ -289,7 +291,7 @@ export function AuthForm({
           {mode === "login" && (
             <Link
               className="self-end text-primary hover:underline"
-              href={`/${locale}/forgot-password`}
+              href="/forgot-password"
             >
               {t.forgot}
             </Link>
@@ -323,7 +325,7 @@ export function AuthForm({
             {t.noAccount}{" "}
             <Link
               className="font-semibold text-primary hover:underline"
-              href={`/${locale}/signup`}
+              href="/signup"
             >
               {t.signup}
             </Link>
@@ -331,7 +333,7 @@ export function AuthForm({
         ) : (
           <Link
             className="font-semibold text-primary hover:underline"
-            href={`/${locale}/login`}
+            href="/login"
           >
             {t.backLogin}
           </Link>
@@ -339,7 +341,7 @@ export function AuthForm({
         {unavailable && (
           <Link
             className="text-primary hover:underline"
-            href={`/${locale}/forgot-password`}
+            href="/forgot-password"
           >
             {t.forgotTitle}
           </Link>

@@ -3,8 +3,7 @@
 import { publicSession } from "@freight/auth/contracts";
 import { type Locale, messages } from "@freight/i18n";
 import { Button, Skeleton } from "@freight/ui";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@freight/ui/navigation";
 import { useEffect, useState } from "react";
 import type { z } from "zod";
 import { AuthPanel } from "./auth-panel";
@@ -30,7 +29,7 @@ export function Account({ locale }: { locale: Locale }) {
         const data: unknown = await response.json();
         if (controller.signal.aborted) return;
         if (data === null) {
-          router.replace(`/${locale}/login`);
+          router.replace("/login", { locale });
           return;
         }
         setSession(publicSession.parse(data));
@@ -54,7 +53,7 @@ export function Account({ locale }: { locale: Locale }) {
       });
       if (!response.ok) throw new Error("Logout failed");
       setSession(null);
-      router.replace(`/${locale}/login`);
+      router.replace("/login", { locale });
     } catch {
       setError(true);
     } finally {
@@ -84,10 +83,7 @@ export function Account({ locale }: { locale: Locale }) {
         </div>
       ) : (
         !loading && (
-          <Link
-            className="text-primary hover:underline"
-            href={`/${locale}/login`}
-          >
+          <Link className="text-primary hover:underline" href="/login">
             {t.backLogin}
           </Link>
         )

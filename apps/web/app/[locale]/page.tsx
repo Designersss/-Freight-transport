@@ -1,6 +1,6 @@
 import { isLocale, messages } from "@freight/i18n";
 import { Button, PageLayout } from "@freight/ui";
-import Link from "next/link";
+import { Link } from "@freight/ui/navigation";
 import { notFound } from "next/navigation";
 
 interface PageProps {
@@ -16,10 +16,14 @@ export default async function Page({ params }: PageProps) {
       <p className="movaro-description">{messages[locale].web.description}</p>
       <div className="mt-5 flex flex-wrap gap-2">
         <Button asChild>
-          <Link href={`/${locale}/login`}>{messages[locale].auth.login}</Link>
+          <Link href="/login" locale={locale}>
+            {messages[locale].auth.login}
+          </Link>
         </Button>
         <Button asChild variant="outline">
-          <Link href={`/${locale}/signup`}>{messages[locale].auth.signup}</Link>
+          <Link href="/signup" locale={locale}>
+            {messages[locale].auth.signup}
+          </Link>
         </Button>
       </div>
     </PageLayout>

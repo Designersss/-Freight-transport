@@ -114,3 +114,41 @@ test("registration preserves name and email after a network failure", async ({
   await expectNoHorizontalOverflow(page);
   await expectAccessible(page);
 });
+
+for (const language of [
+  {
+    locale: "ru",
+    email: "Электронная почта",
+    password: "Пароль",
+    submit: "Войти",
+    confirmation: "Подтверждение почты",
+  },
+  {
+    locale: "en",
+    email: "Email address",
+    password: "Password",
+    submit: "Sign in",
+    confirmation: "Confirm your email",
+  },
+]) {
+  test(`unverified login preserves ${language.locale} locale`, async ({
+    page,
+  }) => {
+    await page.route("**/api/auth/sign-in/email", (route) =>
+      route.fulfill({ status: 403, json: { code: "EMAIL_NOT_VERIFIED" } }),
+    );
+    await page.goto(`/${language.locale}/login`);
+    await page.getByLabel(language.email).fill("user@example.test");
+    await page
+      .getByLabel(language.password, { exact: true })
+      .fill("test-password");
+    await page
+      .getByRole("button", { name: language.submit, exact: true })
+      .click();
+    await expect(page).toHaveURL(`/${language.locale}/email-confirmation`);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      language.confirmation,
+    );
+    await expect(page.locator("html")).toHaveAttribute("lang", language.locale);
+  });
+}
