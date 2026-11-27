@@ -104,6 +104,11 @@ test("registration wizard preserves profile after conflict and network failure",
     attempts++;
     const data = route.request().postDataJSON();
     expect(data).not.toHaveProperty("name");
+    expect(data).not.toHaveProperty("image");
+    expect(Object.keys(data.registration).sort()).toEqual([
+      "profile",
+      "username",
+    ]);
     expect(data.registration.profile).toEqual({
       firstName: "Test",
       lastName: "User",
@@ -137,6 +142,7 @@ test("registration wizard preserves profile after conflict and network failure",
   await expect(heading).toBeFocused();
   await page.getByRole("button", { name: "Driver", exact: true }).click();
   await expect(heading).toHaveText("Complete your profile");
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
   const first = page.getByLabel("First name", { exact: true });
   const last = page.getByLabel("Last name", { exact: true });
   await first.fill("Test");
@@ -146,12 +152,14 @@ test("registration wizard preserves profile after conflict and network failure",
   await back.click();
   await page.getByRole("button", { name: "Dispatcher", exact: true }).click();
   await expect(first).toHaveValue("Test");
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
   await expect(page.getByLabel("Company name")).toHaveCount(0);
   await back.click();
   await page
     .getByRole("button", { name: "Company owner", exact: true })
     .click();
   await expect(last).toHaveValue("User");
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
   await expect(page.getByLabel("Date of birth")).toHaveValue("05/15/1998");
   await page.getByLabel("Company name").fill("Test Company");
   await next.click();

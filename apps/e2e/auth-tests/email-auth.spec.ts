@@ -91,6 +91,7 @@ test("real signup, email verification, login and session revocation", async ({
   await page.getByLabel("Имя", { exact: true }).fill("Test");
   await page.getByLabel("Фамилия", { exact: true }).fill("Driver");
   await page.getByLabel("Дата рождения").fill("15.05.1998");
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
   await next.click();
   const initialUsername = page.getByLabel("Username", { exact: true });
   await expect(initialUsername).toHaveValue("test_driver");
