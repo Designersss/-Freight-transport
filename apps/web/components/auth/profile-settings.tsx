@@ -13,7 +13,11 @@ import {
 import { useRouter } from "@freight/ui/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { type Profile, type ProfileValues, PersonalFields } from "./profile-fields";
+import {
+  PersonalFields,
+  type Profile,
+  type ProfileValues,
+} from "./profile-fields";
 
 function formValues(profile: Profile, locale: Locale): ProfileValues {
   return {

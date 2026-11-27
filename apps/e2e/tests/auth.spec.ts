@@ -494,7 +494,9 @@ test("username settings handle validation, conflicts and server cooldown", async
   await firstName.fill("Updated");
   await birthDate.fill("02/29/1999");
   await saveDetails.click();
-  await expect(personal.getByText("Enter a valid date of birth.")).toBeVisible();
+  await expect(
+    personal.getByText("Enter a valid date of birth."),
+  ).toBeVisible();
   expect(profileWrites).toBe(0);
   await birthDate.fill("02/29/1996");
   await saveDetails.click();

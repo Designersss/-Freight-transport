@@ -110,11 +110,7 @@ export function ProfileFields(props: ProfileFieldsProps) {
   );
 }
 
-export function PersonalFields({
-  form,
-  locale,
-  disabled,
-}: ProfileFieldsProps) {
+export function PersonalFields({ form, locale, disabled }: ProfileFieldsProps) {
   const t = messages[locale].auth;
   const {
     control,

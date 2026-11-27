@@ -403,10 +403,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       lastName: "Driver",
       birthDate: "1996-02-29",
     };
-    assert.equal(
-      (await post("/profile/settings", personal)).statusCode,
-      401,
-    );
+    assert.equal((await post("/profile/settings", personal)).statusCode, 401);
     assert.equal(
       (
         await post("/profile/settings", personal, {
@@ -434,7 +431,9 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       );
     }
     assert.deepEqual((await get(profilePath, cookie)).json(), saved);
-    const changedProfile = await post("/profile/settings", personal, { cookie });
+    const changedProfile = await post("/profile/settings", personal, {
+      cookie,
+    });
     assert.equal(changedProfile.statusCode, 200);
     const expectedProfile = {
       ...saved,

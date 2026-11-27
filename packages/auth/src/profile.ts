@@ -164,9 +164,7 @@ export async function handleProfileSettings(
   if (new URL(request.url).search) return fail(400, "INVALID_REQUEST");
   if (request.headers.get("origin") !== config.AUTH_WEB_ORIGIN)
     return fail(403, "INVALID_ORIGIN");
-  if (
-    request.headers.get("content-type")?.split(";")[0] !== "application/json"
-  )
+  if (request.headers.get("content-type")?.split(";")[0] !== "application/json")
     return fail(400, "INVALID_REQUEST");
 
   try {

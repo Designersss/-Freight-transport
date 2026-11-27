@@ -169,7 +169,9 @@ test("real signup, email verification, login and session revocation", async ({
   await personal.getByLabel("Имя").fill("Updated");
   await personal.getByLabel("Дата рождения").fill("29.02.1996");
   await personal.getByRole("button", { name: "Сохранить данные" }).click();
-  await expect(personal.getByText("Персональные данные сохранены.")).toBeVisible();
+  await expect(
+    personal.getByText("Персональные данные сохранены."),
+  ).toBeVisible();
   await page.reload();
   await expect(personal.getByLabel("Имя")).toHaveValue("Updated");
   await expect(personal.getByLabel("Дата рождения")).toHaveValue("29.02.1996");
