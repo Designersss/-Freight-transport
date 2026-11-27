@@ -1,4 +1,6 @@
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { createProfilePhotoKey } from "./file-policy.js";
 import {
   MAX_PROFILE_PHOTO_BYTES,
   PrivateStorage,
@@ -21,6 +23,37 @@ describe("SeaweedFS private S3", () => {
   }, 70000);
 
   afterAll(() => storage?.close());
+
+  async function seedPhotoObject(bytes: Buffer, contentType: string) {
+    const key = createProfilePhotoKey();
+    const client = new S3Client({
+      endpoint: config.S3_ENDPOINT,
+      region: config.S3_REGION,
+      forcePathStyle: true,
+      credentials: {
+        accessKeyId: config.S3_ACCESS_KEY,
+        secretAccessKey: config.S3_SECRET_KEY,
+      },
+      requestChecksumCalculation: "WHEN_REQUIRED",
+      responseChecksumValidation: "WHEN_REQUIRED",
+      maxAttempts: 2,
+    });
+    try {
+      await client.send(
+        new PutObjectCommand({
+          Bucket: config.S3_BUCKET,
+          Key: key,
+          Body: bytes,
+          ContentType: contentType,
+          ContentLength: bytes.byteLength,
+        }),
+        { abortSignal: AbortSignal.timeout(15000) },
+      );
+      return key;
+    } finally {
+      client.destroy();
+    }
+  }
 
   it("writes, reads and deletes an actual object without anonymous access", async () => {
     const uploaded = await storage.put(bytes, "application/pdf");
@@ -70,6 +103,9 @@ describe("SeaweedFS private S3", () => {
       const downloaded = await storage.getProfilePhoto(uploaded.key);
       expect(Buffer.from(downloaded.bytes)).toEqual(photo);
       expect(downloaded.contentType).toBe("image/png");
+      expect(uploaded.key).toMatch(/^profile-photos\//);
+      await expect(storage.get(uploaded.key)).rejects.toThrow("key");
+      await expect(storage.delete(uploaded.key)).rejects.toThrow("key");
 
       const url = new URL(
         `/${config.S3_BUCKET}/${uploaded.key}`,
@@ -79,7 +115,7 @@ describe("SeaweedFS private S3", () => {
       await anonymous.body?.cancel();
       expect([401, 403]).toContain(anonymous.status);
     } finally {
-      await storage.delete(uploaded.key);
+      await storage.deleteProfilePhoto(uploaded.key);
     }
     await expect(storage.getProfilePhoto(uploaded.key)).rejects.toMatchObject({
       $metadata: { httpStatusCode: 404 },
@@ -93,23 +129,33 @@ describe("SeaweedFS private S3", () => {
     const uploaded = await storage.put(bytes, "application/pdf");
     try {
       await expect(storage.getProfilePhoto(uploaded.key)).rejects.toThrow(
-        "Unsupported",
+        "key",
+      );
+      await expect(storage.deleteProfilePhoto(uploaded.key)).rejects.toThrow(
+        "key",
+      );
+      expect(Buffer.from((await storage.get(uploaded.key)).bytes)).toEqual(
+        bytes,
       );
     } finally {
       await storage.delete(uploaded.key);
     }
+    const key = await seedPhotoObject(bytes, "application/pdf");
+    try {
+      await expect(storage.getProfilePhoto(key)).rejects.toThrow("Unsupported");
+    } finally {
+      await storage.deleteProfilePhoto(key);
+    }
   });
 
-  it("bounds photo reads even for objects written by the general interface", async () => {
+  it("bounds reads of oversized objects in the photo namespace", async () => {
     const oversized = Buffer.alloc(MAX_PROFILE_PHOTO_BYTES + 1);
     oversized.set([255, 216, 255]);
-    const uploaded = await storage.put(oversized, "image/jpeg");
+    const key = await seedPhotoObject(oversized, "image/jpeg");
     try {
-      await expect(storage.getProfilePhoto(uploaded.key)).rejects.toThrow(
-        "size",
-      );
+      await expect(storage.getProfilePhoto(key)).rejects.toThrow("size");
     } finally {
-      await storage.delete(uploaded.key);
+      await storage.deleteProfilePhoto(key);
     }
   }, 30000);
 

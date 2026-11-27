@@ -10,7 +10,9 @@ import type { StorageConfig } from "./config.js";
 import {
   type AllowedContentType,
   assertObjectKey,
+  assertProfilePhotoKey,
   createObjectKey,
+  createProfilePhotoKey,
   MAX_FILE_BYTES,
   MAX_PROFILE_PHOTO_BYTES,
   type ProfilePhotoContentType,
@@ -51,6 +53,15 @@ export class PrivateStorage {
   ): Promise<{ key: string; contentType: AllowedContentType; size: number }> {
     validateFile(contentType, bytes);
     const key = createObjectKey();
+    await this.write(key, bytes, contentType);
+    return { key, contentType, size: bytes.byteLength };
+  }
+
+  private async write(
+    key: string,
+    bytes: Uint8Array,
+    contentType: AllowedContentType,
+  ): Promise<void> {
     await this.client.send(
       new PutObjectCommand({
         Bucket: this.config.S3_BUCKET,
@@ -61,7 +72,6 @@ export class PrivateStorage {
       }),
       { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
     );
-    return { key, contentType, size: bytes.byteLength };
   }
 
   async putProfilePhoto(
@@ -73,19 +83,22 @@ export class PrivateStorage {
     size: number;
   }> {
     validateProfilePhoto(contentType, bytes);
-    const { key, size } = await this.put(bytes, contentType);
-    return { key, contentType, size };
+    const key = createProfilePhotoKey();
+    await this.write(key, bytes, contentType);
+    return { key, contentType, size: bytes.byteLength };
   }
 
   async get(
     key: string,
   ): Promise<{ bytes: Uint8Array; contentType: AllowedContentType }> {
+    assertObjectKey(key);
     return this.read(key, MAX_FILE_BYTES);
   }
 
   async getProfilePhoto(
     key: string,
   ): Promise<{ bytes: Uint8Array; contentType: ProfilePhotoContentType }> {
+    assertProfilePhotoKey(key);
     const { bytes, contentType } = await this.read(
       key,
       MAX_PROFILE_PHOTO_BYTES,
@@ -98,7 +111,6 @@ export class PrivateStorage {
     key: string,
     maxBytes: number,
   ): Promise<{ bytes: Uint8Array; contentType: AllowedContentType }> {
-    assertObjectKey(key);
     const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
     const result = await this.client.send(
       new GetObjectCommand({ Bucket: this.config.S3_BUCKET, Key: key }),
@@ -135,6 +147,15 @@ export class PrivateStorage {
 
   async delete(key: string): Promise<void> {
     assertObjectKey(key);
+    await this.remove(key);
+  }
+
+  async deleteProfilePhoto(key: string): Promise<void> {
+    assertProfilePhotoKey(key);
+    await this.remove(key);
+  }
+
+  private async remove(key: string): Promise<void> {
     await this.client.send(
       new DeleteObjectCommand({ Bucket: this.config.S3_BUCKET, Key: key }),
       { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },

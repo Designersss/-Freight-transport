@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   assertObjectKey,
+  assertProfilePhotoKey,
   createObjectKey,
+  createProfilePhotoKey,
   MAX_FILE_BYTES,
   MAX_PROFILE_PHOTO_BYTES,
   validateFile,
@@ -48,6 +50,18 @@ describe("File policy", () => {
 });
 
 describe("Profile photo envelope policy", () => {
+  it("isolates photo keys from general object keys", () => {
+    const photo = createProfilePhotoKey();
+    const general = createObjectKey();
+    expect(() => assertProfilePhotoKey(photo)).not.toThrow();
+    expect(createProfilePhotoKey()).not.toBe(photo);
+    expect(() => assertObjectKey(photo)).toThrow("key");
+    expect(() => assertProfilePhotoKey(general)).toThrow("key");
+    for (const invalid of ["../secret", "profile-photos/abc", `/${photo}`]) {
+      expect(() => assertProfilePhotoKey(invalid)).toThrow("key");
+    }
+  });
+
   it.each([
     ["image/jpeg", [255, 216, 255, 0]],
     ["image/png", [137, 80, 78, 71, 13, 10, 26, 10]],

@@ -47,6 +47,20 @@ export function createObjectKey(): string {
   return `files/${randomUUID()}`;
 }
 
+export function createProfilePhotoKey(): string {
+  return `profile-photos/${randomUUID()}`;
+}
+
+export function assertProfilePhotoKey(key: string): void {
+  if (
+    !/^profile-photos\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+      key,
+    )
+  ) {
+    throw new Error("Invalid profile photo key");
+  }
+}
+
 export function assertObjectKey(key: string): void {
   if (
     !/^files\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
