@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import { eligibleAccount } from "./active-account.js";
+import { canUsePublicSession, eligibleAccount } from "./active-account.js";
 import { AUTH_BASE_PATH, createEmailAuth } from "./auth.js";
 import { type AuthConfig, parseAuthConfig } from "./config.js";
 import {
@@ -267,7 +267,11 @@ export function createAuthHttpRuntime(
           if (result === null)
             return Response.json(null, { headers: outputHeaders });
           const session = publicSession.parse(result);
-          if (!isDeliverableEmail(session.user.email))
+          if (
+            !session.user.emailVerified ||
+            !isDeliverableEmail(session.user.email) ||
+            !(await canUsePublicSession(pool, session.user.id))
+          )
             return failure(403, "AUTH_REQUEST_FAILED");
           return Response.json(session, { headers: outputHeaders });
         }

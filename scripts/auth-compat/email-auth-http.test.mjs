@@ -887,6 +887,47 @@ test("registration draft survives verification and reserves one username", async
       (await call(sessionsPath, { action: "revokeOthers" }, cookie)).status,
       403,
     );
+    const sessionCount = async () =>
+      (
+        await pool.query(
+          'SELECT count(*)::int AS count FROM "session" WHERE "userId" = $1',
+          [user.id],
+        )
+      ).rows[0].count;
+    const beforeBlockedLogin = await sessionCount();
+    assert.equal((await call("/get-session", undefined, cookie)).status, 403);
+    const blockedLogin = await call(
+      "/sign-in/email",
+      credentials,
+      undefined,
+      "192.0.2.77",
+    );
+    assert.equal(blockedLogin.status, 401);
+    assert.deepEqual(await blockedLogin.json(), { code: "INVALID_CREDENTIALS" });
+    assert.equal(blockedLogin.headers.get("set-cookie"), null);
+    assert.equal(await sessionCount(), beforeBlockedLogin);
+
+    await pool.query(
+      "UPDATE user_profiles SET status = 'ACTIVE', role = 'PLATFORM_ADMIN', company_name = NULL WHERE user_id = $1",
+      [user.id],
+    );
+    assert.equal((await call("/get-session", undefined, cookie)).status, 403);
+    assert.equal((await call("/profile", undefined, cookie)).status, 403);
+    const adminLogin = await call(
+      "/sign-in/email",
+      credentials,
+      undefined,
+      "192.0.2.78",
+    );
+    assert.equal(adminLogin.status, 401);
+    assert.deepEqual(await adminLogin.json(), { code: "INVALID_CREDENTIALS" });
+    assert.equal(adminLogin.headers.get("set-cookie"), null);
+    assert.equal(await sessionCount(), beforeBlockedLogin);
+    await pool.query(
+      "UPDATE user_profiles SET role = 'COMPANY_OWNER', company_name = $2, status = 'DEACTIVATED' WHERE user_id = $1",
+      [user.id, profile.companyName],
+    );
+
     const replacementPassword = randomBytes(24).toString("hex");
     const passwordChange = {
       currentPassword: password,

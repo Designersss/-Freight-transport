@@ -1,5 +1,6 @@
 import { type BetterAuthOptions, betterAuth } from "better-auth";
 import type { Pool } from "pg";
+import { canUsePublicSession } from "./active-account.js";
 import type { AuthConfig } from "./config.js";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./contracts.js";
 import { type AuthMailer, isDeliverableEmail } from "./email.js";
@@ -28,6 +29,15 @@ export function createAuthOptions(
     },
     rateLimit: { enabled: true, storage: "database" },
     session: { cookieCache: { enabled: false } },
+    databaseHooks: {
+      session: {
+        create: {
+          async before(session) {
+            return canUsePublicSession(database, session.userId);
+          },
+        },
+      },
+    },
     account: { accountLinking: { disableImplicitLinking: true } },
     emailAndPassword: {
       enabled: true,
