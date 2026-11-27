@@ -50,7 +50,13 @@ export function createAuthOptions(
         await mailer.send("verify-email", user.email, url);
       },
     },
-    user: { deleteUser: { enabled: false } },
+    user: {
+      deleteUser: { enabled: false },
+      additionalFields: {
+        username: { type: "string", required: false, returned: false },
+        registrationDraft: { type: "string", required: false, returned: false },
+      },
+    },
   };
 }
 

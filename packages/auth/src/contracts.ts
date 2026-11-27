@@ -9,25 +9,6 @@ export const PASSWORD_MIN_LENGTH = 6;
 export const PASSWORD_MAX_LENGTH = 128;
 const password = z.string().min(PASSWORD_MIN_LENGTH).max(PASSWORD_MAX_LENGTH);
 const locale = z.enum(["ru", "en"]).default("ru");
-export const authBodies = {
-  "/sign-up/email": z.strictObject({
-    email,
-    password,
-    name: z.string().trim().min(1).max(200),
-    locale,
-  }),
-  "/sign-in/email": z.strictObject({
-    email,
-    password,
-  }),
-  "/sign-out": z.strictObject({}),
-  "/send-verification-email": z.strictObject({ email, locale }),
-  "/request-password-reset": z.strictObject({ email, locale }),
-  "/reset-password": z.strictObject({
-    token: z.string().min(1).max(512),
-    newPassword: password,
-  }),
-};
 
 export const publicSession = z.object({
   user: z.object({
@@ -72,3 +53,36 @@ export const publicProfile = z.object({
   driverAge: driverAge.nullable(),
   companyName: profileName.nullable(),
 });
+
+export const usernameInput = z
+  .string()
+  .trim()
+  .regex(/^[A-Za-z][A-Za-z0-9_]{2,31}$/)
+  .transform((value) => value.toLowerCase())
+  .refine((value) => !["admin", "support", "movaro"].includes(value));
+
+export const registrationInput = z.strictObject({
+  profile: registrationProfileInput,
+  username: usernameInput,
+});
+
+export const authBodies = {
+  "/sign-up/email": z.strictObject({
+    email,
+    password,
+    name: z.string().trim().min(1).max(200),
+    locale,
+    registration: registrationInput.optional(),
+  }),
+  "/sign-in/email": z.strictObject({
+    email,
+    password,
+  }),
+  "/sign-out": z.strictObject({}),
+  "/send-verification-email": z.strictObject({ email, locale }),
+  "/request-password-reset": z.strictObject({ email, locale }),
+  "/reset-password": z.strictObject({
+    token: z.string().min(1).max(512),
+    newPassword: password,
+  }),
+};

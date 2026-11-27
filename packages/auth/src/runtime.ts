@@ -1,10 +1,15 @@
 import { Pool } from "pg";
 import { AUTH_BASE_PATH, createEmailAuth } from "./auth.js";
 import { type AuthConfig, parseAuthConfig } from "./config.js";
-import { authBodies as bodies, publicSession } from "./contracts.js";
+import {
+  authBodies as bodies,
+  publicSession,
+  registrationInput,
+} from "./contracts.js";
 import { isDeliverableEmail } from "./email.js";
 import { reserveMailRequest } from "./mail-rate-limit.js";
 import { handleProfile } from "./profile.js";
+import { completeRegistration, usernameOwner } from "./registration.js";
 import { createSmtpMailer } from "./smtp-mailer.js";
 
 export { type AuthConfig, parseAuthConfig } from "./config.js";
@@ -50,6 +55,7 @@ export function createAuthHttpRuntime(
         return handleProfile(request, config, auth, pool);
       const headers = new Headers(request.headers);
       let body: string | undefined;
+      let username: string | undefined;
       if (request.method === "POST") {
         if (!Object.hasOwn(bodies, path)) return failure(404, "NOT_FOUND");
         if (headers.get("origin") !== config.AUTH_WEB_ORIGIN)
@@ -72,6 +78,14 @@ export function createAuthHttpRuntime(
           ...parsed.data,
         };
         const payload: Record<string, unknown> = fields;
+        if (path === "/sign-up/email" && payload.registration !== undefined) {
+          const registration = registrationInput.parse(payload.registration);
+          delete payload.registration;
+          username = registration.username;
+          payload.username = username;
+          payload.registrationDraft = JSON.stringify(registration.profile);
+          payload.name = `${registration.profile.firstName} ${registration.profile.lastName}`;
+        }
         if (path === "/sign-up/email" || path === "/send-verification-email") {
           payload.callbackURL = destination(language, "/email-confirmation");
         }
@@ -144,6 +158,8 @@ export function createAuthHttpRuntime(
       } else return failure(405, "METHOD_NOT_ALLOWED");
 
       try {
+        if (username && (await usernameOwner(pool, username)))
+          return failure(409, "USERNAME_TAKEN");
         const response = await auth.handler(
           new Request(url, {
             method: request.method,
@@ -184,6 +200,12 @@ export function createAuthHttpRuntime(
           });
         }
         if (!response.ok) {
+          if (
+            username &&
+            response.status === 422 &&
+            (await usernameOwner(pool, username))
+          )
+            return failure(409, "USERNAME_TAKEN");
           let code =
             response.status === 429 ? "RATE_LIMITED" : "AUTH_REQUEST_FAILED";
           if (path === "/sign-in/email" && response.status === 403) {
@@ -214,6 +236,20 @@ export function createAuthHttpRuntime(
             return failure(403, "AUTH_REQUEST_FAILED");
           return Response.json(session, { headers: outputHeaders });
         }
+        if (username) {
+          const result: unknown = await response.json();
+          const owner = await usernameOwner(pool, username);
+          if (
+            owner &&
+            (!result ||
+              typeof result !== "object" ||
+              !("user" in result) ||
+              publicSession.shape.user.parse(result.user).id !== owner)
+          )
+            return failure(409, "USERNAME_TAKEN");
+        }
+        if (path === "/sign-in/email")
+          await completeRegistration(pool, await response.json());
         // Never expose Better Auth's raw session token or synthetic signup user.
         return Response.json({ success: true }, { headers: outputHeaders });
       } catch {

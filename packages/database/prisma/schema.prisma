@@ -51,16 +51,18 @@ model UserEventInvalidation {
 
 // Better Auth 1.7.28 core tables, managed exclusively by Prisma migrations.
 model User {
-  id            String       @id
-  name          String
-  email         String       @unique(map: "user_email_uidx")
-  emailVerified Boolean      @default(false)
-  image         String?
-  createdAt     DateTime     @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
-  accounts      Account[]
-  sessions      Session[]
-  profile       UserProfile?
+  id                String       @id
+  name              String
+  email             String       @unique(map: "user_email_uidx")
+  emailVerified     Boolean      @default(false)
+  image             String?
+  username          String?      @unique(map: "user_username_uidx")
+  registrationDraft String?
+  createdAt         DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+  accounts          Account[]
+  sessions          Session[]
+  profile           UserProfile?
 
   @@map("user")
 }
