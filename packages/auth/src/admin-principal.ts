@@ -3,7 +3,6 @@ import type { Pool } from "pg";
 const adminOwner = `FROM "user" u JOIN user_profiles p ON p.user_id = u.id
   WHERE u.id = $1 AND p.role = 'PLATFORM_ADMIN' AND p.status = 'ACTIVE'
     AND u."emailVerified" AND u.email NOT LIKE '%.invalid'
-    AND u."registrationDraft" IS NULL
     AND EXISTS (
       SELECT 1 FROM "account" a WHERE a."userId" = u.id
         AND a."providerId" = 'credential' AND a.password IS NOT NULL AND a.password <> ''

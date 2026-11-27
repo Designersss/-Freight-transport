@@ -1,8 +1,13 @@
 import assert from "node:assert/strict";
-import { randomBytes } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import { test } from "node:test";
 import pg from "pg";
-import { issueRegistrationEmailProof } from "../../packages/auth/dist/registration-email-proof.js";
+import { createEmailAuth } from "../../packages/auth/dist/auth.js";
+import { handleEmailRegistration } from "../../packages/auth/dist/registration-email-http.js";
+import {
+  issueRegistrationEmailProof,
+  readRegistrationEmailProof,
+} from "../../packages/auth/dist/registration-email-proof.js";
 import {
   createAuthHttpRuntime,
   parseAuthConfig,
@@ -15,12 +20,13 @@ test("registration creates only the mailbox owner account", async () => {
   const pool = new pg.Pool({ connectionString: database.href });
   const origin = "http://127.0.0.1:4000";
   const webOrigin = "http://127.0.0.1:3000";
+  const secret = randomBytes(32).toString("hex");
   const runtime = createAuthHttpRuntime(
     parseAuthConfig({
       NODE_ENV: "test",
       AUTH_BASE_URL: origin,
       AUTH_WEB_ORIGIN: webOrigin,
-      AUTH_SECRET: randomBytes(32).toString("hex"),
+      AUTH_SECRET: secret,
       SMTP_HOST: "127.0.0.1",
       SMTP_PORT: process.env.AUTH_COMPAT_SMTP_PORT,
       SMTP_SECURITY: "local",
@@ -100,12 +106,13 @@ test("registration creates only the mailbox owner account", async () => {
     assert.equal(rejected.headers.get("set-cookie"), null);
     const winnerPassword =
       competing[0] === result ? password : competingPassword;
-    const loserPassword = competing[0] === result ? competingPassword : password;
+    const loserPassword =
+      competing[0] === result ? competingPassword : password;
     assert.equal(result.status, 200);
     assert.equal(result.headers.get("set-cookie"), null);
     assert.deepEqual(await result.json(), { success: true });
     const after = await pool.query(
-      `SELECT u."emailVerified", u.username, u."registrationDraft", p.role,
+      `SELECT u."emailVerified", u.username, p.role,
          p.first_name, a."registrationProofHash", a."registrationProfile"
        FROM "user" u JOIN user_profiles p ON p.user_id = u.id
        JOIN "account" a ON a."userId" = u.id AND a."providerId" = 'credential'
@@ -116,7 +123,6 @@ test("registration creates only the mailbox owner account", async () => {
       {
         emailVerified: true,
         username: registration.username,
-        registrationDraft: null,
         role: "DRIVER",
         first_name: "Mailbox",
         registrationProofHash: null,
@@ -144,8 +150,7 @@ test("registration creates only the mailbox owner account", async () => {
     );
     const duplicateProof = await issueRegistrationEmailProof(pool, email);
     assert.equal(
-      (await call("registration/email/read", { token: duplicateProof }))
-        .status,
+      (await call("registration/email/read", { token: duplicateProof })).status,
       409,
     );
     const duplicate = await call("registration/email/complete", {
@@ -249,8 +254,138 @@ test("registration creates only the mailbox owner account", async () => {
       "192.0.2.97",
     );
     assert.equal(winningLogin.status, 200);
+
+    const reader = "192.0.2.98";
+    const readerDigest = createHmac("sha256", secret)
+      .update(reader)
+      .digest("hex");
+    // Seed only this synthetic reader's bucket to its last allowed attempt.
+    await pool.query(
+      `INSERT INTO auth_mail_rate_limits (key, count, expires_at)
+       VALUES ($1, 59, now() + interval '1 minute')`,
+      [`registration:read:ip:${readerDigest}`],
+    );
+    const readableEmail = `${randomBytes(12).toString("hex")}@example.test`;
+    const readableToken = await issueRegistrationEmailProof(
+      pool,
+      readableEmail,
+    );
+    const lastRead = await call(
+      "registration/email/read",
+      { token: readableToken },
+      reader,
+    );
+    assert.equal(lastRead.status, 200);
+    assert.deepEqual(await lastRead.json(), { email: readableEmail });
+    const blockedRead = await call(
+      "registration/email/read",
+      { token: "c".repeat(43) },
+      `::ffff:${reader}`,
+    );
+    assert.equal(blockedRead.status, 429);
+    assert.ok(Number(blockedRead.headers.get("retry-after")) > 0);
+    const independentRead = await call(
+      "registration/email/read",
+      { token: readableToken },
+      "192.0.2.99",
+    );
+    assert.equal(independentRead.status, 200);
+    assert.equal(
+      (
+        await call(
+          "registration/email/complete",
+          { token: "c".repeat(43), password, registration },
+          reader,
+        )
+      ).status,
+      400,
+    );
   } finally {
     await runtime.close();
     await pool.end();
+  }
+});
+
+test("failed registration mail preserves earlier proof", async () => {
+  const database = new URL(process.env.AUTH_COMPAT_DATABASE_URL);
+  assert.equal(database.hostname, "127.0.0.1");
+  assert.equal(database.pathname, "/freight_auth_compat");
+  const pool = new pg.Pool({ connectionString: database.href });
+  const email = `${randomBytes(12).toString("hex")}@example.test`;
+  const config = parseAuthConfig({
+    NODE_ENV: "test",
+    AUTH_BASE_URL: "http://127.0.0.1:4000",
+    AUTH_WEB_ORIGIN: "http://127.0.0.1:3000",
+    AUTH_SECRET: randomBytes(32).toString("hex"),
+    SMTP_HOST: "127.0.0.1",
+    SMTP_PORT: process.env.AUTH_COMPAT_SMTP_PORT,
+    SMTP_SECURITY: "local",
+    SMTP_FROM: "auth@movaro.test",
+  });
+  const delivered = [];
+  // Inject the transport error only in this test. The handler, SQL and
+  // auth instance are real; the successful SMTP path is covered by Mailpit.
+  const mailer = {
+    async send(kind, recipient, url) {
+      delivered.push({ kind, recipient, url });
+      throw new Error("Synthetic SMTP failure");
+    },
+  };
+  const auth = createEmailAuth(config, pool, mailer);
+  const startUrl = new URL(
+    "/api/v1/auth/registration/email/start",
+    config.AUTH_BASE_URL,
+  );
+  const start = () =>
+    handleEmailRegistration(
+      new Request(startUrl, {
+        method: "POST",
+        headers: {
+          origin: config.AUTH_WEB_ORIGIN,
+          "content-type": "application/json",
+          "x-movaro-client-ip": "192.0.2.100",
+        },
+        body: JSON.stringify({ email, locale: "en" }),
+      }),
+      config,
+      auth,
+      pool,
+      mailer,
+    );
+  try {
+    const earlier = await issueRegistrationEmailProof(pool, email);
+    const failed = await start();
+    assert.equal(failed.status, 503);
+    assert.deepEqual(await failed.json(), { code: "AUTH_REQUEST_FAILED" });
+    assert.equal(failed.headers.get("set-cookie"), null);
+    assert.equal(delivered.length, 1);
+    const message = delivered[0];
+    assert.equal(message.kind, "registration-email");
+    assert.equal(message.recipient, email);
+    const link = new URL(message.url);
+    assert.equal(link.origin, config.AUTH_WEB_ORIGIN);
+    assert.equal(link.pathname, "/en/signup");
+    assert.equal(link.search, "");
+    const failedToken = new URLSearchParams(link.hash.slice(1)).get("token");
+    assert.ok(failedToken);
+    assert.equal(await readRegistrationEmailProof(pool, failedToken), null);
+    assert.equal(await readRegistrationEmailProof(pool, earlier), email);
+    const users = await pool.query('SELECT id FROM "user" WHERE email = $1', [
+      email,
+    ]);
+    assert.equal(users.rowCount, 0);
+    const retry = await start();
+    assert.equal(retry.status, 429);
+    assert.ok(Number(retry.headers.get("retry-after")) > 0);
+    assert.equal(delivered.length, 1);
+  } finally {
+    try {
+      await pool.query(
+        "DELETE FROM registration_email_proofs WHERE email = $1",
+        [email],
+      );
+    } finally {
+      await pool.end();
+    }
   }
 });

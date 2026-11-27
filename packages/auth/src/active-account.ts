@@ -3,7 +3,6 @@ import type { Pool } from "pg";
 // Use the same identity predicate in session issuance, onboarding and guards.
 // A reserved address is never treated as proof of email ownership.
 export const telegramAccountCondition = `NOT u."emailVerified"
-  AND u."registrationDraft" IS NULL
   AND EXISTS (
     SELECT 1 FROM "account" telegram
     WHERE telegram."userId" = u.id AND telegram."providerId" = 'telegram'
@@ -15,14 +14,12 @@ export const telegramAccountCondition = `NOT u."emailVerified"
   )`;
 
 const emailAccountCondition = `u."emailVerified" = true
-  AND u."registrationDraft" IS NULL
   AND u.email NOT LIKE '%.invalid'`;
 
 export const eligibleAccount = `FROM "user" u
   JOIN user_profiles p ON p.user_id = u.id
   JOIN "session" s ON s."userId" = u.id
   WHERE u.id = $1 AND s.id = $2 AND s."expiresAt" > clock_timestamp()
-    AND u."registrationDraft" IS NULL
     AND p.status = 'ACTIVE' AND p.role <> 'PLATFORM_ADMIN'
     AND ( (${emailAccountCondition})
       OR (u.username IS NOT NULL AND ${telegramAccountCondition}) )`;

@@ -41,6 +41,12 @@ test("Prisma auth migration enforces identity and profile integrity", async () =
       rateLimit: { storage: "database" },
     });
     await assertAuthSchema(auth.options);
+    const obsolete = await pool.query(
+      `SELECT column_name FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'user'
+         AND column_name = 'registrationDraft'`,
+    );
+    assert.equal(obsolete.rowCount, 0);
     await createUser(userId, email);
     await createUser(otherId, otherEmail);
     await createUser(dispatcherId, `${randomUUID()}@example.test`);

@@ -36,7 +36,7 @@ export async function preparePasswordChange(
      WHERE u.id = $1 AND s.id = $2 AND NOT s."adminSession"
        AND s."expiresAt" > clock_timestamp()
        AND u."emailVerified" AND u.email NOT LIKE '%.invalid'
-       AND u.username IS NOT NULL AND u."registrationDraft" IS NULL
+       AND u.username IS NOT NULL
        AND p.status = 'ACTIVE' AND p.role <> 'PLATFORM_ADMIN'`,
     [userId, sessionId],
   );

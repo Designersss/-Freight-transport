@@ -235,10 +235,9 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     assert.equal(readProof.statusCode, 200);
     assert.deepEqual(readProof.json(), { email });
     assert.equal(readProof.headers["set-cookie"], undefined);
-    const pending = await pool.query(
-      'SELECT id FROM "user" WHERE email = $1',
-      [email],
-    );
+    const pending = await pool.query('SELECT id FROM "user" WHERE email = $1', [
+      email,
+    ]);
     assert.equal(pending.rowCount, 0);
     const complete = await post("/registration/email/complete", {
       ...signup,
@@ -761,7 +760,7 @@ test("verified registration atomically claims one username", async () => {
     assert.deepEqual(await accepted.json(), { success: true });
     assert.equal(accepted.headers.get("set-cookie"), null);
     const stored = await pool.query(
-      'SELECT id, username, "registrationDraft", "emailVerified" FROM "user" WHERE email IN ($1, $2)',
+      'SELECT id, username, "emailVerified" FROM "user" WHERE email IN ($1, $2)',
       [email, otherEmail],
     );
     assert.equal(stored.rowCount, 1);
@@ -775,7 +774,6 @@ test("verified registration atomically claims one username", async () => {
     assert.equal(next.status, 200);
     assert.deepEqual(await next.json(), { username: `${username}2` });
     assert.equal(user.emailVerified, true);
-    assert.equal(user.registrationDraft, null);
     const profileRows = () =>
       pool.query("SELECT role FROM user_profiles WHERE user_id = $1", [
         user.id,
@@ -840,16 +838,10 @@ test("verified registration atomically claims one username", async () => {
     assert.equal(read.status, 200);
     assert.deepEqual(await read.json(), profile);
     assert.equal((await profileRows()).rowCount, 1);
-    const finished = await pool.query(
-      'SELECT "registrationDraft" FROM "user" WHERE id = $1',
-      [user.id],
-    );
-    assert.equal(finished.rows[0].registrationDraft, null);
     const session = await call("/get-session", undefined, cookie);
     assert.equal(session.status, 200);
     const data = await session.json();
     assert.equal(data.user.id, user.id);
-    assert.equal(data.user.registrationDraft, undefined);
     assert.equal(data.user.birthDate, undefined);
     assert.equal(data.user.username, undefined);
     const relogin = await call("/sign-in/email", credentials);

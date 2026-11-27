@@ -57,7 +57,6 @@ model User {
   emailVerified     Boolean      @default(false)
   image             String?
   username          String?      @unique(map: "user_username_uidx")
-  registrationDraft String?
   usernameChangedAt DateTime?    @map("username_changed_at") @db.Timestamptz(6)
   telegramLinkRevision Int      @default(0)
   credentialRevision Int        @default(0)
