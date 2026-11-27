@@ -4,12 +4,18 @@ import {
   createDatabaseClient,
   relayOutboxBatch,
 } from "@freight/database";
+import {
+  parseStorageConfig,
+  PrivateStorage,
+  type StorageConfig,
+} from "@freight/storage";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { parseWorkerConfig, type WorkerConfig } from "./config.js";
 import { startWorker } from "./worker.js";
 
 describe("Transactional outbox and pg-boss", () => {
   let config: WorkerConfig;
+  let storageConfig: StorageConfig;
   let database: ReturnType<typeof createDatabaseClient>;
   const aggregateId = randomUUID();
 
@@ -25,6 +31,7 @@ describe("Transactional outbox and pg-boss", () => {
       LOG_LEVEL: "silent",
       DATABASE_URL: process.env.TEST_DATABASE_URL,
     });
+    storageConfig = parseStorageConfig(process.env);
     database = createDatabaseClient(config.DATABASE_URL);
   });
 
@@ -81,7 +88,7 @@ describe("Transactional outbox and pg-boss", () => {
     const id = await database.$transaction((tx) =>
       appendOutboxEvent(tx, event()),
     );
-    const worker = await startWorker(config);
+    const worker = await startWorker(config, storageConfig);
     try {
       await vi.waitFor(
         async () => {
@@ -100,4 +107,50 @@ describe("Transactional outbox and pg-boss", () => {
       await worker.stop();
     }
   }, 30000);
+
+  it("deletes retired profile photos through the real scheduled worker", async () => {
+    const storage = new PrivateStorage(storageConfig);
+    const keys: string[] = [];
+    let worker: Awaited<ReturnType<typeof startWorker>> | undefined;
+    try {
+      const png = Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGMwj6oHAAHcARGUV5xbAAAAAElFTkSuQmCC",
+        "base64",
+      );
+      const { key } = await storage.putProfilePhoto(png, "image/png");
+      keys.push(key);
+      const absent = `profile-photos/${randomUUID()}`;
+      keys.push(absent);
+      await database.profilePhotoCleanup.createMany({
+        data: keys.map((key) => ({ key, availableAt: new Date(0) })),
+      });
+      worker = await startWorker(config, storageConfig);
+      await vi.waitFor(
+        async () => {
+          expect(
+            await database.profilePhotoCleanup.count({
+              where: { key: { in: keys } },
+            }),
+          ).toBe(0);
+        },
+        { timeout: 20000, interval: 100 },
+      );
+      await expect(storage.getProfilePhoto(key)).rejects.toMatchObject({
+        $metadata: { httpStatusCode: 404 },
+      });
+    } finally {
+      try {
+        await worker?.stop();
+      } finally {
+        try {
+          for (const key of keys) await storage.deleteProfilePhoto(key);
+          await database.profilePhotoCleanup.deleteMany({
+            where: { key: { in: keys } },
+          });
+        } finally {
+          storage.close();
+        }
+      }
+    }
+  }, 40000);
 });

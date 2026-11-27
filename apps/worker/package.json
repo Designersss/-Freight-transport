@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@freight/database": "workspace:*",
+    "@freight/storage": "workspace:*",
     "pg-boss": "12.39.0",
     "pino": "10.4.0",
     "zod": "4.1.12",

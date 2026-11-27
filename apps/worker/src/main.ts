@@ -1,8 +1,12 @@
+import { parseStorageConfig } from "@freight/storage";
 import { parseWorkerConfig } from "./config.js";
 import { startWorker } from "./worker.js";
 
 async function main(): Promise<void> {
-  const worker = await startWorker(parseWorkerConfig(process.env));
+  const worker = await startWorker(
+    parseWorkerConfig(process.env),
+    parseStorageConfig(process.env),
+  );
   const shutdown = () => {
     void worker.stop().catch(() => {
       console.error("Worker shutdown failed");

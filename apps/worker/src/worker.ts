@@ -1,17 +1,21 @@
 import { createDatabaseClient, relayOutboxBatch } from "@freight/database";
+import { PrivateStorage, type StorageConfig } from "@freight/storage";
 import { PgBoss } from "pg-boss";
 import { pino } from "pino";
 import type { WorkerConfig } from "./config.js";
+import { registerProfilePhotoCleanup } from "./profile-photo-cleanup.js";
 
 export const OUTBOX_QUEUE = "outbox-relay";
 const MAX_BATCHES_PER_JOB = 10;
 
 export async function startWorker(
   config: WorkerConfig,
+  storageConfig: StorageConfig,
 ): Promise<{ stop(): Promise<void> }> {
   const logger = pino({ level: config.LOG_LEVEL });
   const database = createDatabaseClient(config.DATABASE_URL);
   const boss = new PgBoss(config.DATABASE_URL);
+  const storage = new PrivateStorage(storageConfig);
 
   boss.on("error", (error: Error) => {
     logger.error({ errorName: error.name }, "Queue runtime error");
@@ -23,7 +27,11 @@ export async function startWorker(
       try {
         await boss.stop();
       } finally {
-        await database.$disconnect();
+        try {
+          storage.close();
+        } finally {
+          await database.$disconnect();
+        }
       }
     })();
     return stopping;
@@ -32,6 +40,8 @@ export async function startWorker(
   try {
     // Fail startup if application migrations are absent.
     await database.eventPublication.findFirst({ select: { eventId: true } });
+    await database.profilePhotoCleanup.findFirst({ select: { key: true } });
+    await storage.checkReadiness();
     await boss.start();
     await boss.createQueue(OUTBOX_QUEUE, {
       retryLimit: 5,
@@ -54,6 +64,7 @@ export async function startWorker(
     // A missed tick cannot lose events: pending rows remain in PostgreSQL.
     await boss.schedule(OUTBOX_QUEUE, "* * * * *", {});
     await boss.send(OUTBOX_QUEUE, {});
+    await registerProfilePhotoCleanup(boss, database, storage, logger);
     logger.info("Worker started");
     return { stop };
   } catch (error) {
