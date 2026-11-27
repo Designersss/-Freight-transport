@@ -67,7 +67,11 @@ export class PrivateStorage {
   async putProfilePhoto(
     bytes: Uint8Array,
     contentType: string,
-  ): Promise<{ key: string; contentType: ProfilePhotoContentType; size: number }> {
+  ): Promise<{
+    key: string;
+    contentType: ProfilePhotoContentType;
+    size: number;
+  }> {
     validateProfilePhoto(contentType, bytes);
     const { key, size } = await this.put(bytes, contentType);
     return { key, contentType, size };
@@ -82,7 +86,10 @@ export class PrivateStorage {
   async getProfilePhoto(
     key: string,
   ): Promise<{ bytes: Uint8Array; contentType: ProfilePhotoContentType }> {
-    const { bytes, contentType } = await this.read(key, MAX_PROFILE_PHOTO_BYTES);
+    const { bytes, contentType } = await this.read(
+      key,
+      MAX_PROFILE_PHOTO_BYTES,
+    );
     validateProfilePhoto(contentType, bytes);
     return { bytes, contentType };
   }
