@@ -448,6 +448,45 @@ test("username settings handle validation, conflicts and server cooldown", async
   await expect(username).toHaveValue("new_driver");
   await expect(username).toHaveAttribute("readonly", "");
   expect(posts).toBe(2);
+  let passwordPosts = 0;
+  await page.route("**/api/auth/change-password", (route) => {
+    passwordPosts++;
+    expect(route.request().postDataJSON()).toEqual({
+      currentPassword: "old-password",
+      newPassword: "new-password",
+    });
+    return passwordPosts === 1
+      ? route.fulfill({
+          status: 400,
+          json: { code: "INVALID_CURRENT_PASSWORD" },
+        })
+      : route.fulfill({ json: { success: true } });
+  });
+  const oldPassword = page.getByLabel("Current password", { exact: true });
+  const newPassword = page.getByLabel("New password", { exact: true });
+  const confirmation = page.getByLabel("Confirm new password");
+  const changePassword = page.getByRole("button", { name: "Change password" });
+  await oldPassword.fill("old-password");
+  await newPassword.fill("new-password");
+  await confirmation.fill("mismatch");
+  await changePassword.click();
+  await expect(page.getByText("Passwords do not match.")).toBeVisible();
+  expect(passwordPosts).toBe(0);
+  await confirmation.fill("new-password");
+  await changePassword.click();
+  await expect(page.getByText("Incorrect current password.")).toBeVisible();
+  await expect(oldPassword).toHaveValue("");
+  await expect(newPassword).toHaveValue("");
+  await expect(confirmation).toHaveValue("");
+  await oldPassword.fill("old-password");
+  await newPassword.fill("new-password");
+  await confirmation.fill("new-password");
+  await changePassword.click();
+  await expect(
+    page.getByText("Password changed. Other sessions ended."),
+  ).toBeVisible();
+  await expect(oldPassword).toHaveValue("");
+  expect(passwordPosts).toBe(2);
   await expectAccessible(page);
   await expectNoHorizontalOverflow(page);
 });

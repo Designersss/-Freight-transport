@@ -7,6 +7,7 @@ import { Link, useRouter } from "@freight/ui/navigation";
 import { useEffect, useState } from "react";
 import type { z } from "zod";
 import { AuthPanel } from "./auth-panel";
+import { PasswordSettings } from "./password-settings";
 import { ProfileForm } from "./profile-form";
 import { UsernameSettings } from "./username-settings";
 
@@ -122,6 +123,7 @@ export function Account({ locale }: { locale: Locale }) {
             </div>
           )}
           {profileLoaded && profile && <UsernameSettings locale={locale} />}
+          {profileLoaded && profile && <PasswordSettings locale={locale} />}
           <Button disabled={busy || loading} onClick={logout} variant="outline">
             {t.logout}
           </Button>

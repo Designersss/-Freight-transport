@@ -215,10 +215,32 @@ test("real signup, email verification, login and session revocation", async ({
     user: { email, emailVerified: true },
   });
 
+  const newPassword = randomBytes(24).toString("hex");
+  await page.getByLabel("Текущий пароль", { exact: true }).fill(password);
+  await page.getByLabel("Новый пароль", { exact: true }).fill(newPassword);
+  await page.getByLabel("Повторите новый пароль").fill(newPassword);
+  await page.getByRole("button", { name: "Изменить пароль" }).click();
+  await expect(
+    page.getByText("Пароль изменён. Другие сеансы завершены."),
+  ).toBeVisible();
+  await expect(page.getByLabel("Текущий пароль")).toHaveValue("");
+  await expect(page.getByLabel("Новый пароль", { exact: true })).toHaveValue("");
+  const previous = await request.get("/api/auth/get-session", {
+    headers: { cookie },
+  });
+  expect(previous.status()).toBe(200);
+  expect(await previous.json()).toBeNull();
+  const rotated = (await page.context().cookies()).find(({ name }) =>
+    name.endsWith("session_token"),
+  );
+  if (!rotated) throw new Error("Expected rotated session cookie");
+  expect(rotated.httpOnly).toBe(true);
+  expect(rotated.value).not.toBe(sessionCookie.value);
+  const rotatedCookie = `${rotated.name}=${rotated.value}`;
   await page.getByRole("button", { name: "Выйти", exact: true }).click();
   await expect(page).toHaveURL("/ru/login");
   const revoked = await request.get("/api/auth/get-session", {
-    headers: { cookie },
+    headers: { cookie: rotatedCookie },
   });
   expect(revoked.status()).toBe(200);
   expect((await revoked.json()) === null).toBe(true);

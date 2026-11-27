@@ -7,6 +7,7 @@ const paths = new Set([
   "send-verification-email",
   "request-password-reset",
   "reset-password",
+  "change-password",
   "profile",
   "username",
   "username/settings",

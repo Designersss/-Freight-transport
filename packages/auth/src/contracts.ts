@@ -93,6 +93,10 @@ export const authBodies = {
     password,
   }),
   "/sign-out": z.strictObject({}),
+  "/change-password": z.strictObject({
+    currentPassword: password,
+    newPassword: password,
+  }),
   "/send-verification-email": z.strictObject({ email, locale }),
   "/request-password-reset": z.strictObject({ email, locale }),
   "/reset-password": z.strictObject({

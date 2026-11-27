@@ -286,6 +286,43 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       409,
     );
     assert.deepEqual((await get(profilePath, cookie)).json(), saved);
+    const passwordChange = {
+      currentPassword: password,
+      newPassword,
+    };
+    assert.equal(
+      (await post("/change-password", passwordChange)).statusCode,
+      401,
+    );
+    assert.equal(
+      (
+        await post("/change-password", passwordChange, {
+          cookie,
+          origin: "https://untrusted.invalid",
+        })
+      ).statusCode,
+      403,
+    );
+    assert.equal(
+      (
+        await post(
+          "/change-password",
+          { ...passwordChange, revokeOtherSessions: false },
+          { cookie },
+        )
+      ).statusCode,
+      400,
+    );
+    assert.equal(
+      (
+        await post(
+          "/change-password",
+          { ...passwordChange, newPassword: "12345" },
+          { cookie },
+        )
+      ).statusCode,
+      400,
+    );
     const userId = session.json().user.id;
     await pool.query(
       'UPDATE "user" SET "emailVerified" = false WHERE id = $1',
@@ -293,6 +330,10 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     );
     try {
       assert.equal((await get(profilePath, cookie)).statusCode, 403);
+      assert.equal(
+        (await post("/change-password", passwordChange, { cookie })).statusCode,
+        403,
+      );
     } finally {
       await pool.query(
         'UPDATE "user" SET "emailVerified" = true WHERE id = $1',
@@ -704,12 +745,68 @@ test("registration draft survives verification and reserves one username", async
     );
     assert.equal((await getSettings()).status, 403);
     assert.equal((await change(username)).status, 403);
+    const replacementPassword = randomBytes(24).toString("hex");
+    const passwordChange = {
+      currentPassword: password,
+      newPassword: replacementPassword,
+    };
+    assert.equal(
+      (await call("/change-password", passwordChange, cookie)).status,
+      403,
+    );
     await pool.query(
       "UPDATE user_profiles SET status = 'ACTIVE' WHERE user_id = $1",
       [user.id],
     );
-    assert.equal((await call("/sign-out", {}, cookie)).status, 200);
+    const wrongPassword = await call(
+      "/change-password",
+      { ...passwordChange, currentPassword: "wrong-password" },
+      cookie,
+    );
+    assert.equal(wrongPassword.status, 400);
+    assert.deepEqual(await wrongPassword.json(), {
+      code: "INVALID_CURRENT_PASSWORD",
+    });
+    assert.equal((await getSettings()).status, 200);
+    const changedPassword = await call(
+      "/change-password",
+      passwordChange,
+      cookie,
+    );
+    assert.equal(changedPassword.status, 200);
+    assert.deepEqual(await changedPassword.json(), { success: true });
+    const rotatedCookie = changedPassword.headers
+      .getSetCookie()
+      .map((value) => value.split(";")[0])
+      .join("; ");
+    assert.match(rotatedCookie, /session_token=/);
+    assert.notEqual(rotatedCookie, cookie);
+    const otherCookie = simultaneousLogin.headers
+      .getSetCookie()
+      .map((value) => value.split(";")[0])
+      .join("; ");
+    for (const revoked of [cookie, otherCookie]) {
+      const result = await call("/get-session", undefined, revoked);
+      assert.equal(result.status, 200);
+      assert.equal(await result.json(), null);
+    }
+    assert.equal((await call("/profile", undefined, rotatedCookie)).status, 200);
+    assert.equal((await call("/sign-out", {}, rotatedCookie)).status, 200);
     assert.equal((await getSettings()).status, 401);
+    const oldLogin = await call(
+      "/sign-in/email",
+      credentials,
+      undefined,
+      "192.0.2.55",
+    );
+    assert.equal(oldLogin.status, 401);
+    const newLogin = await call(
+      "/sign-in/email",
+      { ...credentials, password: replacementPassword },
+      undefined,
+      "192.0.2.55",
+    );
+    assert.equal(newLogin.status, 200);
     assert.equal((await change(username)).status, 401);
 
     const rateDigest = createHmac("sha256", config.AUTH_SECRET)

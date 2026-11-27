@@ -13,6 +13,7 @@ import { completeRegistration, usernameOwner } from "./registration.js";
 import { createSmtpMailer } from "./smtp-mailer.js";
 import { handleUsername } from "./username.js";
 import { handleUsernameSettings } from "./username-settings.js";
+import { readVerifiedSession } from "./verified-session.js";
 
 export { type AuthConfig, parseAuthConfig } from "./config.js";
 
@@ -94,6 +95,7 @@ export function createAuthHttpRuntime(
         if (path === "/sign-up/email" || path === "/send-verification-email") {
           payload.callbackURL = destination(language, "/email-confirmation");
         }
+        if (path === "/change-password") payload.revokeOtherSessions = true;
         if (path === "/request-password-reset") {
           payload.redirectTo = destination(language, "/reset-password");
         }
@@ -163,6 +165,24 @@ export function createAuthHttpRuntime(
       } else return failure(405, "METHOD_NOT_ALLOWED");
 
       try {
+        if (path === "/change-password") {
+          const session = await readVerifiedSession(
+            request,
+            config,
+            auth,
+            new Headers({ "cache-control": "no-store" }),
+          );
+          if (session instanceof Response) return session;
+          const eligible = await pool.query(
+            `SELECT p.user_id FROM user_profiles p
+             JOIN "user" u ON u.id = p.user_id
+             WHERE p.user_id = $1 AND p.status = 'ACTIVE'
+               AND p.role <> 'PLATFORM_ADMIN' AND u."emailVerified" = true
+               AND u."registrationDraft" IS NULL`,
+            [session.user.id],
+          );
+          if (!eligible.rowCount) return failure(403, "AUTH_REQUEST_FAILED");
+        }
         if (username && (await usernameOwner(pool, username)))
           return failure(409, "USERNAME_TAKEN");
         const response = await auth.handler(
@@ -222,6 +242,16 @@ export function createAuthHttpRuntime(
               error.code === "EMAIL_NOT_VERIFIED"
             )
               code = "EMAIL_NOT_VERIFIED";
+          }
+          if (path === "/change-password" && response.status === 400) {
+            const error: unknown = await response.json().catch(() => null);
+            if (
+              error &&
+              typeof error === "object" &&
+              "code" in error &&
+              error.code === "INVALID_PASSWORD"
+            )
+              code = "INVALID_CURRENT_PASSWORD";
           }
           if (path === "/sign-in/email" && response.status === 401)
             code = "INVALID_CREDENTIALS";
