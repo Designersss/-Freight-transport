@@ -169,7 +169,9 @@ export async function confirmEmailChange(
 
     // The unique email constraint arbitrates concurrent claims by other users.
     await client.query(
-      'UPDATE "user" SET email = $2, "emailVerified" = true, "updatedAt" = clock_timestamp() WHERE id = $1',
+      `UPDATE "user" SET email = $2, "emailVerified" = true,
+         "credentialRevision" = "credentialRevision" + 1,
+         "updatedAt" = clock_timestamp() WHERE id = $1`,
       [identity.userId, pending.new_email],
     );
     // Invalidate reset links issued to the old inbox and all existing sessions.

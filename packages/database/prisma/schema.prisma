@@ -84,6 +84,9 @@ model Account {
   scope                 String?
   linkSessionId         String?
   linkRevision          Int?
+  rotationUserId        String?
+  rotationEmail         String?
+  rotationRevision      Int?
   telegramSessions      Session[] @relation("TelegramLoginAccount")
   password              String?
   createdAt             DateTime  @default(now()) @db.Timestamptz(6)
@@ -139,6 +142,7 @@ model Verification {
   identifier String
   value      String
   resetEmail String?
+  resetRevision Int?
   expiresAt  DateTime @db.Timestamptz(6)
   createdAt  DateTime @default(now()) @db.Timestamptz(6)
   updatedAt  DateTime @default(now()) @updatedAt @db.Timestamptz(6)

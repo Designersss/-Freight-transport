@@ -1,4 +1,5 @@
 import { type BetterAuthOptions, betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
 import { genericOAuth } from "better-auth/plugins";
 import type { Pool } from "pg";
 import {
@@ -7,7 +8,7 @@ import {
 } from "./active-account.js";
 import { type AuthConfig, telegramEnabled } from "./config.js";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./contracts.js";
-import { credentialLoginProof } from "./credential-login.js";
+import { credentialLoginProof, readCredentialProof } from "./credential-login.js";
 import { type AuthMailer, isDeliverableEmail } from "./email.js";
 import {
   createPublicBeforeHook,
@@ -75,6 +76,12 @@ export function createAuthOptions(
           input: false,
           returned: false,
         },
+        resetRevision: {
+          type: "number",
+          required: false,
+          input: false,
+          returned: false,
+        },
       },
     },
     databaseHooks: {
@@ -82,25 +89,52 @@ export function createAuthOptions(
         create: {
           async before(verification, context) {
             if (!verification.identifier.startsWith("reset-password:")) return;
-            const email = context?.body?.email;
+            const proof = readCredentialProof(context?.context);
             if (
               context?.path !== "/request-password-reset" ||
-              typeof email !== "string" ||
-              !isDeliverableEmail(email)
+              !proof ||
+              proof.userId !== verification.value ||
+              (await isRestrictedPublicEmail(database, proof.email))
             )
-              return false;
-            if (await isRestrictedPublicEmail(database, email)) return false;
-            return { data: { resetEmail: email.toLowerCase() } };
+              throw new APIError("BAD_REQUEST", { code: "AUTH_REQUEST_FAILED" });
+            return {
+              data: { resetEmail: proof.email, resetRevision: proof.revision },
+            };
           },
         },
       },
       account: {
         create: {
-          async before(account) {
+          async before(account, context) {
+            // Public recovery may replace only an existing credential.
+            if (
+              context?.path === "/reset-password" &&
+              account.providerId === "credential"
+            )
+              throw new APIError("BAD_REQUEST", { code: "AUTH_REQUEST_FAILED" });
             if (account.providerId !== "telegram") return;
             if (!telegramLinkContext.getStore()) return;
             const proof = await telegramLinkProof(account.userId);
             return proof ? { data: proof } : false;
+          },
+        },
+        update: {
+          async before(account, context) {
+            if (typeof account.password !== "string") return;
+            const proof = readCredentialProof(context?.context);
+            if (
+              !proof ||
+              (context?.path !== "/change-password" &&
+                context?.path !== "/reset-password")
+            )
+              throw new APIError("BAD_REQUEST", { code: "AUTH_REQUEST_FAILED" });
+            return {
+              data: {
+                rotationUserId: proof.userId,
+                rotationEmail: proof.email,
+                rotationRevision: proof.revision,
+              },
+            };
           },
         },
       },
@@ -138,6 +172,24 @@ export function createAuthOptions(
     hooks: { before: createPublicBeforeHook(database) },
     account: {
       additionalFields: {
+        rotationUserId: {
+          type: "string",
+          required: false,
+          input: false,
+          returned: false,
+        },
+        rotationEmail: {
+          type: "string",
+          required: false,
+          input: false,
+          returned: false,
+        },
+        rotationRevision: {
+          type: "number",
+          required: false,
+          input: false,
+          returned: false,
+        },
         linkSessionId: {
           type: "string",
           required: false,

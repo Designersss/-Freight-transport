@@ -7,9 +7,11 @@ import pg from "pg";
 import { createAuthOptions } from "../../packages/auth/dist/auth.js";
 import { parseAuthConfig } from "../../packages/auth/dist/config.js";
 
-for (const mode of ["change", "reset"]) {
+const modes = ["change", "reset", "change-race", "reset-race"];
+
+for (const mode of modes) {
   test(
-    `password ${mode} rejects a delayed login with the old password`,
+    `credential rotation rejects stale ${mode} operations`,
     { timeout: 20_000 },
     async () => {
       const databaseUrl = process.env.AUTH_COMPAT_DATABASE_URL;
@@ -24,9 +26,13 @@ for (const mode of ["change", "reset"]) {
       const newPassword = randomBytes(24).toString("hex");
       const reached = Promise.withResolvers();
       const release = Promise.withResolvers();
-      let pauseNext = false;
+      let pauseVerify = false;
+      let pauseHash = false;
       let pending;
-      let resetToken;
+      const resetTokens = [];
+      let requestNumber = 0;
+      const change = mode === "change" || mode === "change-race";
+      const otherPassword = randomBytes(24).toString("hex");
       const options = createAuthOptions(
         parseAuthConfig({
           NODE_ENV: "test",
@@ -42,7 +48,7 @@ for (const mode of ["change", "reset"]) {
         {
           async send(kind, _email, url) {
             assert.equal(kind, "reset-password");
-            resetToken = new URL(url).pathname.split("/").at(-1);
+            resetTokens.push(new URL(url).pathname.split("/").at(-1));
           },
         },
       );
@@ -53,12 +59,21 @@ for (const mode of ["change", "reset"]) {
           password: {
             async verify(input) {
               const valid = await verifyPassword(input);
-              if (pauseNext) {
-                pauseNext = false;
+              if (pauseVerify) {
+                pauseVerify = false;
                 reached.resolve(valid);
                 await release.promise;
               }
               return valid;
+            },
+            async hash(input) {
+              const hash = await hashPassword(input);
+              if (pauseHash) {
+                pauseHash = false;
+                reached.resolve(true);
+                await release.promise;
+              }
+              return hash;
             },
           },
         },
@@ -70,8 +85,7 @@ for (const mode of ["change", "reset"]) {
             headers: {
               origin,
               "content-type": "application/json",
-              "x-movaro-client-ip":
-                mode === "change" ? "192.0.2.240" : "192.0.2.241",
+              "x-movaro-client-ip": `198.51.100.${modes.indexOf(mode) * 20 + ++requestNumber}`,
               ...(cookie ? { cookie } : {}),
             },
             body: JSON.stringify(body),
@@ -98,28 +112,46 @@ for (const mode of ["change", "reset"]) {
           .map((item) => item.split(";")[0])
           .join("; ");
         assert.match(cookie, /session_token=/);
-        if (mode === "reset") {
-          assert.equal(
-            (
-              await call("/request-password-reset", {
-                email,
-                redirectTo: `${origin}/en/reset-password`,
-              })
-            ).status,
-            200,
-          );
-          assert.ok(resetToken);
-        }
+        // Issue a link even for password-change cases: rotation must invalidate
+        // earlier recovery links regardless of which operation wins.
+        const requestReset = () =>
+          call("/request-password-reset", {
+            email,
+            redirectTo: `${origin}/en/reset-password`,
+          });
+        assert.equal((await requestReset()).status, 200);
+        assert.equal((await requestReset()).status, 200);
+        const [firstToken, secondToken] = resetTokens;
+        assert.ok(firstToken && secondToken && firstToken !== secondToken);
 
-        pauseNext = true;
-        pending = call("/sign-in/email", { email, password });
+        if (mode === "change-race") {
+          pauseVerify = true;
+          pending = call(
+            "/change-password",
+            {
+              currentPassword: password,
+              newPassword: otherPassword,
+              revokeOtherSessions: true,
+            },
+            cookie,
+          );
+        } else if (mode === "reset-race") {
+          pauseHash = true;
+          pending = call("/reset-password", {
+            token: firstToken,
+            newPassword: otherPassword,
+          });
+        } else {
+          pauseVerify = true;
+          pending = call("/sign-in/email", { email, password });
+        }
         assert.equal(
           await Promise.race([reached.promise, pending.then(() => false)]),
           true,
         );
 
         const changed =
-          mode === "change"
+          change
             ? await call(
                 "/change-password",
                 {
@@ -129,13 +161,16 @@ for (const mode of ["change", "reset"]) {
                 },
                 cookie,
               )
-            : await call("/reset-password", { token: resetToken, newPassword });
+            : await call("/reset-password", {
+                token: secondToken,
+                newPassword,
+              });
         assert.equal(changed.status, 200);
         const before = await pool.query(
           'SELECT id FROM "session" WHERE "userId" = $1 ORDER BY id',
           [id],
         );
-        assert.equal(before.rowCount, mode === "change" ? 1 : 0);
+        assert.equal(before.rowCount, change ? 1 : 0);
 
         release.resolve();
         const stale = await pending;
@@ -146,8 +181,20 @@ for (const mode of ["change", "reset"]) {
           [id],
         );
         assert.deepEqual(after.rows, before.rows);
+        for (const token of [firstToken, secondToken]) {
+          const invalid = await call("/reset-password", {
+            token,
+            newPassword: otherPassword,
+          });
+          assert.equal(invalid.status, 400);
+        }
         assert.equal(
           (await call("/sign-in/email", { email, password })).status,
+          401,
+        );
+        assert.equal(
+          (await call("/sign-in/email", { email, password: otherPassword }))
+            .status,
           401,
         );
         assert.equal(
@@ -159,6 +206,17 @@ for (const mode of ["change", "reset"]) {
           [id],
         );
         assert.equal(revision.rows[0].credentialRevision, 1);
+        const account = await pool.query(
+          'SELECT "rotationUserId", "rotationEmail", "rotationRevision" FROM "account" WHERE "userId" = $1',
+          [id],
+        );
+        assert.deepEqual(account.rows, [
+          {
+            rotationUserId: null,
+            rotationEmail: null,
+            rotationRevision: null,
+          },
+        ]);
         const proofs = await pool.query(
           'SELECT "emailLoginProof", "emailLoginRevision" FROM "session" WHERE "userId" = $1',
           [id],
