@@ -12,6 +12,7 @@ import {
   completeProfilePhotoCleanup,
   createDatabaseClient,
   deferProfilePhotoCleanup,
+  recordProfilePhotoInventory,
 } from "../../packages/database/dist/index.js";
 
 test("profile photo reservations, replacement and durable cleanup", async () => {
@@ -86,6 +87,53 @@ test("profile photo reservations, replacement and durable cleanup", async () => 
       await changeProfilePhoto(pool, owner, first),
       "reservation-expired",
     );
+
+    const scan = await database.profilePhotoScan.findUniqueOrThrow({
+      where: { id: 1 },
+    });
+    const pending = await reserveProfilePhotoKey(pool, other);
+    assert.ok(pending);
+    const orphan = `profile-photos/${randomUUID()}`;
+    const recent = `profile-photos/${randomUUID()}`;
+    const old = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const inventory = [
+      { key: current, lastModified: old },
+      { key: first, lastModified: old },
+      { key: pending, lastModified: old },
+      { key: orphan, lastModified: old },
+      { key: recent, lastModified: new Date() },
+      { key: `files/${randomUUID()}`, lastModified: old },
+    ];
+    const advances = await Promise.all([
+      recordProfilePhotoInventory(database, scan.revision, "next", inventory),
+      recordProfilePhotoInventory(database, scan.revision, "next", inventory),
+    ]);
+    assert.ok(advances.includes(1));
+    assert.ok(advances.includes(null));
+    const updatedScan = await database.profilePhotoScan.findUniqueOrThrow({
+      where: { id: 1 },
+    });
+    assert.equal(updatedScan.revision, scan.revision + 1);
+    assert.equal(updatedScan.continuationToken, "next");
+    assert.equal(await database.profilePhotoCleanup.count(), 4);
+    assert.equal(
+      await recordProfilePhotoInventory(
+        database,
+        updatedScan.revision,
+        null,
+        inventory,
+      ),
+      0,
+    );
+    assert.equal(
+      (await database.profilePhotoCleanup.findUnique({
+        where: { key: pending },
+      }))?.ownerId,
+      other.userId,
+    );
+    await database.profilePhotoCleanup.deleteMany({
+      where: { key: { in: [orphan, pending] } },
+    });
 
     const abandoned = await reserveProfilePhotoKey(pool, owner);
     assert.ok(abandoned);

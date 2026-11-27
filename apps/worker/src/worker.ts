@@ -4,6 +4,7 @@ import { PgBoss } from "pg-boss";
 import { pino } from "pino";
 import type { WorkerConfig } from "./config.js";
 import { registerProfilePhotoCleanup } from "./profile-photo-cleanup.js";
+import { registerProfilePhotoScan } from "./profile-photo-scan.js";
 
 export const OUTBOX_QUEUE = "outbox-relay";
 const MAX_BATCHES_PER_JOB = 10;
@@ -41,6 +42,7 @@ export async function startWorker(
     // Fail startup if application migrations are absent.
     await database.eventPublication.findFirst({ select: { eventId: true } });
     await database.profilePhotoCleanup.findFirst({ select: { key: true } });
+    await database.profilePhotoScan.findUniqueOrThrow({ where: { id: 1 } });
     await storage.checkReadiness();
     await boss.start();
     await boss.createQueue(OUTBOX_QUEUE, {
@@ -65,6 +67,7 @@ export async function startWorker(
     await boss.schedule(OUTBOX_QUEUE, "* * * * *", {});
     await boss.send(OUTBOX_QUEUE, {});
     await registerProfilePhotoCleanup(boss, database, storage, logger);
+    await registerProfilePhotoScan(boss, database, storage, logger);
     logger.info("Worker started");
     return { stop };
   } catch (error) {

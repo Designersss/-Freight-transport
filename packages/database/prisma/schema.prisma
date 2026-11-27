@@ -178,3 +178,12 @@ model ProfilePhotoCleanup {
   @@index([availableAt, key], map: "profile_photo_cleanup_available_idx")
   @@map("profile_photo_cleanup")
 }
+
+// A single durable cursor for the private profile photo inventory.
+model ProfilePhotoScan {
+  id                Int     @id
+  revision          Int     @default(0)
+  continuationToken String? @map("continuation_token")
+
+  @@map("profile_photo_scan")
+}

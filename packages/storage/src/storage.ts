@@ -3,6 +3,7 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadBucketCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -113,6 +114,56 @@ export class PrivateStorage {
   ): Promise<{ bytes: Uint8Array; contentType: AllowedContentType }> {
     assertObjectKey(key);
     return this.read(key, MAX_FILE_BYTES);
+  }
+
+  // A bounded internal inventory of this namespace only. Never read or
+  // delete other file types during profile photo reconciliation.
+  async listProfilePhotos(
+    continuationToken: string | null,
+    limit = 100,
+  ): Promise<{
+    objects: { key: string; lastModified: Date }[];
+    nextToken: string | null;
+  }> {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100)
+      throw new Error("Invalid profile photo inventory limit");
+    const result = await this.client.send(
+      new ListObjectsV2Command({
+        Bucket: this.config.S3_BUCKET,
+        Prefix: "profile-photos/",
+        MaxKeys: limit,
+        ...(continuationToken === null
+          ? {}
+          : { ContinuationToken: continuationToken }),
+      }),
+      { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
+    );
+    const nextToken = result.IsTruncated
+      ? result.NextContinuationToken
+      : null;
+    if (
+      result.IsTruncated &&
+      (!nextToken || nextToken === continuationToken)
+    )
+      throw new Error("Invalid profile photo inventory cursor");
+    const objects: { key: string; lastModified: Date }[] = [];
+    for (const object of result.Contents ?? []) {
+      if (
+        !object.Key ||
+        !object.LastModified ||
+        !Number.isFinite(object.LastModified.getTime())
+      )
+        continue;
+      try {
+        assertProfilePhotoKey(object.Key);
+      } catch {
+        continue;
+      }
+      objects.push({ key: object.Key, lastModified: object.LastModified });
+    }
+    if (objects.length > limit)
+      throw new Error("Invalid profile photo inventory size");
+    return { objects, nextToken: nextToken ?? null };
   }
 
   async getProfilePhoto(

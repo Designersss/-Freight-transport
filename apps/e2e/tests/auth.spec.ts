@@ -637,9 +637,13 @@ for (const variant of [
     if (variant.theme === "light")
       await page.getByRole("button", { name: "Light theme" }).click();
     const settings = page.getByRole("region", { name: variant.title });
-    await expect(settings.getByRole("img", { name: variant.empty })).toBeVisible();
+    await expect(
+      settings.getByRole("img", { name: variant.empty }),
+    ).toBeVisible();
     const input = settings.locator('input[type="file"]');
-    await expect(settings.getByRole("button", { name: variant.upload })).toBeEnabled();
+    await expect(
+      settings.getByRole("button", { name: variant.upload }),
+    ).toBeEnabled();
     await input.setInputFiles({
       name: "wrong.txt",
       mimeType: "text/plain",
@@ -650,8 +654,12 @@ for (const variant of [
     const file = { name: "photo.jpg", mimeType: "image/jpeg", buffer: jpeg };
     await input.setInputFiles(file);
     await expect(settings.getByRole("status")).toHaveText(variant.saved);
-    await expect(settings.getByRole("img", { name: variant.title })).toBeVisible();
-    await expect(settings.getByRole("button", { name: variant.replace })).toBeEnabled();
+    await expect(
+      settings.getByRole("img", { name: variant.title }),
+    ).toBeVisible();
+    await expect(
+      settings.getByRole("button", { name: variant.replace }),
+    ).toBeEnabled();
     await input.setInputFiles(file);
     await expect.poll(() => writes).toBe(2);
     const remove = settings.getByRole("button", { name: variant.remove });
@@ -661,7 +669,9 @@ for (const variant of [
     await remove.click();
     await settings.getByRole("button", { name: variant.confirm }).click();
     await expect(settings.getByRole("status")).toHaveText(variant.removed);
-    await expect(settings.getByRole("img", { name: variant.empty })).toBeVisible();
+    await expect(
+      settings.getByRole("img", { name: variant.empty }),
+    ).toBeVisible();
     expect(writes).toBe(3);
     await expectNoHorizontalOverflow(page);
     await expectAccessible(page);

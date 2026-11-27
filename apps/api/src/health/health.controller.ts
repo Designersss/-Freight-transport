@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Inject,
+  Optional,
   ServiceUnavailableException,
 } from "@nestjs/common";
 import {
@@ -10,6 +11,7 @@ import {
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
+import { AuthService } from "../auth/auth.module.js";
 import { DatabaseService } from "../database/database.service.js";
 
 @ApiTags("Health")
@@ -17,6 +19,7 @@ import { DatabaseService } from "../database/database.service.js";
 export class HealthController {
   constructor(
     @Inject(DatabaseService) private readonly database: DatabaseService,
+    @Optional() @Inject(AuthService) private readonly auth?: AuthService,
   ) {}
 
   @Get()
@@ -68,6 +71,7 @@ export class HealthController {
   async readiness(): Promise<{ status: "ready" }> {
     try {
       await this.database.checkReadiness();
+      await this.auth?.checkReadiness();
       return { status: "ready" };
     } catch {
       throw new ServiceUnavailableException();

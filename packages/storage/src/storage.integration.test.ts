@@ -159,6 +159,42 @@ describe("SeaweedFS private S3", () => {
     }
   });
 
+  it("lists private photo keys in bounded pages without general files", async () => {
+    const png = await sharp({
+      create: { width: 16, height: 16, channels: 3, background: "#123456" },
+    })
+      .png()
+      .toBuffer();
+    const keys: string[] = [];
+    const file = await storage.put(bytes, "application/pdf");
+    try {
+      for (let index = 0; index < 3; index += 1) {
+        const photo = await storage.putProfilePhoto(png, "image/png");
+        keys.push(photo.key);
+      }
+      const found = new Set<string>();
+      let token: string | null = null;
+      for (let page = 0; page < 100; page += 1) {
+        const result = await storage.listProfilePhotos(token, 1);
+        expect(result.objects.length).toBeLessThanOrEqual(1);
+        for (const object of result.objects) {
+          expect(object.key).toMatch(/^profile-photos\//);
+          expect(object.lastModified).toBeInstanceOf(Date);
+          expect(found.has(object.key)).toBe(false);
+          found.add(object.key);
+        }
+        token = result.nextToken;
+        if (token === null) break;
+      }
+      expect(token).toBeNull();
+      for (const key of keys) expect(found.has(key)).toBe(true);
+      expect(found.has(file.key)).toBe(false);
+    } finally {
+      for (const key of keys) await storage.deleteProfilePhoto(key);
+      await storage.delete(file.key);
+    }
+  }, 30000);
+
   it("bounds reads of oversized objects in the photo namespace", async () => {
     const oversized = Buffer.alloc(MAX_PROFILE_PHOTO_BYTES + 1);
     oversized.set([255, 216, 255]);

@@ -25,6 +25,10 @@ export class AuthService implements OnModuleDestroy {
     return this.runtime.handle(request);
   }
 
+  checkReadiness(): Promise<void> {
+    return this.runtime.checkReadiness();
+  }
+
   async onModuleDestroy(): Promise<void> {
     await this.runtime.close();
   }

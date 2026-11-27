@@ -28,6 +28,7 @@ export { type AuthConfig, parseAuthConfig } from "./config.js";
 
 export interface AuthHttpRuntime {
   handle(request: Request): Promise<Response>;
+  checkReadiness(): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -308,6 +309,9 @@ export function createAuthHttpRuntime(
       } catch {
         return failure(500, "AUTH_REQUEST_FAILED");
       }
+    },
+    async checkReadiness() {
+      if (storage) await storage.checkReadiness();
     },
     async close() {
       try {

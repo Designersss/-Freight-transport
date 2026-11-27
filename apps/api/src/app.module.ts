@@ -13,13 +13,14 @@ export class AppModule {
     storage?: StorageConfig,
   ): DynamicModule {
     const databaseModule = DatabaseModule.forRoot(config.DATABASE_URL);
+    const authModule = auth
+      ? AuthModule.register(auth, config.DATABASE_URL, storage)
+      : undefined;
     return {
       module: AppModule,
       imports: [
-        HealthModule.register(databaseModule),
-        ...(auth
-          ? [AuthModule.register(auth, config.DATABASE_URL, storage)]
-          : []),
+        HealthModule.register(databaseModule, authModule),
+        ...(authModule ? [authModule] : []),
       ],
     };
   }

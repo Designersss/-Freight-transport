@@ -16,6 +16,10 @@ export {
   type ProfilePhotoCleanupClaim,
 } from "./profile-photo-cleanup.js";
 export {
+  type ProfilePhotoInventoryEntry,
+  recordProfilePhotoInventory,
+} from "./profile-photo-scan.js";
+export {
   appendUserInvalidation,
   getUserEventHead,
   readUserInvalidations,

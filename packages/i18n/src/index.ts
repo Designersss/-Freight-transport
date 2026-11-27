@@ -126,7 +126,8 @@ const ru = {
     photoAlt: "Фотография профиля",
     photoEmpty: "Без фотографии",
     photoInvalid: "Выберите корректное изображение JPEG или PNG до 2 МБ.",
-    photoUnavailable: "Не удалось получить или изменить фото. Попробуйте ещё раз.",
+    photoUnavailable:
+      "Не удалось получить или изменить фото. Попробуйте ещё раз.",
     photoSaved: "Фотография сохранена.",
     photoRemoved: "Фотография удалена.",
     accountDescription:
