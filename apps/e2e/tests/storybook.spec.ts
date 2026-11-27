@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 import { expectAccessible, expectNoHorizontalOverflow } from "./helpers";
 
 const storybook = "http://127.0.0.1:6106";
+// Playwright owns the axe run in these previews, not Storybook’s addon.
+const manualA11y = "a11y.manual:!true";
 
 for (const variant of [
   {
@@ -25,7 +27,7 @@ for (const variant of [
     page,
   }) => {
     await page.goto(
-      `${storybook}/iframe.html?id=movaro-forms-validation--interactive&viewMode=story&globals=locale:${variant.locale};theme:${variant.theme}`,
+      `${storybook}/iframe.html?id=movaro-forms-validation--interactive&viewMode=story&globals=locale:${variant.locale};theme:${variant.theme};${manualA11y}`,
     );
     await expect(page.locator("html")).toHaveAttribute(
       "data-theme",
@@ -53,7 +55,7 @@ for (const variant of [
 
 test("Storybook table renders semantic header and rows", async ({ page }) => {
   await page.goto(
-    `${storybook}/iframe.html?id=movaro-data-table--basic&viewMode=story`,
+    `${storybook}/iframe.html?id=movaro-data-table--basic&viewMode=story&globals=${manualA11y}`,
   );
   const table = page.getByRole("table", { name: "Тестовые данные Storybook" });
   await expect(table).toBeVisible();

@@ -37,3 +37,9 @@ node scripts/auth-compat/testcontainers.mjs
 ```
 
 Требуется локальный Docker и свободные порты 3110/4110. Не подключать production БД или SMTP. Источники: https://playwright.dev/docs/test-webserver ; https://playwright.dev/docs/api/class-apirequestcontext ; https://mailpit.axllent.org/docs/api-v1/ ; https://node.testcontainers.org/features/containers/ .
+
+## Изоляция axe в браузерных тестах Storybook
+
+CI 45986801409: 27 из 28 E2E прошли; desktop-тест таблицы завершился ошибкой Axe is already running. Storybook 10.6.9 автоматически запускает axe в afterEach, а Playwright отдельно вызывает expectAccessible. В тестовых URL устанавливаем globals=a11y.manual:!true, чтобы в этих preview только Playwright запускал аудит. Обычный Storybook сохраняет автоматический аудит и a11y.test=error. Правила, область проверки, assertions, число тестов и CI не меняются. Повторный запуск должен подтвердить устранение гонки.
+
+Источники: https://storybook.js.org/docs/writing-tests/accessibility-testing ; https://github.com/storybookjs/storybook/blob/v10.6.9/code/addons/a11y/src/preview.tsx ; https://github.com/storybookjs/storybook/blob/v10.6.9/code/core/src/preview-api/modules/preview-web/parseArgsParam.ts .
