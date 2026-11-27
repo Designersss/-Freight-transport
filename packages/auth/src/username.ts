@@ -70,7 +70,11 @@ function usernameCandidates(firstName: string, lastName: string): string[] {
   return candidates;
 }
 
-async function suggestUsername(pool: Pool, firstName: string, lastName: string) {
+async function suggestUsername(
+  pool: Pool,
+  firstName: string,
+  lastName: string,
+) {
   const candidates = usernameCandidates(firstName, lastName);
   const result = await pool.query<{ username: string }>(
     'SELECT username FROM "user" WHERE username = ANY($1::text[])',
