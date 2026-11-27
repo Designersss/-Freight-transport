@@ -5,6 +5,11 @@ import { canUsePublicSession } from "./active-account.js";
 import { type AuthConfig, telegramEnabled } from "./config.js";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./contracts.js";
 import { type AuthMailer, isDeliverableEmail } from "./email.js";
+import {
+  prepareTelegramLink,
+  telegramLinkContext,
+  validateTelegramLink,
+} from "./telegram-link-context.js";
 import { createTelegramProvider } from "./telegram-provider.js";
 
 export const AUTH_BASE_PATH = "/api/v1/auth";
@@ -46,7 +51,16 @@ export function createAuthOptions(
         },
       },
     },
-    account: { accountLinking: { disableImplicitLinking: true } },
+    hooks: { before: prepareTelegramLink },
+    account: {
+      accountLinking: {
+        disableImplicitLinking: true,
+        trustedProviders: telegramEnabled(config) ? ["telegram"] : [],
+        allowDifferentEmails: telegramEnabled(config),
+        updateUserInfoOnLink: false,
+        allowUnlinkingAll: false,
+      },
+    },
     ...(config.AUTH_TELEGRAM_CLIENT_ID && config.AUTH_TELEGRAM_CLIENT_SECRET
       ? {
           plugins: [
@@ -90,6 +104,24 @@ export function createAuthOptions(
       },
     },
     user: {
+      async validateUserInfo({ user, source }) {
+        if (source.action === "link-account") {
+          if (
+            source.method !== "oauth" ||
+            source.oauth?.providerId !== "telegram" ||
+            !telegramEnabled(config) ||
+            !(await validateTelegramLink(database, user.id))
+          )
+            return { error: "AUTH_REQUEST_FAILED" };
+        } else if (
+          source.method === "oauth" &&
+          source.oauth?.providerId === "telegram" &&
+          telegramLinkContext.getStore()
+        ) {
+          // A login callback cannot silently replace an existing session.
+          return { error: "AUTH_REQUEST_FAILED" };
+        }
+      },
       deleteUser: { enabled: false },
       additionalFields: {
         username: { type: "string", required: false, returned: false },

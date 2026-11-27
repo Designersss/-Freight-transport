@@ -29,9 +29,8 @@ export async function handleTelegramSettings(
     )
       return fail(400, "INVALID_REQUEST");
     if (
-      !telegramSettingsAction.safeParse(
-        await request.json().catch(() => null),
-      ).success
+      !telegramSettingsAction.safeParse(await request.json().catch(() => null))
+        .success
     )
       return fail(400, "INVALID_REQUEST");
   }
@@ -55,8 +54,8 @@ export async function handleTelegramSettings(
       return Response.json(
         publicTelegramSettings.parse({
           linked: current.linked,
-          // Link start remains closed until callback authorization is added.
-          canLink: false,
+          canLink:
+            telegramEnabled(config) && !current.linked && current.credential,
           canUnlink: current.linked && current.credential,
           requiresFreshSession:
             current.credential &&

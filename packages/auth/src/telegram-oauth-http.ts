@@ -3,10 +3,13 @@ import { z } from "zod";
 import { AUTH_BASE_PATH, type EmailAuth } from "./auth.js";
 import { type AuthConfig, telegramEnabled } from "./config.js";
 import { reserveTelegramRequest } from "./mail-rate-limit.js";
+import { telegramLinkContext } from "./telegram-link-context.js";
 import { TELEGRAM_ISSUER } from "./telegram-provider.js";
+import { readTelegramSettings } from "./telegram-settings.js";
+import { readAuthSession } from "./verified-session.js";
 
 const startInput = z.strictObject({
-  intent: z.enum(["login", "register"]),
+  intent: z.enum(["login", "register", "link"]),
   locale: z.enum(["ru", "en"]),
 });
 const authorizeResult = z.object({ url: z.string().max(8192) });
@@ -75,6 +78,8 @@ export async function handleTelegramOAuth(
     return fail(405, "METHOD_NOT_ALLOWED");
   const loginError = (locale: string) =>
     new URL(`/${locale}/login?telegram=error`, config.AUTH_WEB_ORIGIN);
+  const linkError = (locale: string) =>
+    new URL(`/${locale}/account?telegram=link-error`, config.AUTH_WEB_ORIGIN);
   const redirect = (target: URL) => {
     headers.set("location", target.href);
     return new Response(null, { status: 303, headers });
@@ -110,40 +115,55 @@ export async function handleTelegramOAuth(
     }
     const upstreamHeaders = new Headers(request.headers);
     upstreamHeaders.delete("content-length");
-    const upstream = new URL(
-      `${AUTH_BASE_PATH}${start ? "/sign-in/social" : "/callback/telegram"}`,
-      config.AUTH_BASE_URL,
-    );
+    const current = await readAuthSession(request, config, auth, headers);
+    if (current instanceof Response && current.status !== 401)
+      return start ? current : redirect(loginError("ru"));
+    const identity =
+      current instanceof Response
+        ? null
+        : { userId: current.user.id, sessionId: current.session.id };
+    const link = payload?.intent === "link";
+    const path = start
+      ? link
+        ? "/link-social"
+        : "/sign-in/social"
+      : "/callback/telegram";
+    const upstream = new URL(`${AUTH_BASE_PATH}${path}`, config.AUTH_BASE_URL);
     if (payload) {
-      const current = await auth.handler(
-        new Request(
-          new URL(
-            `${AUTH_BASE_PATH}/get-session?disableRefresh=true`,
-            config.AUTH_BASE_URL,
-          ),
-          { headers: upstreamHeaders },
-        ),
-      );
-      if (!current.ok) return fail(503, "AUTH_REQUEST_FAILED");
-      if ((await current.json()) !== null)
+      if (link) {
+        if (!identity) return fail(401, "AUTH_REQUIRED");
+        const settings = await readTelegramSettings(pool, identity);
+        if (!settings?.credential) return fail(403, "AUTH_REQUEST_FAILED");
+        if (!settings.fresh) return fail(403, "SESSION_NOT_FRESH");
+        if (settings.linked) return fail(409, "AUTH_REQUEST_FAILED");
+      } else if (identity) {
         return fail(409, "AUTH_REQUEST_FAILED");
+      }
       const account = new URL(
         `/${payload.locale}/account`,
         config.AUTH_WEB_ORIGIN,
       ).href;
-      const response = await auth.handler(
-        new Request(upstream, {
-          method: "POST",
-          headers: upstreamHeaders,
-          body: JSON.stringify({
-            provider: "telegram",
-            requestSignUp: payload.intent === "register",
-            disableRedirect: true,
-            callbackURL: account,
-            newUserCallbackURL: account,
-            errorCallbackURL: loginError(payload.locale).href,
+      const response = await telegramLinkContext.run(identity, () =>
+        auth.handler(
+          new Request(upstream, {
+            method: "POST",
+            headers: upstreamHeaders,
+            body: JSON.stringify({
+              provider: "telegram",
+              ...(link
+                ? {}
+                : {
+                    requestSignUp: payload.intent === "register",
+                    newUserCallbackURL: account,
+                  }),
+              disableRedirect: true,
+              callbackURL: account,
+              errorCallbackURL: link
+                ? linkError(payload.locale).href
+                : loginError(payload.locale).href,
+            }),
           }),
-        }),
+        ),
       );
       if (!response.ok)
         return fail(
@@ -159,8 +179,8 @@ export async function handleTelegramOAuth(
     }
 
     upstream.search = url.search;
-    const response = await auth.handler(
-      new Request(upstream, { headers: upstreamHeaders }),
+    const response = await telegramLinkContext.run(identity, () =>
+      auth.handler(new Request(upstream, { headers: upstreamHeaders })),
     );
     const location = response.headers.get("location");
     if (response.status < 300 || response.status >= 400 || !location)
@@ -179,6 +199,11 @@ export async function handleTelegramOAuth(
           headers.append("set-cookie", cookie);
         return redirect(target);
       }
+      if (
+        target.pathname === `/${locale}/account` &&
+        target.searchParams.get("telegram") === "link-error"
+      )
+        return redirect(linkError(locale));
       if (target.pathname === `/${locale}/login`) {
         // Never reflect provider errors, descriptions, codes or state to UI.
         return redirect(loginError(locale));

@@ -154,7 +154,7 @@ export async function forwardAuth(
           destination.pathname,
         ) ||
         (destination.pathname.endsWith("/account")
-          ? Boolean(destination.search)
+          ? !["", "?telegram=link-error"].includes(destination.search)
           : destination.search !== "?telegram=error")
       )
         return authFailure(502);

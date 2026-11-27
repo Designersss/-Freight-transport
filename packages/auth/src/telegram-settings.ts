@@ -24,11 +24,7 @@ const settingsQuery = `SELECT
   ${eligibleAccount}`;
 
 function settingsValues(identity: TelegramSessionIdentity) {
-  return [
-    identity.userId,
-    identity.sessionId,
-    TELEGRAM_SETTINGS_FRESH_SECONDS,
-  ];
+  return [identity.userId, identity.sessionId, TELEGRAM_SETTINGS_FRESH_SECONDS];
 }
 
 export async function readTelegramSettings(
@@ -77,7 +73,7 @@ export async function unlinkTelegram(
       settingsValues(identity),
     );
     const settings = result.rows[0];
-    if (!settings || !settings.credential || !settings.fresh) {
+    if (!settings?.credential || !settings.fresh) {
       await client.query("ROLLBACK");
       return !settings
         ? "denied"

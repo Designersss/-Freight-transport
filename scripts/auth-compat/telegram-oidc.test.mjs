@@ -9,6 +9,7 @@ import { once } from "node:events";
 import { createServer } from "node:http";
 import { test } from "node:test";
 import { betterAuth } from "better-auth";
+import { hashPassword } from "better-auth/crypto";
 import { genericOAuth } from "better-auth/plugins";
 import pg from "pg";
 import { createAuthOptions } from "../../packages/auth/dist/auth.js";
@@ -144,13 +145,17 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
       .getSetCookie()
       .map((value) => value.split(";")[0])
       .join("; ");
-  async function begin(requestSignUp = false) {
+  async function begin(requestSignUp = false, sessionCookie = "") {
     const response = await handleTelegramOAuth(
       new Request(`${origin}${base}/telegram/start`, {
         method: "POST",
-        headers: { origin, "content-type": "application/json" },
+        headers: {
+          origin,
+          "content-type": "application/json",
+          ...(sessionCookie ? { cookie: sessionCookie } : {}),
+        },
         body: JSON.stringify({
-          intent: requestSignUp ? "register" : "login",
+          intent: sessionCookie ? "link" : requestSignUp ? "register" : "login",
           locale: "en",
         }),
       }),
@@ -166,7 +171,10 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
     assert.ok(challenge);
     assert.ok(url.searchParams.get("state"));
     assert.equal(url.searchParams.get("code_challenge_method"), "S256");
-    return { url, cookies: cookie(response) };
+    return {
+      url,
+      cookies: [sessionCookie, cookie(response)].filter(Boolean).join("; "),
+    };
   }
   async function callback(flow, state = flow.url.searchParams.get("state")) {
     const url = new URL(flow.url.searchParams.get("redirect_uri"));
@@ -295,6 +303,63 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
         idToken: null,
       },
     ]);
+    const emailUser = randomBytes(16).toString("hex");
+    const email = `${emailUser}@example.test`;
+    const password = "synthetic-password";
+    await pool.query(
+      'INSERT INTO "user" (id, name, email, "emailVerified", username) VALUES ($1, $2, $3, true, $4)',
+      [emailUser, "Email Driver", email, `em_${emailUser.slice(0, 20)}`],
+    );
+    await pool.query(
+      `INSERT INTO user_profiles (user_id, first_name, last_name, role, birth_date)
+       VALUES ($1, 'Email', 'Driver', 'DRIVER', '1998-05-15')`,
+      [emailUser],
+    );
+    await pool.query(
+      'INSERT INTO "account" (id, "userId", "providerId", "accountId", password) VALUES ($1, $2, $3, $4, $5)',
+      [
+        randomBytes(16).toString("hex"),
+        emailUser,
+        "credential",
+        emailUser,
+        await hashPassword(password),
+      ],
+    );
+    const emailLogin = await auth.handler(
+      new Request(`${origin}${base}/sign-in/email`, {
+        method: "POST",
+        headers: { origin, "content-type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      }),
+    );
+    assert.equal(emailLogin.status, 200);
+    const emailCookie = cookie(emailLogin);
+    flow = await begin(false, emailCookie);
+    token = mint(); // Already belongs to Telegram-only user.
+    const conflict = await callback(flow);
+    assert.equal(
+      conflict.headers.get("location"),
+      `${origin}/en/account?telegram=link-error`,
+    );
+    const newSubject = randomBytes(16).toString("hex");
+    flow = await begin(false, emailCookie);
+    token = mint({ sub: newSubject });
+    const linked = await callback(flow);
+    assert.equal(linked.headers.get("location"), `${origin}/en/account`);
+    const owners = await pool.query(
+      'SELECT "userId" FROM "account" WHERE "providerId" = $1 AND "accountId" = $2',
+      ["telegram", newSubject],
+    );
+    assert.deepEqual(owners.rows, [{ userId: emailUser }]);
+    flow = await begin();
+    token = mint({ sub: newSubject });
+    const viaTelegram = await callback(flow);
+    const linkedSession = await session(viaTelegram);
+    assert.equal(linkedSession.user.id, emailUser);
+    assert.equal(linkedSession.user.email, email);
+    assert.equal(linkedSession.user.emailVerified, true);
+    assert.equal(linkedSession.user.name, "Email Driver");
+
     await assert.rejects(
       pool.query(
         'INSERT INTO "account" (id, "providerId", "accountId", "userId") VALUES ($1, $2, $3, $4)',

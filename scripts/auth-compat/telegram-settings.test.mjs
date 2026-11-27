@@ -112,7 +112,10 @@ test("Telegram unlink keeps a credential, checks freshness and revokes other ses
       [owner.userId],
     );
     assert.deepEqual(sessions.rows, [{ id: owner.sessionId }]);
-    assert.equal((await readTelegramSettings(pool, telegramOnly))?.linked, true);
+    assert.equal(
+      (await readTelegramSettings(pool, telegramOnly))?.linked,
+      true,
+    );
     await pool.query('DELETE FROM "session" WHERE id = $1', [owner.sessionId]);
     assert.equal(await unlinkTelegram(pool, owner), "denied");
   } finally {
