@@ -65,3 +65,5 @@ Cabinets: real browser driver sign-in now redirects to /ru/cabinet/driver, direc
 RD-04 Admin: прежний dev demo test заменён anonymous login/locale/validation/absence of protected sidebar, production page+API denial. Изолированная auth-browser конфигурация дополнительно поднимает Admin 3111, synthetic CLI bootstrap via stdin, login, reload, public cookie isolation, logout/replay; результаты не подтверждены.
 
 RD-04 deactivation: new PostgreSQL/runtime test covers confirmation, origin, stale session, two simultaneous requests, retained identity/Telegram/credential, reset and email-change invalidation, revoked sessions and rejection of late inserts. Browser settings confirmation and actual test runs remain open.
+
+Deactivation settings: controlled UI case covers explicit confirmation, cancel with focus restoration, no request before confirmation, stale session error, server-confirmed success and removal of private settings, return to login and refusal to reopen account. Actual browser/PG results remain unconfirmed.
