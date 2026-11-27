@@ -136,6 +136,60 @@ test("Prisma auth migration enforces identity and profile integrity", async () =
       "2000-02-29T00:00:00.000Z",
     );
     assert.equal(dispatcher.companyName, null);
+
+    // These are synthetic database keys, not objects uploaded to S3.
+    const photoKey = `profile-photos/${randomUUID()}`;
+    const setPhoto = (id, key) =>
+      pool.query("UPDATE user_profiles SET photo_key = $2 WHERE user_id = $1", [
+        id,
+        key,
+      ]);
+    assert.equal(driver.photoKey, null);
+    assert.equal(owner.photoKey, null);
+    assert.equal(dispatcher.photoKey, null);
+    for (const invalid of [
+      "",
+      "profile-photos/abc",
+      `files/${randomUUID()}`,
+      `https://example.test/${photoKey}`,
+      `../${photoKey}`,
+      `${photoKey}/extra`,
+      photoKey.toUpperCase(),
+      "profile-photos/00000000-0000-0000-0000-000000000000",
+    ]) {
+      await assert.rejects(setPhoto(dispatcherId, invalid), dbCode("23514"));
+    }
+    const photoAttempts = await Promise.allSettled([
+      setPhoto(userId, photoKey),
+      setPhoto(otherId, photoKey),
+    ]);
+    assert.equal(
+      photoAttempts.filter(({ status }) => status === "fulfilled").length,
+      1,
+    );
+    const rejectedPhoto = photoAttempts.find(
+      ({ status }) => status === "rejected",
+    );
+    assert.equal(rejectedPhoto?.reason?.code, "23505");
+    const references = await pool.query(
+      "SELECT user_id FROM user_profiles WHERE photo_key = $1",
+      [photoKey],
+    );
+    assert.equal(references.rowCount, 1);
+    const photoOwner = references.rows[0].user_id;
+    const newKey = `profile-photos/${randomUUID()}`;
+    await setPhoto(photoOwner, newKey);
+    assert.equal(
+      (await database.userProfile.findUnique({ where: { userId: photoOwner } }))
+        ?.photoKey,
+      newKey,
+    );
+    await setPhoto(photoOwner, null);
+    assert.equal(
+      (await database.userProfile.findUnique({ where: { userId: photoOwner } }))
+        ?.photoKey,
+      null,
+    );
     await assert.rejects(
       pool.query(
         "UPDATE user_profiles SET company_name = ' ' WHERE user_id = $1",
