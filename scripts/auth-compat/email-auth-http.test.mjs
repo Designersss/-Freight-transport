@@ -79,10 +79,27 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       fastify.inject({ method: "GET", url, headers: cookie ? { cookie } : {} });
     const creds = { email, password };
     for (const invalidPassword of ["12345", "a".repeat(129)]) {
-      assert.equal((await post("/sign-in/email", { email, password: invalidPassword })).statusCode, 400);
-      assert.equal((await post("/sign-up/email", { email, password: invalidPassword, name: "Test" })).statusCode, 400);
+      assert.equal(
+        (await post("/sign-in/email", { email, password: invalidPassword }))
+          .statusCode,
+        400,
+      );
+      assert.equal(
+        (
+          await post("/sign-up/email", {
+            email,
+            password: invalidPassword,
+            name: "Test",
+          })
+        ).statusCode,
+        400,
+      );
     }
-    assert.equal((await post("/sign-in/email", { email: "not-an-email", password })).statusCode, 400);
+    assert.equal(
+      (await post("/sign-in/email", { email: "not-an-email", password }))
+        .statusCode,
+      400,
+    );
     assert.equal(
       (
         await post("/sign-up/email", {
@@ -125,18 +142,31 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     assert.equal(unverified.statusCode, 403);
     assert.equal(unverified.json().code, "EMAIL_NOT_VERIFIED");
     assert.equal(unverified.headers["set-cookie"], undefined);
-    const blockedMail = await post("/send-verification-email", { email: email.toUpperCase() });
+    const blockedMail = await post("/send-verification-email", {
+      email: email.toUpperCase(),
+    });
     assert.equal(blockedMail.statusCode, 429);
     assert.ok(Number(blockedMail.headers["retry-after"]) > 0);
     const concurrentEmail = `${randomBytes(12).toString("hex")}@example.test`;
-    const simultaneous = await Promise.all(Array.from({ length: 5 }, (_, i) => fastify.inject({
-      method: "POST", url: `${base}/send-verification-email`,
-      remoteAddress: `192.0.2.${i + 1}`,
-      headers: { origin, "content-type": "application/json" },
-      payload: { email: concurrentEmail },
-    })));
-    assert.equal(simultaneous.filter((result) => result.statusCode === 200).length, 1);
-    assert.equal(simultaneous.filter((result) => result.statusCode === 429).length, 4);
+    const simultaneous = await Promise.all(
+      Array.from({ length: 5 }, (_, i) =>
+        fastify.inject({
+          method: "POST",
+          url: `${base}/send-verification-email`,
+          remoteAddress: `192.0.2.${i + 1}`,
+          headers: { origin, "content-type": "application/json" },
+          payload: { email: concurrentEmail },
+        }),
+      ),
+    );
+    assert.equal(
+      simultaneous.filter((result) => result.statusCode === 200).length,
+      1,
+    );
+    assert.equal(
+      simultaneous.filter((result) => result.statusCode === 429).length,
+      4,
+    );
     const verification = await mailLink("/verify-email?");
     assert.equal(
       (await get(verification.pathname + verification.search)).statusCode,
@@ -159,7 +189,10 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       (await post("/request-password-reset", { email })).statusCode,
       200,
     );
-    assert.equal((await post("/request-password-reset", { email })).statusCode, 429);
+    assert.equal(
+      (await post("/request-password-reset", { email })).statusCode,
+      429,
+    );
     const reset = await mailLink("/reset-password/");
     const redirect = await get(reset.pathname + reset.search);
     assert.equal(redirect.statusCode, 302);

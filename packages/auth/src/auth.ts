@@ -1,7 +1,7 @@
 import { type BetterAuthOptions, betterAuth } from "better-auth";
 import type { Pool } from "pg";
 import type { AuthConfig } from "./config.js";
-import { PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH } from "./contracts.js";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./contracts.js";
 import { type AuthMailer, isDeliverableEmail } from "./email.js";
 
 export const AUTH_BASE_PATH = "/api/v1/auth";

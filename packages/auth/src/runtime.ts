@@ -75,10 +75,34 @@ export function createAuthHttpRuntime(
         if (path === "/request-password-reset") {
           payload.redirectTo = destination(language, "/reset-password");
         }
-        if (typeof payload.email === "string" && ["/sign-up/email", "/send-verification-email", "/request-password-reset"].includes(path)) {
+        if (
+          typeof payload.email === "string" &&
+          [
+            "/sign-up/email",
+            "/send-verification-email",
+            "/request-password-reset",
+          ].includes(path)
+        ) {
           try {
-            const retry = await reserveMailRequest(pool, config.AUTH_SECRET, path === "/request-password-reset" ? "password-reset" : "verification", payload.email);
-            if (retry !== null) return Response.json({ code: "RATE_LIMITED" }, { status: 429, headers: { "cache-control": "no-store", "retry-after": String(retry) } });
+            const retry = await reserveMailRequest(
+              pool,
+              config.AUTH_SECRET,
+              path === "/request-password-reset"
+                ? "password-reset"
+                : "verification",
+              payload.email,
+            );
+            if (retry !== null)
+              return Response.json(
+                { code: "RATE_LIMITED" },
+                {
+                  status: 429,
+                  headers: {
+                    "cache-control": "no-store",
+                    "retry-after": String(retry),
+                  },
+                },
+              );
           } catch {
             return failure(503, "AUTH_REQUEST_FAILED");
           }
@@ -139,8 +163,15 @@ export function createAuthHttpRuntime(
           const target = new URL(location, config.AUTH_BASE_URL);
           if (target.origin !== config.AUTH_WEB_ORIGIN)
             return failure(400, "INVALID_REDIRECT");
-          if (path === "/verify-email" && !target.searchParams.has("error") && destinations("/email-confirmation").includes(target.href)) {
-            target.pathname = target.pathname.replace(/\/email-confirmation$/, "/login");
+          if (
+            path === "/verify-email" &&
+            !target.searchParams.has("error") &&
+            destinations("/email-confirmation").includes(target.href)
+          ) {
+            target.pathname = target.pathname.replace(
+              /\/email-confirmation$/,
+              "/login",
+            );
             target.searchParams.set("verified", "done");
           }
           outputHeaders.set("location", target.href);
@@ -150,12 +181,20 @@ export function createAuthHttpRuntime(
           });
         }
         if (!response.ok) {
-          let code = response.status === 429 ? "RATE_LIMITED" : "AUTH_REQUEST_FAILED";
+          let code =
+            response.status === 429 ? "RATE_LIMITED" : "AUTH_REQUEST_FAILED";
           if (path === "/sign-in/email" && response.status === 403) {
             const error: unknown = await response.json().catch(() => null);
-            if (error && typeof error === "object" && "code" in error && error.code === "EMAIL_NOT_VERIFIED") code = "EMAIL_NOT_VERIFIED";
+            if (
+              error &&
+              typeof error === "object" &&
+              "code" in error &&
+              error.code === "EMAIL_NOT_VERIFIED"
+            )
+              code = "EMAIL_NOT_VERIFIED";
           }
-          if (path === "/sign-in/email" && response.status === 401) code = "INVALID_CREDENTIALS";
+          if (path === "/sign-in/email" && response.status === 401)
+            code = "INVALID_CREDENTIALS";
           return Response.json(
             {
               code,

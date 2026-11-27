@@ -1,6 +1,10 @@
 "use client";
 
-import { authBodies, PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH } from "@freight/auth/contracts";
+import {
+  authBodies,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+} from "@freight/auth/contracts";
 import { type Locale, messages } from "@freight/i18n";
 import {
   Alert,
@@ -169,7 +173,10 @@ export function AuthForm({
         redirect: "error",
       });
       const data: unknown = await result.json().catch(() => null);
-      const code = data && typeof data === "object" && "code" in data ? data.code : undefined;
+      const code =
+        data && typeof data === "object" && "code" in data
+          ? data.code
+          : undefined;
       if (!result.ok) {
         if (mode === "login" && code === "EMAIL_NOT_VERIFIED") {
           router.replace(`/${locale}/email-confirmation`);
@@ -218,7 +225,11 @@ export function AuthForm({
 
   return (
     <AuthPanel title={title} description={description}>
-      {completed && mode === "login" && <p role="status" className="mb-4 text-primary">{t.verifiedDone}</p>}
+      {completed && mode === "login" && (
+        <p role="status" className="mb-4 text-primary">
+          {t.verifiedDone}
+        </p>
+      )}
       {unavailable ? (
         <p role="alert" className="text-destructive">
           {t.invalidLink}
@@ -245,8 +256,16 @@ export function AuthForm({
                   id={field.name}
                   type={field.type}
                   autoComplete={field.autoComplete}
-                  maxLength={field.type === "password" ? PASSWORD_MAX_LENGTH : field.name === "name" ? 200 : 254}
-                  minLength={field.type === "password" ? PASSWORD_MIN_LENGTH : undefined}
+                  maxLength={
+                    field.type === "password"
+                      ? PASSWORD_MAX_LENGTH
+                      : field.name === "name"
+                        ? 200
+                        : 254
+                  }
+                  minLength={
+                    field.type === "password" ? PASSWORD_MIN_LENGTH : undefined
+                  }
                   aria-invalid={Boolean(errors[field.name])}
                   aria-describedby={
                     errors[field.name] ? `${field.name}-error` : undefined
@@ -299,17 +318,15 @@ export function AuthForm({
       )}
       <div className="mt-5 flex flex-col gap-2 text-center text-muted-foreground">
         {mode === "login" ? (
-          <>
-            <p>
-              {t.noAccount}{" "}
-              <Link
-                className="font-semibold text-primary hover:underline"
-                href={`/${locale}/signup`}
-              >
-                {t.signup}
-              </Link>
-            </p>
-          </>
+          <p>
+            {t.noAccount}{" "}
+            <Link
+              className="font-semibold text-primary hover:underline"
+              href={`/${locale}/signup`}
+            >
+              {t.signup}
+            </Link>
+          </p>
         ) : (
           <Link
             className="font-semibold text-primary hover:underline"

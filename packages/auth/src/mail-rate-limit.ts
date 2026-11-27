@@ -18,7 +18,9 @@ export async function reserveMailRequest(
   action: MailAction,
   email: string,
 ): Promise<number | null> {
-  const digest = createHmac("sha256", secret).update(email.trim().toLowerCase()).digest("hex");
+  const digest = createHmac("sha256", secret)
+    .update(email.trim().toLowerCase())
+    .digest("hex");
   const prefix = `recipient:${action}:${digest}`;
   const buckets: Bucket[] = [
     { key: "global:minute", seconds: 60, max: 60 },
@@ -50,11 +52,15 @@ export async function reserveMailRequest(
       }
     }
     // Global buckets serialize admitted requests, and expired state is bounded.
-    await client.query("DELETE FROM auth_mail_rate_limits WHERE expires_at <= now()");
+    await client.query(
+      "DELETE FROM auth_mail_rate_limits WHERE expires_at <= now()",
+    );
     await client.query("COMMIT");
     return null;
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
-  } finally { client.release(); }
+  } finally {
+    client.release();
+  }
 }
