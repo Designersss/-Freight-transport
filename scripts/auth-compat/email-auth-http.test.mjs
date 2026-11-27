@@ -8,6 +8,7 @@ import { createApp } from "../../apps/api/dist/create-app.js";
 import { parseAuthConfig } from "../../packages/auth/dist/runtime.js";
 
 const origin = "http://127.0.0.1:4000";
+const webOrigin = "http://127.0.0.1:3000";
 const base = "/api/v1/auth";
 
 test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions", async () => {
@@ -58,7 +59,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       parseAuthConfig({
         NODE_ENV: "test",
         AUTH_BASE_URL: origin,
-        AUTH_WEB_ORIGIN: origin,
+        AUTH_WEB_ORIGIN: webOrigin,
         AUTH_SECRET: randomBytes(32).toString("hex"),
         SMTP_HOST: "127.0.0.1",
         SMTP_PORT: process.env.AUTH_COMPAT_SMTP_PORT,
@@ -73,7 +74,11 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
         method: "POST",
         url: `${base}${path}`,
         payload,
-        headers: { origin, "content-type": "application/json", ...headers },
+        headers: {
+          origin: webOrigin,
+          "content-type": "application/json",
+          ...headers,
+        },
       });
     const get = (url, cookie) =>
       fastify.inject({ method: "GET", url, headers: cookie ? { cookie } : {} });
@@ -154,7 +159,10 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
           method: "POST",
           url: `${base}/send-verification-email`,
           remoteAddress: `192.0.2.${i + 1}`,
-          headers: { origin, "content-type": "application/json" },
+          headers: {
+            origin: webOrigin,
+            "content-type": "application/json",
+          },
           payload: { email: concurrentEmail },
         }),
       ),
@@ -168,10 +176,14 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       4,
     );
     const verification = await mailLink("/verify-email?");
+    const verified = await get(verification.pathname + verification.search);
+    assert.equal(verified.statusCode, 302);
     assert.equal(
-      (await get(verification.pathname + verification.search)).statusCode,
-      302,
+      verified.headers.location,
+      `${webOrigin}/ru/login?verified=done`,
     );
+    assert.equal(verified.headers["set-cookie"], undefined);
+    assert.equal((await get(`${base}/get-session`)).json(), null);
     const login = await post("/sign-in/email", creds);
     assert.equal(login.statusCode, 200);
     assert.deepEqual(login.json(), { success: true });
@@ -231,15 +243,20 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
 
     await delay((retryAfter + 1) * 1000);
 
-    assert.equal(
-      (
-        await post("/sign-in/email", {
-          email,
-          password: newPassword,
-        })
-      ).statusCode,
-      200,
-    );
+    const relogin = await post("/sign-in/email", {
+      email,
+      password: newPassword,
+    });
+    assert.equal(relogin.statusCode, 200);
+    const newCookies = relogin.headers["set-cookie"];
+    assert.ok(newCookies);
+    const newCookie = (Array.isArray(newCookies) ? newCookies : [newCookies])
+      .map((value) => value.split(";")[0])
+      .join("; ");
+    assert.equal((await get(`${base}/get-session`, newCookie)).statusCode, 200);
+    const logout = await post("/sign-out", {}, { cookie: newCookie });
+    assert.equal(logout.statusCode, 200);
+    assert.equal((await get(`${base}/get-session`, newCookie)).json(), null);
   } finally {
     try {
       await app?.close();
