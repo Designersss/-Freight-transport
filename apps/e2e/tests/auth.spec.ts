@@ -220,7 +220,9 @@ for (const variant of [
     await first.fill("Test");
     await last.fill("Driver");
     await submit.click();
-    await expect(page.getByText(variant.invalidRole)).toBeVisible();
+    await expect(
+      page.getByText(variant.invalidRole, { exact: true }),
+    ).toBeVisible();
     expect(posts).toBe(0);
     const driver = page.getByRole("button", {
       name: variant.driver,
