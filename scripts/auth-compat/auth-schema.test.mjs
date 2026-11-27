@@ -131,7 +131,10 @@ test("Prisma auth migration enforces identity and profile integrity", async () =
         birthDate: new Date("2000-02-29T00:00:00.000Z"),
       },
     });
-    assert.equal(dispatcher.birthDate.toISOString(), "2000-02-29T00:00:00.000Z");
+    assert.equal(
+      dispatcher.birthDate.toISOString(),
+      "2000-02-29T00:00:00.000Z",
+    );
     assert.equal(dispatcher.companyName, null);
     await assert.rejects(
       pool.query(
