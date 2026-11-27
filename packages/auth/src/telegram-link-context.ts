@@ -11,8 +11,12 @@ import { readTelegramSettings } from "./telegram-settings.js";
 
 // Only the MOVARO HTTP adapter supplies this context after reading a signed
 // Better Auth cookie. No incoming header or body can supply these values.
+export type TelegramLinkIdentity = TelegramSessionIdentity & {
+  revision?: number;
+};
+
 export const telegramLinkContext =
-  new AsyncLocalStorage<(TelegramSessionIdentity & { revision?: number }) | null>();
+  new AsyncLocalStorage<TelegramLinkIdentity | null>();
 
 // Populated only by validateUserInfo after the OIDC assertion is verified.
 export const telegramLoginContext = new AsyncLocalStorage<{
@@ -22,7 +26,11 @@ export const telegramLoginContext = new AsyncLocalStorage<{
 export const prepareTelegramLink = createAuthMiddleware(async (ctx) => {
   if (ctx.path !== "/link-social") return;
   const identity = telegramLinkContext.getStore();
-  if (!identity || identity.revision === undefined || ctx.body?.provider !== "telegram")
+  if (
+    !identity ||
+    identity.revision === undefined ||
+    ctx.body?.provider !== "telegram"
+  )
     throw new APIError("FORBIDDEN", { code: "AUTH_REQUEST_FAILED" });
   await addOAuthServerContext({
     movaroTelegramLinkSessionId: identity.sessionId,
@@ -39,8 +47,9 @@ export async function validateTelegramLink(
   if (
     !identity ||
     identity.userId !== userId ||
-    state?.link?.userId !== userId ||
-    state?.serverContext?.movaroTelegramLinkSessionId !== identity.sessionId
+    !state ||
+    state.link?.userId !== userId ||
+    state.serverContext?.movaroTelegramLinkSessionId !== identity.sessionId
   )
     return false;
   const current = await readTelegramSettings(pool, identity);
@@ -60,8 +69,9 @@ export async function telegramLinkProof(userId: string) {
   if (
     !identity ||
     identity.userId !== userId ||
-    state?.link?.userId !== userId ||
-    state?.serverContext?.movaroTelegramLinkSessionId !== identity.sessionId ||
+    !state ||
+    state.link?.userId !== userId ||
+    state.serverContext?.movaroTelegramLinkSessionId !== identity.sessionId ||
     typeof revision !== "number" ||
     !Number.isSafeInteger(revision) ||
     revision < 0

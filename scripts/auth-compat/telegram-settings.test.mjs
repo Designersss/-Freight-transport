@@ -125,7 +125,59 @@ test("Telegram unlink keeps a credential, checks freshness and revokes other ses
       (await readTelegramSettings(pool, telegramOnly))?.linked,
       true,
     );
-    await pool.query('DELETE FROM "session" WHERE id = $1', [owner.sessionId]);
+    const candidate = randomUUID();
+    const insertLink = (sessionId, revision, accountId = randomUUID()) =>
+      pool.query(
+        'INSERT INTO "account" (id, "userId", "providerId", "accountId", "linkSessionId", "linkRevision") VALUES ($1, $2, $3, $4, $5, $6)',
+        [accountId, owner.userId, "telegram", candidate, sessionId, revision],
+      );
+    const rejectedBinding = (error) =>
+      error.code === "23514" &&
+      error.constraint === "account_telegram_link_guard";
+    await assert.rejects(insertLink(owner.sessionId, 1), rejectedBinding);
+    await assert.rejects(
+      insertLink(telegramOnly.sessionId, 3),
+      rejectedBinding,
+    );
+    await assert.rejects(insertLink(null, 3), rejectedBinding);
+
+    // Independent connections race with the same revision; only one wins.
+    const writes = await Promise.allSettled([
+      insertLink(owner.sessionId, 3),
+      insertLink(owner.sessionId, 3),
+    ]);
+    assert.equal(writes.filter((row) => row.status === "fulfilled").length, 1);
+    const rejected = writes.find((row) => row.status === "rejected");
+    assert.ok(rejectedBinding(rejected.reason));
+    const afterLink = await readTelegramSettings(pool, owner);
+    assert.equal(afterLink.revision, 4);
+    assert.equal(afterLink.linked, true);
+    assert.equal(await unlinkTelegram(pool, owner), "unlinked");
+    await assert.rejects(insertLink(owner.sessionId, 3), rejectedBinding);
+
+    // Revoke the initiating session while holding the same user row lock
+    // required by the INSERT trigger; the pending write must fail closed.
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query('SELECT id FROM "user" WHERE id = $1 FOR UPDATE', [
+        owner.userId,
+      ]);
+      const pending = assert.rejects(
+        insertLink(owner.sessionId, 5),
+        rejectedBinding,
+      );
+      await client.query('DELETE FROM "session" WHERE id = $1', [
+        owner.sessionId,
+      ]);
+      await client.query("COMMIT");
+      await pending;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
     assert.equal(await unlinkTelegram(pool, owner), "denied");
   } finally {
     await pool.end();

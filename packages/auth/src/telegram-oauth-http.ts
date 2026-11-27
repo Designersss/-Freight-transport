@@ -5,6 +5,7 @@ import { type AuthConfig, telegramEnabled } from "./config.js";
 import { reserveTelegramRequest } from "./mail-rate-limit.js";
 import {
   telegramLinkContext,
+  type TelegramLinkIdentity,
   telegramLoginContext,
 } from "./telegram-link-context.js";
 import { TELEGRAM_ISSUER } from "./telegram-provider.js";
@@ -121,7 +122,7 @@ export async function handleTelegramOAuth(
     const current = await readAuthSession(request, config, auth, headers);
     if (current instanceof Response && current.status !== 401)
       return start ? current : redirect(loginError("ru"));
-    let identity: { userId: string; sessionId: string; revision?: number } | null =
+    let identity: TelegramLinkIdentity | null =
       current instanceof Response
         ? null
         : { userId: current.user.id, sessionId: current.session.id };
