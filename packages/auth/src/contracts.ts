@@ -55,7 +55,8 @@ export const profileInput = z
     (value) => value.role !== "COMPANY_OWNER" || value.driverAge === undefined,
   )
   .refine(
-    (value) => value.role === "COMPANY_OWNER" || value.companyName === undefined,
+    (value) =>
+      value.role === "COMPANY_OWNER" || value.companyName === undefined,
   );
 
 // Legacy profiles may lack a company name; new registration requires one.
