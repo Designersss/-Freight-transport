@@ -6,8 +6,11 @@ import { type AuthConfig, telegramEnabled } from "./config.js";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./contracts.js";
 import { type AuthMailer, isDeliverableEmail } from "./email.js";
 import {
+  findTelegramLoginAccount,
   prepareTelegramLink,
   telegramLinkContext,
+  telegramLinkProof,
+  telegramLoginContext,
   validateTelegramLink,
 } from "./telegram-link-context.js";
 import { createTelegramProvider } from "./telegram-provider.js";
@@ -37,22 +40,70 @@ export function createAuthOptions(
       ipAddress: { ipAddressHeaders: ["x-movaro-client-ip"] },
     },
     rateLimit: { enabled: true, storage: "database" },
-    session: { cookieCache: { enabled: false } },
+    session: {
+      cookieCache: { enabled: false },
+      additionalFields: {
+        telegramAccountId: {
+          type: "string",
+          required: false,
+          input: false,
+          returned: false,
+        },
+      },
+    },
     databaseHooks: {
+      account: {
+        create: {
+          async before(account) {
+            if (account.providerId !== "telegram") return;
+            if (!telegramLinkContext.getStore()) return;
+            const proof = await telegramLinkProof(account.userId);
+            return proof ? { data: proof } : false;
+          },
+        },
+      },
       session: {
         create: {
           async before(session) {
-            return canUsePublicSession(
+            if (
+              !(await canUsePublicSession(
+                database,
+                session.userId,
+                telegramEnabled(config),
+              ))
+            )
+              return false;
+            const login = telegramLoginContext.getStore();
+            if (!login) return true;
+            if (!login.providerEmail) return false;
+            const telegramAccountId = await findTelegramLoginAccount(
               database,
               session.userId,
-              telegramEnabled(config),
+              login.providerEmail,
             );
+            return telegramAccountId
+              ? { data: { telegramAccountId } }
+              : false;
           },
         },
       },
     },
     hooks: { before: prepareTelegramLink },
     account: {
+      additionalFields: {
+        linkSessionId: {
+          type: "string",
+          required: false,
+          input: false,
+          returned: false,
+        },
+        linkRevision: {
+          type: "number",
+          required: false,
+          input: false,
+          returned: false,
+        },
+      },
       accountLinking: {
         disableImplicitLinking: true,
         trustedProviders: telegramEnabled(config) ? ["telegram"] : [],
@@ -115,11 +166,17 @@ export function createAuthOptions(
             return { error: "AUTH_REQUEST_FAILED" };
         } else if (
           source.method === "oauth" &&
-          source.oauth?.providerId === "telegram" &&
-          telegramLinkContext.getStore()
+          source.oauth?.providerId === "telegram"
         ) {
-          // A login callback cannot silently replace an existing session.
-          return { error: "AUTH_REQUEST_FAILED" };
+          const login = telegramLoginContext.getStore();
+          if (
+            telegramLinkContext.getStore() ||
+            !login ||
+            typeof user.email !== "string" ||
+            !/^[0-9a-f]{64}@telegram\.invalid$/.test(user.email)
+          )
+            return { error: "AUTH_REQUEST_FAILED" };
+          login.providerEmail = user.email;
         }
       },
       deleteUser: { enabled: false },

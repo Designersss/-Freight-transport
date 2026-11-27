@@ -3,7 +3,10 @@ import { z } from "zod";
 import { AUTH_BASE_PATH, type EmailAuth } from "./auth.js";
 import { type AuthConfig, telegramEnabled } from "./config.js";
 import { reserveTelegramRequest } from "./mail-rate-limit.js";
-import { telegramLinkContext } from "./telegram-link-context.js";
+import {
+  telegramLinkContext,
+  telegramLoginContext,
+} from "./telegram-link-context.js";
 import { TELEGRAM_ISSUER } from "./telegram-provider.js";
 import { readTelegramSettings } from "./telegram-settings.js";
 import { readAuthSession } from "./verified-session.js";
@@ -118,7 +121,7 @@ export async function handleTelegramOAuth(
     const current = await readAuthSession(request, config, auth, headers);
     if (current instanceof Response && current.status !== 401)
       return start ? current : redirect(loginError("ru"));
-    const identity =
+    let identity: { userId: string; sessionId: string; revision?: number } | null =
       current instanceof Response
         ? null
         : { userId: current.user.id, sessionId: current.session.id };
@@ -136,6 +139,7 @@ export async function handleTelegramOAuth(
         if (!settings?.credential) return fail(403, "AUTH_REQUEST_FAILED");
         if (!settings.fresh) return fail(403, "SESSION_NOT_FRESH");
         if (settings.linked) return fail(409, "AUTH_REQUEST_FAILED");
+        identity = { ...identity, revision: settings.revision };
       } else if (identity) {
         return fail(409, "AUTH_REQUEST_FAILED");
       }
@@ -179,8 +183,10 @@ export async function handleTelegramOAuth(
     }
 
     upstream.search = url.search;
-    const response = await telegramLinkContext.run(identity, () =>
-      auth.handler(new Request(upstream, { headers: upstreamHeaders })),
+    const response = await telegramLoginContext.run({}, () =>
+      telegramLinkContext.run(identity, () =>
+        auth.handler(new Request(upstream, { headers: upstreamHeaders })),
+      ),
     );
     const location = response.headers.get("location");
     if (response.status < 300 || response.status >= 400 || !location)

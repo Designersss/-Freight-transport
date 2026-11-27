@@ -8,6 +8,7 @@ interface SettingsRow {
   linked: boolean;
   credential: boolean;
   fresh: boolean;
+  revision: number;
 }
 
 const settingsQuery = `SELECT
@@ -20,7 +21,8 @@ const settingsQuery = `SELECT
     WHERE a."userId" = u.id AND a."providerId" = 'credential'
       AND a.password IS NOT NULL AND a.password <> ''
   )) AS credential,
-  s."createdAt" > clock_timestamp() - $3 * interval '1 second' AS fresh
+  (s."telegramAccountId" IS NULL AND s."createdAt" > clock_timestamp() - $3 * interval '1 second') AS fresh,
+  u."telegramLinkRevision" AS revision
   ${eligibleAccount}`;
 
 function settingsValues(identity: TelegramSessionIdentity) {
@@ -83,6 +85,10 @@ export async function unlinkTelegram(
     }
     const removed = await client.query(
       `DELETE FROM "account" WHERE "userId" = $1 AND "providerId" = 'telegram'`,
+      [identity.userId],
+    );
+    await client.query(
+      'UPDATE "user" SET "telegramLinkRevision" = "telegramLinkRevision" + 1 WHERE id = $1',
       [identity.userId],
     );
     if (removed.rowCount) {

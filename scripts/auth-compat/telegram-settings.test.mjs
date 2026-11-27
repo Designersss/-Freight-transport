@@ -36,10 +36,6 @@ test("Telegram unlink keeps a credential, checks freshness and revokes other ses
        VALUES ($1, 'Test', 'Driver', 'DRIVER', '1998-05-15')`,
       [userId],
     );
-    await pool.query(
-      'INSERT INTO "account" (id, "userId", "providerId", "accountId") VALUES ($1, $2, $3, $4)',
-      [randomUUID(), userId, "telegram", subject],
-    );
     if (credential) {
       await pool.query(
         'INSERT INTO "account" (id, "userId", "providerId", "accountId", password) VALUES ($1, $2, $3, $4, $5)',
@@ -53,6 +49,17 @@ test("Telegram unlink keeps a credential, checks freshness and revokes other ses
         [id, userId, randomUUID()],
       );
     }
+    await pool.query(
+      'INSERT INTO "account" (id, "userId", "providerId", "accountId", "linkSessionId", "linkRevision") VALUES ($1, $2, $3, $4, $5, $6)',
+      [
+        randomUUID(),
+        userId,
+        "telegram",
+        subject,
+        credential ? sessionId : null,
+        credential ? 0 : null,
+      ],
+    );
     return { userId, sessionId, otherSessionId };
   }
 
@@ -63,6 +70,7 @@ test("Telegram unlink keeps a credential, checks freshness and revokes other ses
       linked: true,
       credential: true,
       fresh: true,
+      revision: 1,
     });
     assert.equal(await unlinkTelegram(pool, telegramOnly), "last-method");
     assert.equal(
@@ -101,6 +109,7 @@ test("Telegram unlink keeps a credential, checks freshness and revokes other ses
       linked: false,
       credential: true,
       fresh: true,
+      revision: 3,
     });
     const accounts = await pool.query(
       'SELECT "providerId" FROM "account" WHERE "userId" = $1',

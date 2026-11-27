@@ -359,6 +359,42 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
     assert.equal(linkedSession.user.email, email);
     assert.equal(linkedSession.user.emailVerified, true);
     assert.equal(linkedSession.user.name, "Email Driver");
+    const provenance = await pool.query(
+      'SELECT s."telegramAccountId", a."accountId" FROM "session" s JOIN "account" a ON a.id = s."telegramAccountId" WHERE s.id = $1',
+      [linkedSession.session.id],
+    );
+    assert.equal(provenance.rows[0].accountId, newSubject);
+    const emailIdentity = internalSession.parse(await session(emailLogin));
+    const { unlinkTelegram } = await import(
+      "../../packages/auth/dist/telegram-settings.js"
+    );
+    assert.equal(
+      await unlinkTelegram(pool, {
+        userId: emailUser,
+        sessionId: linkedSession.session.id,
+      }),
+      "session-not-fresh",
+    );
+    assert.equal(
+      await unlinkTelegram(pool, {
+        userId: emailUser,
+        sessionId: emailIdentity.session.id,
+      }),
+      "unlinked",
+    );
+    assert.equal(await session(viaTelegram), null);
+    await assert.rejects(
+      pool.query(
+        'INSERT INTO "session" (id, "userId", token, "expiresAt", "telegramAccountId") VALUES ($1, $2, $3, clock_timestamp() + interval \'1 hour\', $4)',
+        [
+          randomBytes(16).toString("hex"),
+          emailUser,
+          randomBytes(32).toString("hex"),
+          provenance.rows[0].telegramAccountId,
+        ],
+      ),
+      (error) => error.code === "23514",
+    );
 
     await assert.rejects(
       pool.query(
@@ -371,8 +407,8 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
         ],
       ),
       (error) =>
-        error.code === "23505" &&
-        error.constraint === "account_telegram_user_uidx",
+        error.code === "23514" &&
+        error.constraint === "account_telegram_link_guard",
     );
   } finally {
     try {

@@ -27,7 +27,7 @@ test("Telegram-only onboarding requires a live owned identity and is atomic", as
       'INSERT INTO "user" (id, name, email, "emailVerified") VALUES ($1, $2, $3, $4)',
       [userId, "Telegram", email ?? internal, verified],
     );
-    if (linked) {
+    if (linked && email === undefined) {
       await pool.query(
         'INSERT INTO "account" (id, "userId", "providerId", "accountId") VALUES ($1, $2, $3, $4)',
         [randomUUID(), userId, "telegram", subject],

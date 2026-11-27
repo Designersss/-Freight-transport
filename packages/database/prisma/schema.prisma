@@ -59,6 +59,7 @@ model User {
   username          String?      @unique(map: "user_username_uidx")
   registrationDraft String?
   usernameChangedAt DateTime?    @map("username_changed_at") @db.Timestamptz(6)
+  telegramLinkRevision Int      @default(0)
   createdAt         DateTime     @default(now()) @db.Timestamptz(6)
   updatedAt         DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
   accounts          Account[]
@@ -79,6 +80,9 @@ model Account {
   accessTokenExpiresAt  DateTime? @db.Timestamptz(6)
   refreshTokenExpiresAt DateTime? @db.Timestamptz(6)
   scope                 String?
+  linkSessionId         String?
+  linkRevision          Int?
+  telegramSessions      Session[] @relation("TelegramLoginAccount")
   password              String?
   createdAt             DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt             DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
@@ -97,10 +101,13 @@ model Session {
   updatedAt DateTime @default(now()) @updatedAt @db.Timestamptz(6)
   ipAddress String?
   userAgent String?
+  telegramAccountId String?
+  telegramAccount Account? @relation("TelegramLoginAccount", fields: [telegramAccountId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "session_telegram_account_fkey")
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId], map: "session_userId_idx")
+  @@index([telegramAccountId], map: "session_telegram_account_idx")
   @@map("session")
 }
 
