@@ -34,3 +34,9 @@
 - https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Installing
 
 Общие рекомендации изучены при фиксации требования; точные API закреплённой версии Next.js и браузерную совместимость проверить непосредственно перед реализацией.
+
+## Первый технический срез RD-04
+
+В пользовательский Web добавлены типизированный App Router manifest и metadata в [locale]/layout, PNG 192/512 и Apple touch icon 180. Временная буквенная M-иконка в текущих цветах предназначена для технической проверки установки, не является утверждённым фирменным знаком. Обе локали ссылаются на один manifest; постоянный id, scope и start_url равны /, запуск ведёт на существующий публичный маршрут с переходом на RU (localeDetection false). Файлы с расширением исключены действующим locale proxy, менять matcher не потребовалось. Admin не затронута. Service worker, offline, push, install prompt, viewport/safe-area переработка и фирменная иконка остаются отдельными задачами. HTTPS и реальная установка на устройствах обязательны до приёмки. Не считать наличие manifest доказательством установки. Добавлен Playwright-тест обеих локалей, manifest без редиректа, MIME, PNG signature и размеры всех иконок, start route; выполняется в обоих Chromium проектах. Результат нового CI и проверка на реальных телефонах пока открыты.
+
+Источники закреплённой версии Next.js 16.4.6: https://github.com/vercel/next.js/blob/v16.4.6/packages/next/src/lib/metadata/types/manifest-types.ts ; https://github.com/vercel/next.js/blob/v16.4.6/packages/next/src/lib/metadata/types/metadata-interface.ts ; https://github.com/vercel/next.js/blob/v16.4.6/packages/next/src/build/webpack/loaders/next-metadata-route-loader.ts .
