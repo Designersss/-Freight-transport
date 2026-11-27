@@ -1,6 +1,7 @@
 import "server-only";
 
 import { publicCabinet, publicProfile } from "@freight/auth/contracts";
+import { forwardTrustedProxyIp } from "@freight/auth/proxy-ip";
 import { headers } from "next/headers";
 import type { z } from "zod";
 import { forwardAuth } from "./auth-proxy";
@@ -18,6 +19,10 @@ async function read(path: string) {
   const cookie = incoming.get("cookie");
   if (!cookie) return new Response(null, { status: 401 });
   const forwarded = new Headers({ cookie });
+  if (
+    !forwardTrustedProxyIp(incoming, forwarded, process.env.AUTH_PROXY_SECRET)
+  )
+    return new Response(null, { status: 403 });
   const agent = incoming.get("user-agent");
   if (agent) forwarded.set("user-agent", agent);
   // Reuse the fixed-origin, no-store auth bridge; no Host or URL from clients.

@@ -22,6 +22,7 @@ const schema = z
     AUTH_BASE_URL: origin,
     AUTH_WEB_ORIGIN: origin,
     AUTH_SECRET: z.string().min(32),
+    AUTH_PROXY_SECRET: z.string().regex(/^[0-9a-f]{64}$/).optional(),
     AUTH_ADMIN_ORIGIN: origin.optional(),
     AUTH_ADMIN_SECRET: z.string().min(32).optional(),
     SMTP_HOST: z.string().trim().min(1),
@@ -37,6 +38,18 @@ const schema = z
     AUTH_TELEGRAM_CLIENT_SECRET: z.string().min(1).max(512).optional(),
   })
   .superRefine((config, ctx) => {
+    if (
+      config.AUTH_PROXY_SECRET &&
+      [config.AUTH_SECRET, config.AUTH_ADMIN_SECRET].includes(
+        config.AUTH_PROXY_SECRET,
+      )
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["AUTH_PROXY_SECRET"],
+        message: "Proxy requires a distinct secret",
+      });
+    }
     if (
       Boolean(config.AUTH_ADMIN_ORIGIN) !== Boolean(config.AUTH_ADMIN_SECRET) ||
       (config.AUTH_ADMIN_SECRET &&

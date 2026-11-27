@@ -1,5 +1,7 @@
 import "server-only";
 
+import { forwardTrustedProxyIp } from "@freight/auth/proxy-ip";
+
 function origin(value: string | undefined): string {
   if (!value) throw new Error("Missing admin configuration");
   const url = new URL(value);
@@ -66,6 +68,14 @@ export async function forwardAdmin(
     const api = origin(process.env.AUTH_BASE_URL);
     if (!read && request.headers.get("origin") !== admin) return failure(403);
     const headers = new Headers();
+    if (
+      !forwardTrustedProxyIp(
+        request.headers,
+        headers,
+        process.env.AUTH_PROXY_SECRET,
+      )
+    )
+      return failure(403);
     const cookie = adminCookies(request.headers.get("cookie"));
     if (cookie) headers.set("cookie", cookie);
     const agent = request.headers.get("user-agent");

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { forwardTrustedProxyIp } from "@freight/auth/proxy-ip";
+
 const paths = new Set([
   "sign-up/email",
   "sign-in/email",
@@ -105,6 +107,14 @@ export async function forwardAuth(
     const encoding = request.headers.get("content-encoding");
     if (encoding && encoding !== "identity") return authFailure(415);
     const headers = new Headers();
+    if (
+      !forwardTrustedProxyIp(
+        request.headers,
+        headers,
+        process.env.AUTH_PROXY_SECRET,
+      )
+    )
+      return authFailure(403);
     const cookie = (request.headers.get("cookie") ?? "")
       .split(";")
       .map((part) => part.trim())

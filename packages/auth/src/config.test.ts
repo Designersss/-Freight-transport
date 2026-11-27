@@ -19,6 +19,14 @@ describe("auth config", () => {
     assert.equal(parseAuthConfig(env).SMTP_PORT, 1025);
   });
 
+  it("accepts a separate proxy secret", () => {
+    const secret = "a".repeat(64);
+    assert.equal(
+      parseAuthConfig({ ...env, AUTH_PROXY_SECRET: secret }).AUTH_PROXY_SECRET,
+      secret,
+    );
+  });
+
   it("accepts paired Telegram credentials with an HTTPS Web origin", () => {
     const parsed = parseAuthConfig({
       ...env,
@@ -50,6 +58,8 @@ describe("auth config", () => {
 
   for (const override of [
     { AUTH_SECRET: "short" },
+    { AUTH_PROXY_SECRET: "short" },
+    { AUTH_SECRET: "a".repeat(64), AUTH_PROXY_SECRET: "a".repeat(64) },
     { AUTH_ADMIN_ORIGIN: "http://127.0.0.1:3001" },
     { AUTH_ADMIN_SECRET: env.AUTH_SECRET },
     {

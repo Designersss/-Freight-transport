@@ -1,3 +1,8 @@
+import {
+  PROXY_IP_HEADER,
+  PROXY_SECRET_HEADER,
+  trustedProxyIp,
+} from "@freight/auth/proxy-ip";
 import { MAX_PROFILE_PHOTO_BYTES } from "@freight/auth/runtime";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { AuthService } from "./auth.module.js";
@@ -6,6 +11,7 @@ export function registerAuthRoutes(
   fastify: FastifyInstance,
   service: AuthService,
   origin: string,
+  proxySecret?: string,
 ): void {
   async function forward(request: FastifyRequest, reply: FastifyReply) {
     const target = new URL(request.url, origin);
@@ -26,8 +32,23 @@ export function registerAuthRoutes(
     if (encoding !== undefined && encoding !== "identity") {
       return reply.code(415).send({ code: "INVALID_REQUEST" });
     }
-    // Never trust a client-supplied forwarding or client-IP header.
-    headers.set("x-movaro-client-ip", request.ip);
+    // Direct mode ignores every client-supplied forwarding assertion.
+    // Proxy mode requires an authenticated assertion, including on callbacks.
+    let ip = request.ip;
+    if (proxySecret !== undefined) {
+      const assertion = new Headers();
+      for (const name of [PROXY_IP_HEADER, PROXY_SECRET_HEADER]) {
+        const value = request.headers[name];
+        if (typeof value !== "string")
+          return reply.code(403).send({ code: "AUTH_REQUEST_FAILED" });
+        assertion.set(name, value);
+      }
+      const trusted = trustedProxyIp(assertion, proxySecret);
+      if (!trusted)
+        return reply.code(403).send({ code: "AUTH_REQUEST_FAILED" });
+      ip = trusted;
+    }
+    headers.set("x-movaro-client-ip", ip);
     const body =
       request.body === undefined || request.method === "GET"
         ? undefined

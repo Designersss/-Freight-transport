@@ -21,11 +21,13 @@ export async function createApp(
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule.register(config, auth, storage),
     new FastifyAdapter({
+      trustProxy: false,
       logger: {
         level: config.LOG_LEVEL,
         redact: [
           "req.headers.authorization",
           "req.headers.cookie",
+          "req.headers['x-movaro-proxy-secret']",
           "res.headers.set-cookie",
         ],
       },
@@ -44,6 +46,7 @@ export async function createApp(
       app.getHttpAdapter().getInstance(),
       app.get(AuthService),
       auth.AUTH_BASE_URL,
+      auth.AUTH_PROXY_SECRET,
     );
   }
   app.setGlobalPrefix("api/v1");

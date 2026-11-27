@@ -131,7 +131,12 @@ for (const mode of modes) {
     try {
       await pool.query(
         'INSERT INTO "user" (id, name, email, "emailVerified", username) VALUES ($1, $2, $3, true, $4)',
-        [id, "Credential Test", email, `ct_${id.replaceAll("-", "").slice(0, 20)}`],
+        [
+          id,
+          "Credential Test",
+          email,
+          `ct_${id.replaceAll("-", "").slice(0, 20)}`,
+        ],
       );
       await pool.query(
         `INSERT INTO user_profiles (user_id, first_name, last_name, role, birth_date)
@@ -252,21 +257,20 @@ for (const mode of modes) {
           true,
         );
 
-      const changed =
-        change
-          ? await call(
-              "/change-password",
-              {
-                currentPassword: password,
-                newPassword,
-                revokeOtherSessions: true,
-              },
-              cookie,
-            )
-          : await call("/reset-password", {
-              token: mode === "reset-lock" ? firstToken : secondToken,
+      const changed = change
+        ? await call(
+            "/change-password",
+            {
+              currentPassword: password,
               newPassword,
-            });
+              revokeOtherSessions: true,
+            },
+            cookie,
+          )
+        : await call("/reset-password", {
+            token: mode === "reset-lock" ? firstToken : secondToken,
+            newPassword,
+          });
       assert.equal(changed.status, 200);
       const before = await pool.query(
         'SELECT id FROM "session" WHERE "userId" = $1 ORDER BY id',
@@ -328,7 +332,8 @@ for (const mode of modes) {
       );
       assert.ok(
         proofs.rows.every(
-          (row) => row.emailLoginProof === null && row.emailLoginRevision === null,
+          (row) =>
+            row.emailLoginProof === null && row.emailLoginRevision === null,
         ),
       );
     } finally {

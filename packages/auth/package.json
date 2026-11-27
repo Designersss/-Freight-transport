@@ -15,13 +15,17 @@
     "./contracts": {
       "types": "./dist/contracts.d.ts",
       "import": "./dist/contracts.js"
+    },
+    "./proxy-ip": {
+      "types": "./dist/proxy-ip.d.ts",
+      "import": "./dist/proxy-ip.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "admin:create": "node dist/admin-cli.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --experimental-strip-types --test src/config.test.ts"
+    "test": "node --experimental-strip-types --test src/config.test.ts src/proxy-ip.test.ts"
   },
   "dependencies": {
     "@freight/config": "workspace:*",
