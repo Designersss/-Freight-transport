@@ -10,7 +10,7 @@ import {
 } from "./contracts.js";
 import { isDeliverableEmail } from "./email.js";
 import { reserveMailRequest } from "./mail-rate-limit.js";
-import { handleProfile } from "./profile.js";
+import { handleProfile, handleProfileSettings } from "./profile.js";
 import { handleProfilePhoto } from "./profile-photo.js";
 import { completeRegistration, usernameOwner } from "./registration.js";
 import { handleSessionSettings } from "./session-settings.js";
@@ -73,6 +73,8 @@ export function createAuthHttpRuntime(
           ? handleProfilePhoto(request, config, auth, pool, storage)
           : failure(503, "AUTH_REQUEST_FAILED");
       }
+      if (path === "/profile/settings")
+        return handleProfileSettings(request, config, auth, pool);
       if (path === "/profile")
         return handleProfile(request, config, auth, pool);
       if (path === "/username") return handleUsername(request, config, pool);

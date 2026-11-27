@@ -126,9 +126,11 @@ test("profile photo reservations, replacement and durable cleanup", async () => 
       0,
     );
     assert.equal(
-      (await database.profilePhotoCleanup.findUnique({
-        where: { key: pending },
-      }))?.ownerId,
+      (
+        await database.profilePhotoCleanup.findUnique({
+          where: { key: pending },
+        })
+      )?.ownerId,
       other.userId,
     );
     await database.profilePhotoCleanup.deleteMany({

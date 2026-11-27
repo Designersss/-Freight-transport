@@ -45,6 +45,12 @@ export const profileInput = z
     { path: ["companyName"] },
   );
 
+export const profileSettingsInput = z.strictObject({
+  firstName: profileName,
+  lastName: profileName,
+  birthDate: birthDateInput,
+});
+
 export const publicProfile = z.object({
   firstName: profileName,
   lastName: profileName,

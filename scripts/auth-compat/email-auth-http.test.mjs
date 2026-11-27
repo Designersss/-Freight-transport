@@ -398,6 +398,67 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       409,
     );
     assert.deepEqual((await get(profilePath, cookie)).json(), saved);
+    const personal = {
+      firstName: " Updated ",
+      lastName: "Driver",
+      birthDate: "1996-02-29",
+    };
+    assert.equal(
+      (await post("/profile/settings", personal)).statusCode,
+      401,
+    );
+    assert.equal(
+      (
+        await post("/profile/settings", personal, {
+          cookie,
+          origin: "https://untrusted.invalid",
+        })
+      ).statusCode,
+      403,
+    );
+    for (const invalid of [
+      { ...personal, role: "PLATFORM_ADMIN" },
+      { ...personal, userId: "another-user" },
+      { ...personal, username: "other_name" },
+      { ...personal, email: "other@example.test" },
+      { ...personal, companyName: "Other company" },
+      { ...personal, photoKey: "test-photo" },
+      { ...personal, status: "DEACTIVATED" },
+      { ...personal, firstName: " " },
+      { ...personal, birthDate: "1999-02-29" },
+      { ...personal, birthDate: "9999-12-31" },
+    ]) {
+      assert.equal(
+        (await post("/profile/settings", invalid, { cookie })).statusCode,
+        400,
+      );
+    }
+    assert.deepEqual((await get(profilePath, cookie)).json(), saved);
+    const changedProfile = await post("/profile/settings", personal, { cookie });
+    assert.equal(changedProfile.statusCode, 200);
+    const expectedProfile = {
+      ...saved,
+      firstName: "Updated",
+      birthDate: personal.birthDate,
+    };
+    assert.deepEqual(changedProfile.json(), expectedProfile);
+    assert.deepEqual((await get(profilePath, cookie)).json(), expectedProfile);
+    const updatedSession = await get(`${base}/get-session`, cookie);
+    assert.equal(updatedSession.json().user.name, "Updated Driver");
+    assert.equal(updatedSession.json().user.email, email);
+    const usernameUnchanged = await get(`${base}/username/settings`, cookie);
+    assert.deepEqual(usernameUnchanged.json(), settings.json());
+    const restoredProfile = await post(
+      "/profile/settings",
+      {
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        birthDate: profile.birthDate,
+      },
+      { cookie },
+    );
+    assert.deepEqual(restoredProfile.json(), saved);
+
     const passwordChange = {
       currentPassword: password,
       newPassword,
@@ -443,6 +504,10 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     try {
       assert.equal((await get(profilePath, cookie)).statusCode, 403);
       assert.equal(
+        (await post("/profile/settings", personal, { cookie })).statusCode,
+        403,
+      );
+      assert.equal(
         (await post("/change-password", passwordChange, { cookie })).statusCode,
         403,
       );
@@ -458,6 +523,10 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     );
     try {
       assert.equal((await get(profilePath, cookie)).statusCode, 403);
+      assert.equal(
+        (await post("/profile/settings", personal, { cookie })).statusCode,
+        403,
+      );
       assert.equal(
         (await post("/profile", profile, { cookie })).statusCode,
         403,

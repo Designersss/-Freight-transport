@@ -9,6 +9,7 @@ const paths = new Set([
   "reset-password",
   "change-password",
   "profile",
+  "profile/settings",
   "username",
   "username/settings",
   "sessions",
