@@ -408,6 +408,29 @@ test("username settings handle validation, conflicts and server cooldown", async
   await page.route("**/api/auth/profile/photo", (route) =>
     route.fulfill({ status: 404, json: { code: "NOT_FOUND" } }),
   );
+  let profileWrites = 0;
+  await page.route("**/api/auth/profile/settings", (route) => {
+    profileWrites++;
+    expect(route.request().postDataJSON()).toEqual({
+      firstName: "Updated",
+      lastName: "Driver",
+      birthDate: "1996-02-29",
+    });
+    return profileWrites === 1
+      ? route.fulfill({
+          status: 503,
+          json: { code: "AUTH_REQUEST_FAILED" },
+        })
+      : route.fulfill({
+          json: {
+            firstName: "Updated",
+            lastName: "Driver",
+            birthDate: "1996-02-29",
+            role: "DRIVER",
+            companyName: null,
+          },
+        });
+  });
   let posts = 0;
   let current: { username: string; nextChangeAt: string | null } = {
     username: "test_driver",
@@ -462,6 +485,27 @@ test("username settings handle validation, conflicts and server cooldown", async
   });
   await page.goto("/en/account");
   await page.getByRole("button", { name: "Light theme" }).click();
+  const personal = page.getByRole("region", { name: "Personal details" });
+  const firstName = personal.getByLabel("First name");
+  const birthDate = personal.getByLabel("Date of birth");
+  const saveDetails = personal.getByRole("button", { name: "Save details" });
+  await expect(firstName).toHaveValue("Test");
+  await expect(saveDetails).toBeDisabled();
+  await firstName.fill("Updated");
+  await birthDate.fill("02/29/1999");
+  await saveDetails.click();
+  await expect(personal.getByText("Enter a valid date of birth.")).toBeVisible();
+  expect(profileWrites).toBe(0);
+  await birthDate.fill("02/29/1996");
+  await saveDetails.click();
+  await expect(personal.getByRole("alert")).toBeVisible();
+  await expect(firstName).toHaveValue("Updated");
+  await expect(birthDate).toHaveValue("02/29/1996");
+  await saveDetails.click();
+  await expect(personal.getByText("Personal details saved.")).toBeVisible();
+  await expect(saveDetails).toBeDisabled();
+  await expect(page.getByText("Updated Driver", { exact: true })).toBeVisible();
+  expect(profileWrites).toBe(2);
   const username = page.getByLabel("Username", { exact: true });
   const save = page.getByRole("button", { name: "Save username" });
   await expect(username).toHaveValue("test_driver");
@@ -496,7 +540,10 @@ test("username settings handle validation, conflicts and server cooldown", async
     exact: true,
   });
   await endSession.click();
-  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page
+    .getByRole("region", { name: "Active sessions" })
+    .getByRole("button", { name: "Cancel", exact: true })
+    .click();
   expect(revocations).toBe(0);
   await endSession.click();
   await page.getByRole("button", { name: "Confirm", exact: true }).click();

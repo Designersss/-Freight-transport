@@ -69,22 +69,58 @@ export function validateProfile(
   return parsed.data;
 }
 
-export function ProfileFields({
-  form,
-  locale,
-  disabled,
-}: {
+type ProfileFieldsProps = {
   form: UseFormReturn<ProfileValues>;
   locale: Locale;
   disabled: boolean;
-}) {
+};
+
+export function ProfileFields(props: ProfileFieldsProps) {
+  const { form, locale, disabled } = props;
+  const t = messages[locale].auth;
+  const role = useWatch({ control: form.control, name: "role" });
+  const {
+    register,
+    formState: { errors },
+  } = form;
+  return (
+    <FieldGroup className="gap-4">
+      <PersonalFields {...props} />
+      {role === "COMPANY_OWNER" && (
+        <Field data-invalid={Boolean(errors.companyName)}>
+          <FieldLabel htmlFor="companyName">{t.companyName}</FieldLabel>
+          <Input
+            id="companyName"
+            autoComplete="organization"
+            maxLength={200}
+            required
+            aria-invalid={Boolean(errors.companyName)}
+            aria-describedby={
+              errors.companyName ? "company-name-error" : undefined
+            }
+            disabled={disabled}
+            {...register("companyName")}
+          />
+          <FieldError id="company-name-error">
+            {errors.companyName?.message}
+          </FieldError>
+        </Field>
+      )}
+    </FieldGroup>
+  );
+}
+
+export function PersonalFields({
+  form,
+  locale,
+  disabled,
+}: ProfileFieldsProps) {
   const t = messages[locale].auth;
   const {
     control,
     register,
     formState: { errors },
   } = form;
-  const role = useWatch({ control, name: "role" });
   return (
     <FieldGroup className="gap-4">
       {(["firstName", "lastName"] as const).map((name) => (
@@ -129,26 +165,6 @@ export function ProfileFields({
           {errors.birthDate?.message}
         </FieldError>
       </Field>
-      {role === "COMPANY_OWNER" && (
-        <Field data-invalid={Boolean(errors.companyName)}>
-          <FieldLabel htmlFor="companyName">{t.companyName}</FieldLabel>
-          <Input
-            id="companyName"
-            autoComplete="organization"
-            maxLength={200}
-            required
-            aria-invalid={Boolean(errors.companyName)}
-            aria-describedby={
-              errors.companyName ? "company-name-error" : undefined
-            }
-            disabled={disabled}
-            {...register("companyName")}
-          />
-          <FieldError id="company-name-error">
-            {errors.companyName?.message}
-          </FieldError>
-        </Field>
-      )}
     </FieldGroup>
   );
 }

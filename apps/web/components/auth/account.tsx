@@ -10,6 +10,7 @@ import { AuthPanel } from "./auth-panel";
 import { PasswordSettings } from "./password-settings";
 import { ProfileForm } from "./profile-form";
 import { ProfilePhotoSettings } from "./profile-photo-settings";
+import { ProfileSettings } from "./profile-settings";
 import { SessionSettings } from "./session-settings";
 import { UsernameSettings } from "./username-settings";
 
@@ -131,6 +132,14 @@ export function Account({ locale }: { locale: Locale }) {
               locale={locale}
               firstName={profile.firstName}
               lastName={profile.lastName}
+            />
+          )}
+          {profileLoaded && profile && (
+            <ProfileSettings
+              key={`${session.user.id}:${locale}`}
+              locale={locale}
+              profile={profile}
+              onSaved={setProfile}
             />
           )}
           {profileLoaded && profile && <UsernameSettings locale={locale} />}

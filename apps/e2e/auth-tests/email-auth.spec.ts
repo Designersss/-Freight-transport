@@ -164,6 +164,15 @@ test("real signup, email verification, login and session revocation", async ({
     birthDate: "1998-05-15",
     companyName: null,
   });
+  const personal = page.getByRole("region", { name: "Персональные данные" });
+  await expect(personal.getByLabel("Имя")).toHaveValue("Test");
+  await personal.getByLabel("Имя").fill("Updated");
+  await personal.getByLabel("Дата рождения").fill("29.02.1996");
+  await personal.getByRole("button", { name: "Сохранить данные" }).click();
+  await expect(personal.getByText("Персональные данные сохранены.")).toBeVisible();
+  await page.reload();
+  await expect(personal.getByLabel("Имя")).toHaveValue("Updated");
+  await expect(personal.getByLabel("Дата рождения")).toHaveValue("29.02.1996");
   const photoSettings = page.getByRole("region", {
     name: "Фотография профиля",
   });
