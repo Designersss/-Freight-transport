@@ -12,7 +12,10 @@ import {
   assertObjectKey,
   createObjectKey,
   MAX_FILE_BYTES,
+  MAX_PROFILE_PHOTO_BYTES,
+  type ProfilePhotoContentType,
   validateFile,
+  validateProfilePhoto,
 } from "./file-policy.js";
 
 const REQUEST_TIMEOUT_MS = 15000;
@@ -61,8 +64,32 @@ export class PrivateStorage {
     return { key, contentType, size: bytes.byteLength };
   }
 
+  async putProfilePhoto(
+    bytes: Uint8Array,
+    contentType: string,
+  ): Promise<{ key: string; contentType: ProfilePhotoContentType; size: number }> {
+    validateProfilePhoto(contentType, bytes);
+    const { key, size } = await this.put(bytes, contentType);
+    return { key, contentType, size };
+  }
+
   async get(
     key: string,
+  ): Promise<{ bytes: Uint8Array; contentType: AllowedContentType }> {
+    return this.read(key, MAX_FILE_BYTES);
+  }
+
+  async getProfilePhoto(
+    key: string,
+  ): Promise<{ bytes: Uint8Array; contentType: ProfilePhotoContentType }> {
+    const { bytes, contentType } = await this.read(key, MAX_PROFILE_PHOTO_BYTES);
+    validateProfilePhoto(contentType, bytes);
+    return { bytes, contentType };
+  }
+
+  private async read(
+    key: string,
+    maxBytes: number,
   ): Promise<{ bytes: Uint8Array; contentType: AllowedContentType }> {
     assertObjectKey(key);
     const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
@@ -77,7 +104,7 @@ export class PrivateStorage {
       addAbortSignal(signal, body);
       if (
         result.ContentLength !== undefined &&
-        (result.ContentLength < 1 || result.ContentLength > MAX_FILE_BYTES)
+        (result.ContentLength < 1 || result.ContentLength > maxBytes)
       ) {
         throw new Error("Invalid stored file size");
       }
@@ -87,7 +114,7 @@ export class PrivateStorage {
         if (!Buffer.isBuffer(chunk))
           throw new Error("Invalid object stream chunk");
         size += chunk.byteLength;
-        if (size > MAX_FILE_BYTES) throw new Error("Invalid stored file size");
+        if (size > maxBytes) throw new Error("Invalid stored file size");
         chunks.push(chunk);
       }
       const bytes = Buffer.concat(chunks, size);

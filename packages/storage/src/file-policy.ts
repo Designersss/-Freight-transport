@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
 
 export const MAX_FILE_BYTES = 10 * 1024 * 1024;
+export const MAX_PROFILE_PHOTO_BYTES = 2 * 1024 * 1024;
 
-export type AllowedContentType = "image/jpeg" | "image/png" | "application/pdf";
+export type ProfilePhotoContentType = "image/jpeg" | "image/png";
+export type AllowedContentType = ProfilePhotoContentType | "application/pdf";
 
 const signatures: Record<AllowedContentType, readonly number[]> = {
   "image/jpeg": [255, 216, 255],
@@ -27,6 +29,18 @@ export function validateFile(
   if (!signatures[contentType].every((byte, index) => bytes[index] === byte)) {
     throw new Error("File signature does not match content type");
   }
+}
+
+// This is an envelope/signature check, not a full image decoder.
+export function validateProfilePhoto(
+  contentType: string,
+  bytes: Uint8Array,
+): asserts contentType is ProfilePhotoContentType {
+  if (bytes.byteLength > MAX_PROFILE_PHOTO_BYTES)
+    throw new Error("Invalid profile photo size");
+  if (contentType !== "image/jpeg" && contentType !== "image/png")
+    throw new Error("Unsupported profile photo content type");
+  validateFile(contentType, bytes);
 }
 
 export function createObjectKey(): string {
