@@ -39,7 +39,9 @@ try {
       fileURLToPath(new URL("./email-auth-http.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./email-less-oauth.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./telegram-oidc.test.mjs", import.meta.url)),
-      fileURLToPath(new URL("./telegram-registration.test.mjs", import.meta.url)),
+      fileURLToPath(
+        new URL("./telegram-registration.test.mjs", import.meta.url),
+      ),
       fileURLToPath(
         new URL("./profile-photo-record.test.mjs", import.meta.url),
       ),

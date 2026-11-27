@@ -11,6 +11,14 @@ import { test } from "node:test";
 import { betterAuth } from "better-auth";
 import { genericOAuth } from "better-auth/plugins";
 import pg from "pg";
+import { createAuthOptions } from "../../packages/auth/dist/auth.js";
+import { parseAuthConfig } from "../../packages/auth/dist/config.js";
+import { handleTelegramRegistration } from "../../packages/auth/dist/telegram-registration-http.js";
+import {
+  internalSession,
+  sessionAccess,
+  toPublicSession,
+} from "../../packages/auth/dist/verified-session.js";
 import {
   createTelegramProvider,
   TELEGRAM_ISSUER,
@@ -89,20 +97,24 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
   assert.equal(config.disableIdTokenNonceBinding, false);
   assert.equal(config.disableImplicitSignUp, true);
   assert.deepEqual(config.scopes, ["openid", "profile"]);
+  const authConfig = parseAuthConfig({
+    NODE_ENV: "test",
+    AUTH_BASE_URL: origin,
+    AUTH_WEB_ORIGIN: origin,
+    AUTH_SECRET: randomBytes(32).toString("hex"),
+    AUTH_TELEGRAM_CLIENT_ID: clientId,
+    AUTH_TELEGRAM_CLIENT_SECRET: clientSecret,
+    SMTP_HOST: "127.0.0.1",
+    SMTP_PORT: "1025",
+    SMTP_SECURITY: "local",
+    SMTP_FROM: "auth@movaro.test",
+  });
   const auth = betterAuth({
-    baseURL: origin,
-    basePath: base,
-    secret: randomBytes(32).toString("hex"),
-    database: pool,
-    trustedOrigins: [origin],
-    telemetry: { enabled: false },
-    logger: { disabled: true },
-    session: { cookieCache: { enabled: false } },
-    account: {
-      accountLinking: {
-        disableImplicitLinking: true,
+    ...createAuthOptions(authConfig, pool, {
+      async send() {
+        assert.fail("Telegram must not send email");
       },
-    },
+    }),
     plugins: [
       genericOAuth({
         config: [
@@ -218,6 +230,37 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
       `${createHash("sha256").update(subject).digest("hex")}@telegram.invalid`,
     );
     assert.ok(!created.user.image);
+    const identity = internalSession.parse(created);
+    assert.equal(await sessionAccess(pool, authConfig, identity), "onboarding");
+    const publicView = toPublicSession(identity, "onboarding");
+    assert.equal(publicView.user.email, null);
+    assert.equal(publicView.user.emailVerified, false);
+    assert.ok(!("id" in publicView.session));
+    const registration = {
+      username: `tg_${subject.slice(0, 20)}`,
+      profile: {
+        firstName: "Telegram",
+        lastName: "Driver",
+        role: "DRIVER",
+        birthDate: "1996-02-29",
+      },
+    };
+    const complete = await handleTelegramRegistration(
+      new Request(`${origin}${base}/telegram/registration`, {
+        method: "POST",
+        headers: {
+          origin,
+          cookie: cookie(first),
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(registration),
+      }),
+      authConfig,
+      auth,
+      pool,
+    );
+    assert.equal(complete.status, 200);
+    assert.equal(await sessionAccess(pool, authConfig, identity), "active");
     await reject(flow); // Consumed state cannot be replayed.
 
     const previousToken = token;

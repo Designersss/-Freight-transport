@@ -1,6 +1,6 @@
 import { PrivateStorage, type StorageConfig } from "@freight/storage";
 import { Pool } from "pg";
-import { canUsePublicSession, eligibleAccount } from "./active-account.js";
+import { eligibleAccount } from "./active-account.js";
 import { AUTH_BASE_PATH, createEmailAuth } from "./auth.js";
 import { type AuthConfig, parseAuthConfig } from "./config.js";
 import {
@@ -8,16 +8,21 @@ import {
   publicSession,
   registrationInput,
 } from "./contracts.js";
-import { isDeliverableEmail } from "./email.js";
 import { reserveMailRequest } from "./mail-rate-limit.js";
 import { handleProfile, handleProfileSettings } from "./profile.js";
 import { handleProfilePhoto } from "./profile-photo.js";
 import { completeRegistration, usernameOwner } from "./registration.js";
 import { handleSessionSettings } from "./session-settings.js";
 import { createSmtpMailer } from "./smtp-mailer.js";
+import { handleTelegramRegistration } from "./telegram-registration-http.js";
 import { handleUsername } from "./username.js";
 import { handleUsernameSettings } from "./username-settings.js";
-import { readVerifiedSession } from "./verified-session.js";
+import {
+  internalSession,
+  readVerifiedSession,
+  sessionAccess,
+  toPublicSession,
+} from "./verified-session.js";
 
 export {
   MAX_PROFILE_PHOTO_BYTES,
@@ -66,6 +71,8 @@ export function createAuthHttpRuntime(
         return failure(404, "NOT_FOUND");
       }
       const path = url.pathname.slice(AUTH_BASE_PATH.length);
+      if (path === "/telegram/registration")
+        return handleTelegramRegistration(request, config, auth, pool);
       if (path === "/sessions")
         return handleSessionSettings(request, config, auth, pool);
       if (path === "/profile/photo") {
@@ -192,8 +199,11 @@ export function createAuthHttpRuntime(
             config,
             auth,
             new Headers({ "cache-control": "no-store" }),
+            pool,
           );
           if (session instanceof Response) return session;
+          if (session.access !== "email")
+            return failure(403, "AUTH_REQUEST_FAILED");
           const eligible = await pool.query(`SELECT u.id ${eligibleAccount}`, [
             session.user.id,
             session.session.id,
@@ -283,14 +293,13 @@ export function createAuthHttpRuntime(
           const result = await response.json();
           if (result === null)
             return Response.json(null, { headers: outputHeaders });
-          const session = publicSession.parse(result);
-          if (
-            !session.user.emailVerified ||
-            !isDeliverableEmail(session.user.email) ||
-            !(await canUsePublicSession(pool, session.user.id))
-          )
+          const session = internalSession.parse(result);
+          const access = await sessionAccess(pool, config, session);
+          if (access === "denied")
             return failure(403, "AUTH_REQUEST_FAILED");
-          return Response.json(session, { headers: outputHeaders });
+          return Response.json(toPublicSession(session, access), {
+            headers: outputHeaders,
+          });
         }
         if (username) {
           const result: unknown = await response.json();

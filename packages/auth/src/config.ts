@@ -28,8 +28,31 @@ const schema = z
     SMTP_USER: z.string().min(1).optional(),
     SMTP_PASSWORD: z.string().min(1).optional(),
     SMTP_FROM: z.email(),
+    AUTH_TELEGRAM_CLIENT_ID: z.string().regex(/^\d{1,32}$/).optional(),
+    AUTH_TELEGRAM_CLIENT_SECRET: z.string().min(1).max(512).optional(),
   })
   .superRefine((config, ctx) => {
+    if (
+      Boolean(config.AUTH_TELEGRAM_CLIENT_ID) !==
+      Boolean(config.AUTH_TELEGRAM_CLIENT_SECRET)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["AUTH_TELEGRAM_CLIENT_ID"],
+        message: "Telegram OAuth credentials must be paired",
+      });
+    }
+    if (
+      config.AUTH_TELEGRAM_CLIENT_ID &&
+      !config.AUTH_WEB_ORIGIN.startsWith("https://") &&
+      config.NODE_ENV !== "test"
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["AUTH_WEB_ORIGIN"],
+        message: "Telegram OAuth requires an HTTPS Web origin",
+      });
+    }
     if (config.NODE_ENV === "production") {
       for (const field of ["AUTH_BASE_URL", "AUTH_WEB_ORIGIN"] as const) {
         if (!config[field].startsWith("https://")) {
@@ -72,4 +95,10 @@ export type AuthConfig = z.infer<typeof schema>;
 
 export function parseAuthConfig(env: Record<string, unknown>): AuthConfig {
   return parseEnvironment(schema, env, "auth");
+}
+
+export function telegramEnabled(config: AuthConfig): boolean {
+  return Boolean(
+    config.AUTH_TELEGRAM_CLIENT_ID && config.AUTH_TELEGRAM_CLIENT_SECRET,
+  );
 }

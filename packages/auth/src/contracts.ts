@@ -14,7 +14,7 @@ export const publicSession = z.object({
   user: z.object({
     id: z.string(),
     name: z.string(),
-    email: z.string(),
+    email: z.string().nullable(),
     emailVerified: z.boolean(),
   }),
   session: z.object({ expiresAt: z.string() }),

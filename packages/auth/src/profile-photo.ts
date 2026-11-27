@@ -68,7 +68,13 @@ export async function handleProfilePhoto(
     return fail(415, "INVALID_REQUEST");
 
   try {
-    const verified = await readVerifiedSession(request, config, auth, headers);
+    const verified = await readVerifiedSession(
+      request,
+      config,
+      auth,
+      headers,
+      pool,
+    );
     if (verified instanceof Response) return verified;
     const session = {
       userId: verified.user.id,

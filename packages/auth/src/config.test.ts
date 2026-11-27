@@ -19,6 +19,16 @@ describe("auth config", () => {
     assert.equal(parseAuthConfig(env).SMTP_PORT, 1025);
   });
 
+  it("accepts paired Telegram credentials with an HTTPS Web origin", () => {
+    const parsed = parseAuthConfig({
+      ...env,
+      AUTH_WEB_ORIGIN: "https://movaro.test",
+      AUTH_TELEGRAM_CLIENT_ID: "123456",
+      AUTH_TELEGRAM_CLIENT_SECRET: "test-secret",
+    });
+    assert.equal(parsed.AUTH_TELEGRAM_CLIENT_ID, "123456");
+  });
+
   it("requires secure production origins and SMTP", () => {
     assert.throws(
       () => parseAuthConfig({ ...env, NODE_ENV: "production" }),
@@ -40,6 +50,17 @@ describe("auth config", () => {
 
   for (const override of [
     { AUTH_SECRET: "short" },
+    { AUTH_TELEGRAM_CLIENT_ID: "123456" },
+    { AUTH_TELEGRAM_CLIENT_SECRET: "secret" },
+    {
+      AUTH_TELEGRAM_CLIENT_ID: "not-numeric",
+      AUTH_TELEGRAM_CLIENT_SECRET: "secret",
+    },
+    {
+      NODE_ENV: "development",
+      AUTH_TELEGRAM_CLIENT_ID: "123456",
+      AUTH_TELEGRAM_CLIENT_SECRET: "secret",
+    },
     { AUTH_BASE_URL: "https://example.test/other" },
     { AUTH_WEB_ORIGIN: "https://user:pass@example.test" },
     { SMTP_HOST: "smtp.example.test" },

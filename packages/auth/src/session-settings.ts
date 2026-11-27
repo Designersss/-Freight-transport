@@ -43,7 +43,13 @@ export async function handleSessionSettings(
   }
 
   try {
-    const session = await readVerifiedSession(request, config, auth, headers);
+    const session = await readVerifiedSession(
+      request,
+      config,
+      auth,
+      headers,
+      pool,
+    );
     if (session instanceof Response) return session;
     const owner = [session.user.id, session.session.id];
     if (request.method === "GET") {

@@ -75,8 +75,17 @@ export async function handleProfile(
   }
 
   try {
-    const session = await readVerifiedSession(request, config, auth, headers);
+    const session = await readVerifiedSession(
+      request,
+      config,
+      auth,
+      headers,
+      pool,
+      request.method === "GET",
+    );
     if (session instanceof Response) return session;
+    if (request.method === "POST" && session.access !== "email")
+      return fail(403, "AUTH_REQUEST_FAILED");
 
     const existing = await readProfile(pool, session.user.id);
     if (
@@ -168,7 +177,13 @@ export async function handleProfileSettings(
     return fail(400, "INVALID_REQUEST");
 
   try {
-    const session = await readVerifiedSession(request, config, auth, headers);
+    const session = await readVerifiedSession(
+      request,
+      config,
+      auth,
+      headers,
+      pool,
+    );
     if (session instanceof Response) return session;
     const input = profileSettingsInput.safeParse(
       await request.json().catch(() => null),

@@ -1,4 +1,5 @@
 import type { Pool } from "pg";
+import { telegramAccountCondition } from "./active-account.js";
 import { registrationInput } from "./contracts.js";
 
 // Only an account established by the verified Telegram callback qualifies.
@@ -8,13 +9,8 @@ const telegramIdentity = `FROM "user" u
   JOIN "session" s ON s."userId" = u.id`;
 
 const telegramConditions = `WHERE u.id = $1 AND s.id = $2
-    AND s."expiresAt" > clock_timestamp() AND NOT u."emailVerified"
-    AND u.email = encode(sha256(convert_to(a."accountId", 'UTF8')), 'hex') || '@telegram.invalid'
-    AND u."registrationDraft" IS NULL
-    AND NOT EXISTS (
-      SELECT 1 FROM "account" credential
-      WHERE credential."userId" = u.id AND credential."providerId" = 'credential'
-    )`;
+    AND s."expiresAt" > clock_timestamp()
+    AND ${telegramAccountCondition}`;
 
 const telegramSession = `${telegramIdentity} ${telegramConditions}`;
 

@@ -1,9 +1,11 @@
 import { type BetterAuthOptions, betterAuth } from "better-auth";
+import { genericOAuth } from "better-auth/plugins";
 import type { Pool } from "pg";
 import { canUsePublicSession } from "./active-account.js";
-import type { AuthConfig } from "./config.js";
+import { type AuthConfig, telegramEnabled } from "./config.js";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./contracts.js";
 import { type AuthMailer, isDeliverableEmail } from "./email.js";
+import { createTelegramProvider } from "./telegram-provider.js";
 
 export const AUTH_BASE_PATH = "/api/v1/auth";
 export const RESET_PASSWORD_TTL_SECONDS = 15 * 60;
@@ -24,7 +26,9 @@ export function createAuthOptions(
     telemetry: { enabled: false },
     logger: { disabled: true },
     advanced: {
-      useSecureCookies: config.AUTH_BASE_URL.startsWith("https://"),
+      useSecureCookies:
+        config.AUTH_BASE_URL.startsWith("https://") ||
+        config.AUTH_WEB_ORIGIN.startsWith("https://"),
       ipAddress: { ipAddressHeaders: ["x-movaro-client-ip"] },
     },
     rateLimit: { enabled: true, storage: "database" },
@@ -33,12 +37,30 @@ export function createAuthOptions(
       session: {
         create: {
           async before(session) {
-            return canUsePublicSession(database, session.userId);
+            return canUsePublicSession(
+              database,
+              session.userId,
+              telegramEnabled(config),
+            );
           },
         },
       },
     },
     account: { accountLinking: { disableImplicitLinking: true } },
+    ...(config.AUTH_TELEGRAM_CLIENT_ID && config.AUTH_TELEGRAM_CLIENT_SECRET
+      ? {
+          plugins: [
+            genericOAuth({
+              config: [
+                createTelegramProvider(
+                  config.AUTH_TELEGRAM_CLIENT_ID,
+                  config.AUTH_TELEGRAM_CLIENT_SECRET,
+                ),
+              ],
+            }),
+          ],
+        }
+      : {}),
     emailAndPassword: {
       enabled: true,
       minPasswordLength: PASSWORD_MIN_LENGTH,

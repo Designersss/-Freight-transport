@@ -132,7 +132,13 @@ export async function handleUsernameSettings(
   }
 
   try {
-    const session = await readVerifiedSession(request, config, auth, headers);
+    const session = await readVerifiedSession(
+      request,
+      config,
+      auth,
+      headers,
+      pool,
+    );
     if (session instanceof Response) return session;
     if (request.method === "GET") {
       const current = await readSettings(

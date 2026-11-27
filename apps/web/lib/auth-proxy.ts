@@ -10,6 +10,7 @@ const paths = new Set([
   "change-password",
   "profile",
   "profile/settings",
+  "telegram/registration",
   "username",
   "username/settings",
   "sessions",

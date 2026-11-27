@@ -14,7 +14,11 @@ test("Telegram-only onboarding requires a live owned identity and is atomic", as
   assert.equal(target.hostname, "127.0.0.1");
   assert.equal(target.pathname, "/freight_auth_compat");
   const pool = new pg.Pool({ connectionString: databaseUrl });
-  async function createIdentity({ linked = true, email, verified = false } = {}) {
+  async function createIdentity({
+    linked = true,
+    email,
+    verified = false,
+  } = {}) {
     const userId = randomUUID();
     const sessionId = randomUUID();
     const subject = randomUUID();
