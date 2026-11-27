@@ -190,7 +190,9 @@ export function ProfileForm({
             disabled={isSubmitting}
             {...register("birthDate")}
           />
-          <FieldError id="birth-date-error">{errors.birthDate?.message}</FieldError>
+          <FieldError id="birth-date-error">
+            {errors.birthDate?.message}
+          </FieldError>
         </Field>
         {role === "COMPANY_OWNER" && (
           <Field data-invalid={Boolean(errors.companyName)}>
