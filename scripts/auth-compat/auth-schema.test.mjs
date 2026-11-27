@@ -3,10 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { test } from "node:test";
 import { betterAuth } from "better-auth";
 import pg from "pg";
-import {
-  registrationDraftInput,
-  registrationProfileInput,
-} from "../../packages/auth/dist/contracts.js";
+import { profileInput } from "../../packages/auth/dist/contracts.js";
 import { createDatabaseClient } from "../../packages/database/dist/index.js";
 import { assertAuthSchema } from "./assert-auth-schema.mjs";
 
@@ -75,16 +72,22 @@ test("Prisma auth migration enforces identity and profile integrity", async () =
     assert.equal(rejected?.reason?.code, "23505");
 
     const driver = await database.userProfile.create({
-      data: { userId, firstName: "Test", lastName: "Driver", role: "DRIVER" },
+      data: {
+        userId,
+        firstName: "Test",
+        lastName: "Driver",
+        role: "DRIVER",
+        birthDate: new Date("1998-05-15T00:00:00.000Z"),
+      },
     });
-    assert.equal(driver.driverAge, null);
-    assert.equal(driver.birthDate, null);
+    assert.equal(driver.birthDate.toISOString(), "1998-05-15T00:00:00.000Z");
     assert.equal(driver.status, "ACTIVE");
     await assert.rejects(
-      pool.query("UPDATE user_profiles SET driver_age = 0 WHERE user_id = $1", [
-        userId,
-      ]),
-      dbCode("23514"),
+      pool.query(
+        "UPDATE user_profiles SET birth_date = NULL WHERE user_id = $1",
+        [userId],
+      ),
+      dbCode("23502"),
     );
     await assert.rejects(
       pool.query(
@@ -95,7 +98,7 @@ test("Prisma auth migration enforces identity and profile integrity", async () =
     );
     await assert.rejects(
       pool.query(
-        "INSERT INTO user_profiles (user_id, first_name, last_name, role, driver_age) VALUES ($1, 'Test', 'Owner', 'COMPANY_OWNER', 30)",
+        "INSERT INTO user_profiles (user_id, first_name, last_name, role, birth_date) VALUES ($1, 'Test', 'Owner', 'COMPANY_OWNER', '1996-02-29')",
         [otherId],
       ),
       dbCode("23514"),
@@ -125,11 +128,10 @@ test("Prisma auth migration enforces identity and profile integrity", async () =
         firstName: "Test",
         lastName: "Dispatcher",
         role: "DISPATCHER",
-        driverAge: 30,
+        birthDate: new Date("2000-02-29T00:00:00.000Z"),
       },
     });
-    assert.equal(dispatcher.driverAge, 30);
-    assert.equal(dispatcher.birthDate, null);
+    assert.equal(dispatcher.birthDate.toISOString(), "2000-02-29T00:00:00.000Z");
     assert.equal(dispatcher.companyName, null);
     await assert.rejects(
       pool.query(
@@ -146,10 +148,11 @@ test("Prisma auth migration enforces identity and profile integrity", async () =
       dbCode("23514"),
     );
     await assert.rejects(
-      pool.query("UPDATE user_profiles SET driver_age = 0 WHERE user_id = $1", [
-        dispatcherId,
-      ]),
-      dbCode("23514"),
+      pool.query(
+        "UPDATE user_profiles SET birth_date = '2001-02-29' WHERE user_id = $1",
+        [dispatcherId],
+      ),
+      dbCode("22008"),
     );
     await assert.rejects(
       pool.query(
@@ -164,7 +167,7 @@ test("Prisma auth migration enforces identity and profile integrity", async () =
     );
     await assert.rejects(
       pool.query(
-        "INSERT INTO user_profiles (user_id, first_name, last_name, role) VALUES ($1, 'Test', 'Orphan', 'DRIVER')",
+        "INSERT INTO user_profiles (user_id, first_name, last_name, role, birth_date) VALUES ($1, 'Test', 'Orphan', 'DRIVER', '1998-05-15')",
         [randomUUID()],
       ),
       dbCode("23503"),
@@ -185,26 +188,22 @@ test("new registration requires role-specific profile data", () => {
   const dispatcher = { ...identity, role: "DISPATCHER" };
   const driver = { ...identity, role: "DRIVER" };
 
-  assert.equal(registrationProfileInput.safeParse(owner).success, false);
+  assert.equal(profileInput.safeParse(owner).success, false);
   assert.equal(
-    registrationProfileInput.safeParse({
+    profileInput.safeParse({
       ...owner,
       companyName: "Test Equipment",
     }).success,
     true,
   );
   for (const profile of [dispatcher, driver]) {
-    assert.equal(registrationProfileInput.safeParse(profile).success, true);
+    assert.equal(profileInput.safeParse(profile).success, true);
     assert.equal(
-      registrationProfileInput.safeParse({ ...profile, driverAge: 30 }).success,
+      profileInput.safeParse({ ...profile, driverAge: 30 }).success,
       false,
     );
     assert.equal(
-      registrationProfileInput.safeParse({ ...profile, driverAge: -1 }).success,
-      false,
-    );
-    assert.equal(
-      registrationProfileInput.safeParse({
+      profileInput.safeParse({
         ...profile,
         companyName: "Test Equipment",
       }).success,
@@ -221,8 +220,7 @@ test("birth date is required for every new registration role", () => {
       role,
       ...(role === "COMPANY_OWNER" ? { companyName: "Test Equipment" } : {}),
     };
-    assert.equal(registrationProfileInput.safeParse(profile).success, false);
-    assert.equal(registrationDraftInput.safeParse(profile).success, true);
+    assert.equal(profileInput.safeParse(profile).success, false);
     for (const birthDate of [
       "",
       "1999-02-29",
@@ -233,11 +231,11 @@ test("birth date is required for every new registration role", () => {
       "1996-02-29T00:00:00Z",
     ]) {
       assert.equal(
-        registrationProfileInput.safeParse({ ...profile, birthDate }).success,
+        profileInput.safeParse({ ...profile, birthDate }).success,
         false,
       );
     }
-    const valid = registrationProfileInput.safeParse({
+    const valid = profileInput.safeParse({
       ...profile,
       birthDate: "2000-02-29",
     });

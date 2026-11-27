@@ -207,6 +207,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       firstName: "Test",
       lastName: "Driver",
       role: "DRIVER",
+      birthDate: "1998-05-15",
     };
     assert.equal((await get(profilePath)).statusCode, 401);
     assert.equal((await post("/profile", profile)).statusCode, 401);
@@ -220,8 +221,11 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     for (const invalidProfile of [
       { ...profile, role: "PLATFORM_ADMIN" },
       { ...profile, firstName: " " },
-      { ...profile, driverAge: 0 },
-      { ...profile, role: "COMPANY_OWNER", driverAge: 30 },
+      { ...profile, driverAge: 30 },
+      { ...profile, birthDate: undefined },
+      { ...profile, birthDate: "1999-02-29" },
+      { ...profile, birthDate: "9999-12-31" },
+      { ...profile, role: "COMPANY_OWNER" },
       { ...profile, companyName: "Other company" },
       { ...profile, role: "DISPATCHER", companyName: "Other company" },
       { ...profile, role: "COMPANY_OWNER", companyName: " " },
@@ -244,11 +248,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
     );
     const competing = await Promise.all([
       post("/profile", profile, { cookie }),
-      post(
-        "/profile",
-        { ...profile, role: "DISPATCHER", driverAge: 30 },
-        { cookie },
-      ),
+      post("/profile", { ...profile, role: "DISPATCHER" }, { cookie }),
     ]);
     assert.deepEqual(
       competing.map(({ statusCode }) => statusCode).sort(),
@@ -262,8 +262,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       firstName: "Test",
       lastName: "Driver",
       role: saved.role,
-      driverAge: saved.role === "DISPATCHER" ? 30 : null,
-      birthDate: null,
+      birthDate: profile.birthDate,
       companyName: null,
     });
     const read = await get(profilePath, cookie);
@@ -273,7 +272,7 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       (
         await post(
           "/profile",
-          { ...profile, role: "COMPANY_OWNER" },
+          { ...profile, role: "COMPANY_OWNER", companyName: "Test Equipment" },
           { cookie },
         )
       ).statusCode,
@@ -580,7 +579,7 @@ test("registration draft survives verification and reserves one username", async
     assert.match(cookie, /session_token=/);
     const read = await call("/profile", undefined, cookie);
     assert.equal(read.status, 200);
-    assert.deepEqual(await read.json(), { ...profile, driverAge: null });
+    assert.deepEqual(await read.json(), profile);
     assert.equal((await profileRows()).rowCount, 1);
     const finished = await pool.query(
       'SELECT "registrationDraft" FROM "user" WHERE id = $1',
@@ -685,7 +684,7 @@ test("registration draft survives verification and reserves one username", async
     assert.equal(afterCooldown.status, 200);
     assert.equal((await afterCooldown.json()).username, username);
     const retained = await call("/profile", undefined, cookie);
-    assert.deepEqual(await retained.json(), { ...profile, driverAge: null });
+    assert.deepEqual(await retained.json(), profile);
     assert.equal((await profileRows()).rowCount, 1);
 
     await pool.query(

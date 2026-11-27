@@ -76,12 +76,14 @@ CREATE TABLE "user_profiles" (
     "last_name" TEXT NOT NULL,
     "role" "user_role" NOT NULL,
     "status" "user_status" NOT NULL DEFAULT 'ACTIVE',
-    "driver_age" INTEGER,
+    "birth_date" DATE NOT NULL,
+    "company_name" TEXT,
     "photo_key" TEXT,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "user_profiles_pkey" PRIMARY KEY ("user_id"),
     CONSTRAINT "user_profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "user_profiles_name_check" CHECK (btrim("first_name") <> '' AND btrim("last_name") <> ''),
-    CONSTRAINT "user_profiles_driver_age_check" CHECK ("driver_age" IS NULL OR ("role" = 'DRIVER' AND "driver_age" > 0))
+    CONSTRAINT "user_profiles_birth_date_check" CHECK ("birth_date" >= DATE '0001-01-01' AND "birth_date" <= ("created_at" AT TIME ZONE 'UTC')::date),
+    CONSTRAINT "user_profiles_company_name_check" CHECK (("role" = 'COMPANY_OWNER' AND "company_name" IS NOT NULL AND btrim("company_name") <> '' AND char_length("company_name") <= 200) OR ("role" <> 'COMPANY_OWNER' AND "company_name" IS NULL))
 );

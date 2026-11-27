@@ -1,6 +1,6 @@
 import type { Pool } from "pg";
 import { z } from "zod";
-import { publicSession, registrationDraftInput } from "./contracts.js";
+import { profileInput, publicSession } from "./contracts.js";
 
 const signedInUser = z.object({ user: publicSession.shape.user });
 
@@ -29,20 +29,17 @@ export async function completeRegistration(pool: Pool, response: unknown) {
     const row = result.rows[0];
     if (!row) throw new Error("Registration owner unavailable");
     if (row.registrationDraft !== null) {
-      const profile = registrationDraftInput.parse(
-        JSON.parse(row.registrationDraft),
-      );
+      const profile = profileInput.parse(JSON.parse(row.registrationDraft));
       await client.query(
-        `INSERT INTO user_profiles (user_id, first_name, last_name, role, driver_age, company_name, birth_date)
-         VALUES ($1, $2, $3, $4, $5, $6, $7::date)`,
+        `INSERT INTO user_profiles (user_id, first_name, last_name, role, company_name, birth_date)
+         VALUES ($1, $2, $3, $4, $5, $6::date)`,
         [
           user.id,
           profile.firstName,
           profile.lastName,
           profile.role,
-          profile.driverAge ?? null,
           profile.companyName ?? null,
-          profile.birthDate ?? null,
+          profile.birthDate,
         ],
       );
       await client.query(

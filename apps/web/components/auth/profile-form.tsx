@@ -24,7 +24,8 @@ type Values = {
   firstName: string;
   lastName: string;
   role: Profile["role"] | "";
-  driverAge: string;
+  birthDate: string;
+  companyName: string;
 };
 
 const roles = ["COMPANY_OWNER", "DISPATCHER", "DRIVER"] as const;
@@ -50,7 +51,13 @@ export function ProfileForm({
     clearErrors,
     formState: { errors, isSubmitting },
   } = useForm<Values>({
-    defaultValues: { firstName: "", lastName: "", role: "", driverAge: "" },
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      role: "",
+      birthDate: "",
+      companyName: "",
+    },
   });
   const role = useWatch({ control, name: "role" });
 
@@ -62,8 +69,9 @@ export function ProfileForm({
       firstName: values.firstName,
       lastName: values.lastName,
       role: values.role,
-      ...(values.role === "DRIVER" && values.driverAge.trim()
-        ? { driverAge: Number(values.driverAge) }
+      birthDate: values.birthDate,
+      ...(values.role === "COMPANY_OWNER"
+        ? { companyName: values.companyName }
         : {}),
     });
     if (!parsed.success) {
@@ -71,8 +79,10 @@ export function ProfileForm({
         const key = issue.path[0];
         if (key === "firstName" || key === "lastName") {
           setError(key, { message: t.invalidName }, { shouldFocus: true });
-        } else if (key === "driverAge") {
-          setError(key, { message: t.invalidAge }, { shouldFocus: true });
+        } else if (key === "birthDate") {
+          setError(key, { message: t.invalidBirthDate }, { shouldFocus: true });
+        } else if (key === "companyName") {
+          setError(key, { message: t.invalidName }, { shouldFocus: true });
         } else if (key === "role") {
           setError(key, { message: t.invalidRole });
         } else {
@@ -166,22 +176,40 @@ export function ProfileForm({
           <FieldDescription id="role-hint">{t.roleHint}</FieldDescription>
           <FieldError id="role-error">{errors.role?.message}</FieldError>
         </FieldSet>
-        {role === "DRIVER" && (
-          <Field data-invalid={Boolean(errors.driverAge)}>
-            <FieldLabel htmlFor="driverAge">{t.driverAge}</FieldLabel>
+        <Field data-invalid={Boolean(errors.birthDate)}>
+          <FieldLabel htmlFor="birthDate">{t.birthDate}</FieldLabel>
+          <Input
+            id="birthDate"
+            type="date"
+            autoComplete="bday"
+            min="0001-01-01"
+            max={new Date().toISOString().slice(0, 10)}
+            required
+            aria-invalid={Boolean(errors.birthDate)}
+            aria-describedby={errors.birthDate ? "birth-date-error" : undefined}
+            disabled={isSubmitting}
+            {...register("birthDate")}
+          />
+          <FieldError id="birth-date-error">{errors.birthDate?.message}</FieldError>
+        </Field>
+        {role === "COMPANY_OWNER" && (
+          <Field data-invalid={Boolean(errors.companyName)}>
+            <FieldLabel htmlFor="companyName">{t.companyName}</FieldLabel>
             <Input
-              id="driverAge"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={2147483647}
-              step={1}
-              aria-invalid={Boolean(errors.driverAge)}
-              aria-describedby={errors.driverAge ? "age-error" : undefined}
+              id="companyName"
+              autoComplete="organization"
+              maxLength={200}
+              required
+              aria-invalid={Boolean(errors.companyName)}
+              aria-describedby={
+                errors.companyName ? "company-name-error" : undefined
+              }
               disabled={isSubmitting}
-              {...register("driverAge")}
+              {...register("companyName")}
             />
-            <FieldError id="age-error">{errors.driverAge?.message}</FieldError>
+            <FieldError id="company-name-error">
+              {errors.companyName?.message}
+            </FieldError>
           </Field>
         )}
       </FieldGroup>

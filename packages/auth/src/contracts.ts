@@ -22,9 +22,8 @@ export const publicSession = z.object({
 
 const publicRole = z.enum(["COMPANY_OWNER", "DISPATCHER", "DRIVER"]);
 const profileName = z.string().trim().min(1).max(200);
-const driverAge = z.number().int().positive().max(2147483647);
-export const birthDateInput = z
-  .iso.date()
+export const birthDateInput = z.iso
+  .date()
   .refine(
     (value) =>
       value >= "0001-01-01" && value <= new Date().toISOString().slice(0, 10),
@@ -35,34 +34,22 @@ export const profileInput = z
     firstName: profileName,
     lastName: profileName,
     role: publicRole,
-    driverAge: driverAge.optional(),
-    birthDate: birthDateInput.optional(),
+    birthDate: birthDateInput,
     companyName: profileName.optional(),
   })
   .refine(
-    (value) => value.role !== "COMPANY_OWNER" || value.driverAge === undefined,
-  )
-  .refine(
     (value) =>
-      value.role === "COMPANY_OWNER" || value.companyName === undefined,
+      value.role === "COMPANY_OWNER"
+        ? value.companyName !== undefined
+        : value.companyName === undefined,
+    { path: ["companyName"] },
   );
-
-// Existing drafts may predate the birth-date requirement.
-export const registrationDraftInput = profileInput.refine(
-  (value) => value.role !== "COMPANY_OWNER" || value.companyName !== undefined,
-  { path: ["companyName"] },
-);
-
-export const registrationProfileInput = registrationDraftInput
-  .refine((value) => value.birthDate !== undefined, { path: ["birthDate"] })
-  .refine((value) => value.driverAge === undefined, { path: ["driverAge"] });
 
 export const publicProfile = z.object({
   firstName: profileName,
   lastName: profileName,
   role: publicRole,
-  driverAge: driverAge.nullable(),
-  birthDate: birthDateInput.nullable(),
+  birthDate: birthDateInput,
   companyName: profileName.nullable(),
 });
 
@@ -90,7 +77,7 @@ export const usernameRequest = z.discriminatedUnion("action", [
 ]);
 
 export const registrationInput = z.strictObject({
-  profile: registrationProfileInput,
+  profile: profileInput,
   username: usernameInput,
 });
 

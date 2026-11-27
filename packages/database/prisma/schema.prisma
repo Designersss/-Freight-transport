@@ -148,8 +148,7 @@ model UserProfile {
   lastName    String     @map("last_name")
   role        UserRole
   status      UserStatus @default(ACTIVE)
-  driverAge   Int?       @map("driver_age")
-  birthDate   DateTime?  @map("birth_date") @db.Date
+  birthDate   DateTime   @map("birth_date") @db.Date
   companyName String?    @map("company_name")
   photoKey    String?    @map("photo_key")
   createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)

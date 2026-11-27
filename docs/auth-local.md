@@ -72,3 +72,7 @@ curl -i http://127.0.0.1:3000/api/auth/get-session
 Остановка только собственного тестового почтового контейнера: docker stop movaro-auth-mailpit. Не удалять тома БД.
 
 Источники: https://nextjs.org/docs/app/guides/environment-variables ; https://mailpit.axllent.org/docs/install/docker/ ; https://better-auth.com/docs/concepts/email .
+
+## Чистая БД до первого релиза
+
+С 27.11.2026 действует greenfield-правило AGENTS.md. В ветке RD-04 переработана ещё не слитая auth migration и удалены промежуточные миграции возраста. Локальная одноразовая БД, на которой применялись предыдущие версии этой ветки, не подходит для нового checksum. Для проверки использовать новую изолированную пустую dev/test БД, выполнить pnpm db:deploy и pnpm db:status. Не запускать reset, удаление volume или очистку данных на неизвестном/общем/production окружении. Основная ветка и реальные данные не изменялись.

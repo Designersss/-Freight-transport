@@ -161,7 +161,8 @@ for (const variant of [
     firstName: "Имя",
     lastName: "Фамилия",
     driver: "Водитель",
-    age: "Возраст (необязательно)",
+    birthDate: "Дата рождения",
+    invalidBirthDate: "Введите корректную дату рождения.",
     submit: "Завершить регистрацию",
     invalidRole: "Выберите роль.",
   },
@@ -172,7 +173,8 @@ for (const variant of [
     firstName: "First name",
     lastName: "Last name",
     driver: "Driver",
-    age: "Age (optional)",
+    birthDate: "Date of birth",
+    invalidBirthDate: "Enter a valid date of birth.",
     submit: "Complete registration",
     invalidRole: "Choose a role.",
   },
@@ -230,13 +232,21 @@ for (const variant of [
     });
     await driver.click();
     await expect(driver).toHaveAttribute("aria-pressed", "true");
-    await expect(page.getByLabel(variant.age)).toBeVisible();
+    const birthDate = page.getByLabel(variant.birthDate);
+    await expect(birthDate).toBeVisible();
+    await submit.click();
+    await expect(
+      page.getByText(variant.invalidBirthDate, { exact: true }),
+    ).toBeVisible();
+    expect(posts).toBe(0);
+    await birthDate.fill("1998-05-15");
     await submit.click();
     await expect(page.getByRole("main").getByRole("alert")).toBeVisible();
     await expect(submit).toBeEnabled();
     expect(posts).toBe(1);
     await expect(first).toHaveValue("Test");
     await expect(last).toHaveValue("Driver");
+    await expect(birthDate).toHaveValue("1998-05-15");
     await expect(driver).toHaveAttribute("aria-pressed", "true");
     await expect(page).toHaveTitle("MOVARO");
     await expectNoHorizontalOverflow(page);
