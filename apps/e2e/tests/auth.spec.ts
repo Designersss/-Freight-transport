@@ -147,7 +147,9 @@ test("registration wizard preserves profile after conflict and network failure",
   await expect(first).toHaveValue("Test");
   await expect(page.getByLabel("Company name")).toHaveCount(0);
   await back.click();
-  await page.getByRole("button", { name: "Company owner", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Company owner", exact: true })
+    .click();
   await expect(last).toHaveValue("User");
   await expect(page.getByLabel("Date of birth")).toHaveValue("05/15/1998");
   await page.getByLabel("Company name").fill("Test Company");
@@ -173,7 +175,9 @@ test("registration wizard preserves profile after conflict and network failure",
   await expect(password).toHaveValue("");
   await password.fill("test-password");
   await next.click();
-  await page.getByRole("button", { name: "Company owner", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Company owner", exact: true })
+    .click();
   await expect(first).toHaveValue("Test");
   await expect(last).toHaveValue("User");
   await expect(page.getByLabel("Company name")).toHaveValue("Test Company");

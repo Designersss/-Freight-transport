@@ -122,16 +122,11 @@ export function AuthForm({
     if (!parsed.success) {
       for (const issue of parsed.error.issues) {
         const key = issue.path[0];
-        if (
-          key === "email" ||
-          key === "password" ||
-          key === "newPassword"
-        ) {
+        if (key === "email" || key === "password" || key === "newPassword") {
           setError(
             key,
             {
-              message:
-                key === "email" ? t.invalidEmail : t.invalidPassword,
+              message: key === "email" ? t.invalidEmail : t.invalidPassword,
             },
             { shouldFocus: true },
           );
@@ -248,12 +243,11 @@ export function AuthForm({
                 <FieldError id={`${field.name}-error`}>
                   {errors[field.name]?.message}
                 </FieldError>
-                {mode === "reset" &&
-                  field.type === "password" && (
-                    <p className="text-xs text-muted-foreground">
-                      {t.passwordHint}
-                    </p>
-                  )}
+                {mode === "reset" && field.type === "password" && (
+                  <p className="text-xs text-muted-foreground">
+                    {t.passwordHint}
+                  </p>
+                )}
               </Field>
             ))}
           </FieldGroup>

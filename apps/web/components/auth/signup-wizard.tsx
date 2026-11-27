@@ -107,8 +107,9 @@ export function SignupWizard({ locale }: { locale: Locale }) {
   }[step];
 
   useEffect(() => {
-    heading.current?.focus();
-  }, [step]);
+    const element = heading.current;
+    if (element?.textContent === title) element.focus();
+  }, [title]);
 
   useEffect(() => {
     if (step !== "username" || !canonical || busy || usernameError) return;

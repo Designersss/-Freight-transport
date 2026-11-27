@@ -42,7 +42,8 @@ const ru = {
     usernameTitle: "Выберите username",
     usernameDescription: "Мы предложили свободное имя. Вы можете изменить его.",
     username: "Username",
-    usernameHint: "3–32 символа: латинские буквы, цифры и подчёркивание. Начните с буквы.",
+    usernameHint:
+      "3–32 символа: латинские буквы, цифры и подчёркивание. Начните с буквы.",
     usernameInvalid: "Введите допустимое имя пользователя.",
     usernameChecking: "Проверяем доступность…",
     usernameAvailable: "Имя свободно.",
@@ -161,7 +162,8 @@ const en: typeof ru = {
     usernameTitle: "Choose a username",
     usernameDescription: "We suggested an available name. You can change it.",
     username: "Username",
-    usernameHint: "3–32 characters: Latin letters, digits and underscores. Start with a letter.",
+    usernameHint:
+      "3–32 characters: Latin letters, digits and underscores. Start with a letter.",
     usernameInvalid: "Enter a valid username.",
     usernameChecking: "Checking availability…",
     usernameAvailable: "This name is available.",

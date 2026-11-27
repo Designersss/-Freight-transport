@@ -100,9 +100,7 @@ export function ProfileFields({
             disabled={disabled}
             {...register(name)}
           />
-          <FieldError id={`${name}-error`}>
-            {errors[name]?.message}
-          </FieldError>
+          <FieldError id={`${name}-error`}>{errors[name]?.message}</FieldError>
         </Field>
       ))}
       <Field data-invalid={Boolean(errors.birthDate)}>
