@@ -10,6 +10,7 @@ import {
 import {
   beginBotOnlyRegistrationDraft,
   beginTelegramRegistrationDraft,
+  beginTelegramRegistrationInBot,
   cancelTelegramRegistrationDraft,
   completeTelegramRegistrationDraft,
   findTelegramRegistrationDraft,
@@ -51,6 +52,7 @@ export const telegramBotCommandInput = z.discriminatedUnion("action", [
   z.strictObject({ action: z.literal("contact"), ...request, contact }),
   z.strictObject({ action: z.literal("approve"), ...request }),
   z.strictObject({ action: z.literal("reject"), ...request }),
+  z.strictObject({ action: z.literal("draft-begin-chat"), ...request }),
   z.strictObject({
     action: z.literal("draft-begin"),
     ...request,
@@ -107,6 +109,8 @@ async function execute(pool: Pool, command: TelegramBotCommand): Promise<unknown
       return prepareTelegramBotApproval(pool, command.requestId, command.actor);
     case "reject":
       return rejectTelegramBotRequest(pool, command.requestId, command.actor);
+    case "draft-begin-chat":
+      return beginTelegramRegistrationInBot(pool, command.requestId, command.actor);
     case "draft-begin":
       return beginTelegramRegistrationDraft(
         pool,
@@ -133,8 +137,17 @@ async function execute(pool: Pool, command: TelegramBotCommand): Promise<unknown
     case "draft-find":
       return findTelegramRegistrationDraft(pool, access);
     case "draft-suggest-username": {
-      const current = await readTelegramRegistrationDraft(pool, command.draftId, access);
-      if (!current || current.channel !== "bot" || !current.firstName || !current.lastName)
+      const current = await readTelegramRegistrationDraft(
+        pool,
+        command.draftId,
+        access,
+      );
+      if (
+        !current ||
+        current.channel !== "bot" ||
+        !current.firstName ||
+        !current.lastName
+      )
         return null;
       return suggestUsername(pool, current.firstName, current.lastName);
     }
