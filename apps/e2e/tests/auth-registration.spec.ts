@@ -60,7 +60,9 @@ test("registration wizard preserves profile after conflict and network failure",
   });
   await page.goto("/en/signup");
   await expect(page.getByText(/^Step \d+ of \d+$/)).toHaveCount(0);
-  await page.getByRole("button", { name: "Email address", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Email address", exact: true })
+    .click();
   await page.getByRole("button", { name: "Light theme" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   const email = page.getByLabel("Email address");
@@ -145,7 +147,10 @@ test("registration method navigation respects reduced motion and keyboard", asyn
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/en/signup");
   const step = page.locator(".movaro-signup-step");
-  const email = page.getByRole("button", { name: "Email address", exact: true });
+  const email = page.getByRole("button", {
+    name: "Email address",
+    exact: true,
+  });
   await expect(step).toHaveCSS("animation-name", "movaro-signup-step-in");
   await email.focus();
   await page.keyboard.press("Enter");
