@@ -20,6 +20,7 @@ const paths = new Set([
   "profile/settings",
   "telegram/registration",
   "telegram/start",
+  "telegram-bot/browser",
   "username",
   "username/settings",
   "sessions",
