@@ -62,6 +62,7 @@ test("Web and bot share one versioned registration draft without creating accoun
     );
     const returnProof = await prepareTelegramBotApproval(pool, id, actor);
     assert.ok(returnProof);
+    assert.equal(await begin(), null);
     assert.equal(
       await confirmTelegramBotApproval(pool, browser, id, returnProof),
       true,
@@ -350,7 +351,11 @@ test("Bot-first draft can attach a freshly approved browser and revoke the old o
         await saveTelegramBotContact(pool, request.id, actor, contact),
         true,
       );
-      const returnProof = await prepareTelegramBotApproval(pool, request.id, actor);
+      const returnProof = await prepareTelegramBotApproval(
+        pool,
+        request.id,
+        actor,
+      );
       assert.ok(returnProof);
       assert.equal(
         await confirmTelegramBotApproval(pool, browser, request.id, returnProof),
