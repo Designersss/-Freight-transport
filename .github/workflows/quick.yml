@@ -58,7 +58,7 @@ jobs:
         run: |
           status=0
           echo "::group::Workspace vulnerability audit"
-          pnpm audit --audit-level=moderate || status=1
+          pnpm audit --audit-level=low || status=1
           echo "::endgroup::"
           echo "::group::Isolated compatibility dependency audit"
           if npm --prefix scripts/auth-compat ci --ignore-scripts --no-audit --no-fund; then
