@@ -251,6 +251,7 @@ model TelegramBotRequest {
   id             String   @id @db.Uuid
   browserHash    String   @unique(map: "telegram_bot_requests_browser_uidx") @map("browser_hash")
   deepLinkHash   String   @unique(map: "telegram_bot_requests_deep_link_uidx") @map("deep_link_hash")
+  returnHash     String?  @map("return_hash")
   intent         String
   locale         String
   status         String   @default("pending")
