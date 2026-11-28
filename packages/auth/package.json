@@ -19,6 +19,10 @@
     "./proxy-ip": {
       "types": "./dist/proxy-ip.d.ts",
       "import": "./dist/proxy-ip.js"
+    },
+    "./telegram-bot-internal": {
+      "types": "./dist/telegram-bot-internal.d.ts",
+      "import": "./dist/telegram-bot-internal.js"
     }
   },
   "scripts": {
