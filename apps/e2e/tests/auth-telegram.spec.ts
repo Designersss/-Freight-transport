@@ -186,6 +186,9 @@ test("Telegram settings allow one permanent connection", async ({ page }) => {
       },
     });
   });
+  await page.route("**/api/auth/telegram/status", (route) =>
+    route.fulfill({ json: { enabled: true } }),
+  );
   await page.route("**/api/auth/telegram/start", (route) => {
     expect(route.request().postDataJSON()).toEqual({
       intent: "link",
@@ -218,4 +221,77 @@ test("Telegram settings allow one permanent connection", async ({ page }) => {
   ).toHaveCount(0);
   await expectNoHorizontalOverflow(page);
   await expectAccessible(page);
+});
+
+test("Telegram bot signup waits, returns with a fragment and resumes the shared draft", async ({
+  page,
+}) => {
+  const requestId = "1b7a89d1-1b4a-4a76-8a5a-548744bcac44";
+  const proof = "b".repeat(43);
+  const deepLink = "a".repeat(43);
+  let confirmed = false;
+  const draft = {
+    id: requestId,
+    channel: "web",
+    locale: "en",
+    revision: 0,
+    expiresAt: new Date(Date.now() + 1800000).toISOString(),
+    firstName: "Synthetic",
+    lastName: "Driver",
+    role: null,
+    birthDate: null,
+    companyName: null,
+    username: null,
+  };
+  await page.route("**/api/auth/telegram/status", (route) =>
+    route.fulfill({ json: { enabled: true, mode: "bot" } }),
+  );
+  await page.route("**/api/auth/telegram-bot/browser", (route) => {
+    const command = route.request().postDataJSON();
+    if (command.action === "start") {
+      expect(command).toEqual({ action: "start", intent: "register", locale: "en" });
+      return route.fulfill({
+        json: {
+          requestId,
+          url: `https://t.me/synthetic_movaro_bot?start=${deepLink}`,
+          displayCode: "123456",
+          expiresAt: new Date(Date.now() + 300000).toISOString(),
+        },
+      });
+    }
+    if (command.action === "status")
+      return route.fulfill({ json: { status: confirmed ? "approved" : "pending" } });
+    if (command.action === "confirm") {
+      expect(command).toEqual({ action: "confirm", requestId, proof });
+      expect(route.request().url()).not.toContain(proof);
+      confirmed = true;
+      return route.fulfill({ json: { success: true } });
+    }
+    if (command.action === "finish") {
+      expect(confirmed).toBe(true);
+      return route.fulfill({ json: { outcome: "registration", draftId: requestId } });
+    }
+    if (command.action === "draft-find")
+      return route.fulfill({ json: { draft } });
+    return route.fulfill({ status: 400, json: { code: "INVALID_REQUEST" } });
+  });
+  await page.goto("/en/signup");
+  await page.getByRole("button", { name: "Register with Telegram" }).click();
+  await expect(page).toHaveURL(/\/en\/telegram\/wait$/);
+  await expect(page.getByText("123456", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open Telegram" })).toHaveAttribute(
+    "href",
+    `https://t.me/synthetic_movaro_bot?start=${deepLink}`,
+  );
+  await expectAccessible(page);
+  await expectNoHorizontalOverflow(page);
+  await page.goto(`/en/telegram/return#requestId=${requestId}&proof=${proof}`);
+  await expect(page).toHaveURL(/\/en\/telegram\/registration$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Choose your role");
+  await expect(page.getByText("Step 1 of 3", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Password", { exact: true })).toHaveCount(0);
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  expect(confirmed).toBe(true);
+  await expectAccessible(page);
+  await expectNoHorizontalOverflow(page);
 });
