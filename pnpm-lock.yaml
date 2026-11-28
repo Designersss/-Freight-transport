@@ -137,6 +137,28 @@ importers:
         specifier: 4.1.12
         version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@24.0.0)(vite@7.3.8(@types/node@24.0.0)(jiti@2.7.0)(lightningcss@1.33.0)(yaml@2.9.1))
 
+  apps/bot:
+    dependencies:
+      '@freight/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@freight/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@types/node':
+        specifier: 24.0.0
+        version: 24.0.0
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 4.1.12
+        version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@24.0.0)(vite@7.3.8(@types/node@24.0.0)(jiti@2.7.0)(lightningcss@1.33.0)(yaml@2.9.1))
+
   apps/e2e:
     devDependencies:
       '@freight/config':
