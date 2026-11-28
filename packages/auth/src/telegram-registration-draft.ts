@@ -35,7 +35,7 @@ const editInput = z.strictObject({
   companyName: profileSettingsInput.shape.firstName.nullable().optional(),
   username: usernameInput.optional(),
 });
-const mutationInput = z.discriminatedUnion("action", [
+export const telegramDraftMutationInput = z.discriminatedUnion("action", [
   editInput,
   z.strictObject({
     action: z.literal("switch"),
@@ -259,7 +259,7 @@ export async function updateTelegramRegistrationDraft(
   payload: unknown,
 ): Promise<DraftView | null> {
   const owner = ownership(access);
-  const parsed = mutationInput.safeParse(payload);
+  const parsed = telegramDraftMutationInput.safeParse(payload);
   if (!owner || !parsed.success) return null;
   const change = parsed.data;
   if (change.action === "switch") {
