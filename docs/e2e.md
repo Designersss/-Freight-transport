@@ -71,3 +71,15 @@ Deactivation settings: controlled UI case covers explicit confirmation, cancel w
 ## RD-04 — обратная связь при восстановлении пароля
 
 Контролируемые Playwright тесты проверяют отказ reset API, очистку пароля, успешный повтор, переход на login?reset=done и локализованное role=status, отличное от сообщения о регистрации. RU/EN × dark/light × Chromium desktop/mobile — 8 экземпляров тестов; axe и overflow включены. Это проверка UI с тестовыми ответами, а не доказательство реального восстановления credential. Результаты ещё не подтверждены.
+
+## Выборочный запуск controlled auth suites
+
+После рефакторинга auth.spec.ts содержит login/recovery; auth-registration.spec.ts — регистрацию; auth-profile.spec.ts — профиль, username и фото; auth-telegram.spec.ts — Telegram; auth-account.spec.ts — email change и деактивацию. auth-fixtures.ts регистрирует общую подготовку fallback Telegram settings отдельно в каждом файле. Все прежние сценарии остаются в стандартном test:e2e; отдельная конфигурация реального auth E2E не изменена.
+
+```bash
+pnpm --filter @freight/e2e exec playwright test tests/auth-registration.spec.ts
+pnpm --filter @freight/e2e exec playwright test tests/auth-profile.spec.ts --project=chromium-desktop
+pnpm --filter @freight/e2e exec playwright test --list
+```
+
+Выборочный запуск предназначен для локальной диагностики, не замена обязательной полной матрицы. Web servers из общей конфигурации пока стартуют даже при выборе одного файла. Новые результаты запуска ещё не подтверждены.

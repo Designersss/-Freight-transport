@@ -40,3 +40,9 @@ Typecheck graph включает production builds Next Web (компиляци�
 - Matt Pocock TDD: найден каталог, прямой исходник по проверенному пути недоступен; не объявляется изученным upstream skill. Действующие правила TDD остаются.
 
 Upstream материалы — справочные, не импортированы и не исполнены. Полного лицензионного аудита upstream нет; собственный skill написан для MOVARO. Локальный pinned toolchain недоступен, доказательство нового результата — CI на новом head.
+
+## Срез 2 — разбиение controlled browser suite
+
+Исходный auth.spec.ts: 1320 строк, 16 синтаксических объявлений test, 237 вызовов expect. Разделён на пять файлов по доменам: login/reset, registration, profile/username/photo, Telegram, account/email/deactivation. Сохранены дословно тела всех сценариев и параметризующие циклы; проверено статическое равенство исходных блоков и всех объявлений test, 237/237 expect. Общий beforeEach с fallback Telegram settings вынесен в registerAuthFixtures; hook регистрируется явно в каждом файле, fresh page и порядок локальных route overrides не меняются. Full suite и 2 Chromium projects сохраняются. Разбиение само по себе не доказывает ускорение: fullyParallel уже был включён. CI #63 (46091641205): frozen install/api:check PASSED, единственный formatter error в turbo.json, typecheck skipped. Формат исправлен без изменения JSON semantics.
+
+Инвентаризация: 40 изменённых тестовых файлов на 44e9043, 18 auth-compat файлов прочитаны по структуре/утверждениям. schema-readiness.test.mjs временно изменяет общие таблицы, колонки, triggers/constraints; параллельный запуск на той же БД небезопасен. email-auth-http.test.mjs — 1249 строк и 277 вызовов assert в двух верхнеуровневых сценариях; отдельный кандидат на разбиение с независимым setup. Не удалены security, DB, SMTP, S3, role, concurrency или UI assertions. Полная карта требований и полный каталог неизменённых тестов ещё не завершены.
