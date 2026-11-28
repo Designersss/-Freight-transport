@@ -7,10 +7,9 @@ import {
 } from "node:crypto";
 import { once } from "node:events";
 import { createServer } from "node:http";
+import { createRequire } from "node:module";
 import { test } from "node:test";
-import { betterAuth } from "better-auth";
-import { hashPassword } from "better-auth/crypto";
-import { genericOAuth } from "better-auth/plugins";
+import { pathToFileURL } from "node:url";
 import pg from "pg";
 import { createAuthOptions } from "../../packages/auth/dist/auth.js";
 import { parseAuthConfig } from "../../packages/auth/dist/config.js";
@@ -28,6 +27,21 @@ import {
   sessionAccess,
   toPublicSession,
 } from "../../packages/auth/dist/verified-session.js";
+
+// Resolve the same Better Auth instance used by the workspace auth hooks.
+// OAuth request state uses module-local keys, not only a shared ALS store.
+const authRequire = createRequire(
+  new URL("../../packages/auth/dist/auth.js", import.meta.url),
+);
+const { betterAuth } = await import(
+  pathToFileURL(authRequire.resolve("better-auth")).href
+);
+const { hashPassword } = await import(
+  pathToFileURL(authRequire.resolve("better-auth/crypto")).href
+);
+const { genericOAuth } = await import(
+  pathToFileURL(authRequire.resolve("better-auth/plugins")).href
+);
 
 const origin = "http://127.0.0.1:4000";
 const base = "/api/v1/auth";
