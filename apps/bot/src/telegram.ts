@@ -88,12 +88,19 @@ type InlineButton =
   | { text: string; url: string };
 export type ReplyMarkup =
   | { inline_keyboard: InlineButton[][] }
-  | { keyboard: { text: string; request_contact: true }[][]; resize_keyboard: true; one_time_keyboard: true }
+  | {
+      keyboard: { text: string; request_contact: true }[][];
+      resize_keyboard: true;
+      one_time_keyboard: true;
+    }
   | { remove_keyboard: true }
-  | { force_reply: true; selective: true };
+  | { force_reply: true; selective: false };
 
 export interface TelegramTransport {
-  getUpdates(offset: number | undefined, signal: AbortSignal): Promise<TelegramUpdate[]>;
+  getUpdates(
+    offset: number | undefined,
+    signal: AbortSignal,
+  ): Promise<TelegramUpdate[]>;
   sendMessage(chatId: string, text: string, markup?: ReplyMarkup): Promise<number>;
   answerCallback(id: string): Promise<void>;
 }
@@ -147,7 +154,12 @@ export function createTelegramTransport(
     async sendMessage(chatId, text, markup) {
       const sent = await call(
         "sendMessage",
-        { chat_id: chatId, text, reply_markup: markup, link_preview_options: { is_disabled: true } },
+        {
+          chat_id: chatId,
+          text,
+          reply_markup: markup,
+          link_preview_options: { is_disabled: true },
+        },
         z.object({ message_id: id }),
         AbortSignal.timeout(10000),
       );
