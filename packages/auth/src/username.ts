@@ -70,7 +70,7 @@ function usernameCandidates(firstName: string, lastName: string): string[] {
   return candidates;
 }
 
-async function suggestUsername(
+export async function suggestUsername(
   pool: Pool,
   firstName: string,
   lastName: string,
