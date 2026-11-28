@@ -1,3 +1,4 @@
+import { Api, GrammyError } from "grammy";
 import { z } from "zod";
 
 const id = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
@@ -105,73 +106,70 @@ export interface TelegramTransport {
   answerCallback(id: string): Promise<void>;
 }
 
-export function createTelegramTransport(
-  token: string,
-  request: typeof fetch = fetch,
-): TelegramTransport {
-  async function call<T>(
-    method: "getUpdates" | "sendMessage" | "answerCallbackQuery",
-    body: unknown,
-    result: z.ZodType<T>,
-    signal: AbortSignal,
-  ): Promise<T> {
-    try {
-      const response = await request(
-        `https://api.telegram.org/bot${token}/${method}`,
-        {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(body),
-          redirect: "error",
-          signal,
-        },
-      );
-      if (!response.ok) throw new Error("Telegram rejected request");
-      const parsed = z.object({ ok: z.literal(true), result }).safeParse(
-        await response.json(),
-      );
-      if (!parsed.success) throw new Error("Invalid Telegram response");
-      return parsed.data.result;
-    } catch {
-      throw new Error("Telegram transport unavailable");
-    }
+// Preserve only a safe numeric retry hint, never a grammY error payload.
+export class TelegramPollError extends Error {
+  constructor(
+    public readonly retryAfterSeconds: number | undefined,
+    public readonly fatal: boolean,
+  ) {
+    super("Telegram polling unavailable");
   }
+}
+
+export function createTelegramTransport(token: string): TelegramTransport {
+  const api = new Api(token, {
+    sensitiveLogs: false,
+    baseFetchConfig: { redirect: "error" },
+    timeoutSeconds: 35,
+  });
 
   return {
-    getUpdates(offset, signal) {
-      return call(
-        "getUpdates",
-        {
-          offset,
-          timeout: 25,
-          limit: 50,
-          allowed_updates: ["message", "callback_query"],
-        },
-        z.array(update),
-        AbortSignal.any([signal, AbortSignal.timeout(35000)]),
-      );
+    async getUpdates(offset, signal) {
+      try {
+        const updates = await api.getUpdates(
+          {
+            ...(offset === undefined ? {} : { offset }),
+            timeout: 25,
+            limit: 50,
+            allowed_updates: ["message", "callback_query"],
+          },
+          AbortSignal.any([signal, AbortSignal.timeout(35000)]),
+        );
+        return z.array(update).parse(updates);
+      } catch (error) {
+        const telegram = error instanceof GrammyError ? error : null;
+        const retry = telegram?.parameters.retry_after;
+        throw new TelegramPollError(
+          typeof retry === "number" && Number.isSafeInteger(retry) && retry > 0
+            ? retry
+            : undefined,
+          telegram?.error_code === 401 || telegram?.error_code === 409,
+        );
+      }
     },
     async sendMessage(chatId, text, markup) {
-      const sent = await call(
-        "sendMessage",
-        {
-          chat_id: chatId,
+      try {
+        const sent = await api.sendMessage(
+          chatId,
           text,
-          reply_markup: markup,
-          link_preview_options: { is_disabled: true },
-        },
-        z.object({ message_id: id }),
-        AbortSignal.timeout(10000),
-      );
-      return sent.message_id;
+          {
+            ...(markup === undefined ? {} : { reply_markup: markup }),
+            link_preview_options: { is_disabled: true },
+            protect_content: true,
+          },
+          AbortSignal.timeout(10000),
+        );
+        return id.parse(sent.message_id);
+      } catch {
+        throw new Error("Telegram transport unavailable");
+      }
     },
     async answerCallback(id) {
-      await call(
-        "answerCallbackQuery",
-        { callback_query_id: id },
-        z.literal(true),
-        AbortSignal.timeout(5000),
-      );
+      try {
+        await api.answerCallbackQuery(id, {}, AbortSignal.timeout(5000));
+      } catch {
+        throw new Error("Telegram transport unavailable");
+      }
     },
   };
 }
