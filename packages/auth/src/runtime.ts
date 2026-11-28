@@ -98,7 +98,10 @@ export function createAuthHttpRuntime(
         if (request.method !== "GET") return failure(405, "METHOD_NOT_ALLOWED");
         if (url.search) return failure(400, "INVALID_REQUEST");
         return Response.json(
-          { enabled: telegramEnabled(config) },
+          {
+            enabled: telegramEnabled(config),
+            ...(config.AUTH_TELEGRAM_BOT_USERNAME ? { mode: "bot" } : {}),
+          },
           { headers: { "cache-control": "no-store" } },
         );
       }
