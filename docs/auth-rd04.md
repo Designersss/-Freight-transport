@@ -1,6 +1,6 @@
 # RD-04 — авторизация и границы доступа MOVARO
 
-Задача #5, родитель #1. Основание: решения владельца 26.11.2026 и принятый RD-03 (#22). Это проектирование первого среза, не реализованный runtime.
+Задача #5, родитель #1. Основание: решения владельца 26.11.2026 и принятый RD-03 (#22). Ниже — историческая последовательность проектирования, реализации и ревью. Ранние срезы отражают состояние на момент написания, не текущий контракт. Для действующего сценария и запуска см. [registration-wizard.md](registration-wizard.md), [auth-local.md](auth-local.md), [e2e.md](e2e.md) и [infra/README.md](../infra/README.md). Реализация остаётся preview dev/test до полного quality, ручной приёмки и отдельного открытия production gate.
 
 ## Подтверждённые требования
 
@@ -344,3 +344,9 @@ Quick Checks 46087034267: OpenAPI/Orval, lint и strict typecheck прошли �
 На 46089918720 (b536fc6): 5/5 серверных сборок, Prisma generate, OpenAPI/Orval 8.47.0, 3/3 целевых теста OpenAPI прошли. pnpm audit --audit-level=low: 0 известных уязвимостей; npm auth-compat audit --audit-level=moderate: 0; license policy 9/9, 751 unique installed packages, 631 workspace, 0 unreviewed, 7 development-reviewed требуют release review. Это проверка зарегистрированных advisories, не доказательство отсутствия всех дефектов безопасности. Постоянный quality включает workspace audit --audit-level=moderate, isolated audit и license check.
 
 Сохранены lockfile, openapi.json и generated/api.ts на eddabd7; SHA-256 всех трёх совпали с runner, readback GitHub идентичен. 36 операций, 32 пути, 80 export const (включая helpers) сохранены. Semantic diff: 6 email patterns, 169 datetime patterns (секунды стали обязательны), 2 пары anyOf → oneOf для взаимоисключающих actions username/session; внутренние поля не опубликованы. Type guard явно отклоняет несовместимые type arrays и null, без ослабления TypeScript. Временная диагностика полностью удалена, Quick Checks возвращён к конфигурации 4bcf651. Quick Checks 46090258122 подтверждает frozen install и api:check уже на закоммиченных файлах; единственная ошибка Biome — форматирование сигнатуры type guard, исправлено по точному выводу formatter. Общий typecheck в этом run не запускался. Полный quality, интеграции и ручная приёмка ещё не подтверждены. Источники и подробные доказательства: PR #24, комментарии 7230966685, 7231217430 и 7231262845.
+
+## Итоговое ревью — P3.01/P3.02: reset feedback и эксплуатационная документация
+
+Quick Checks 46090482974 на 869cf34: frozen install, api:check, lint, strict typecheck прошли. P3.01: a3dbdc1 различает registration/reset completion, использует существующие RU/EN тексты и role=status; query marker не является доказательством авторизации. Добавлено 8 controlled browser cases (4 definitions × 2 projects), запуск ещё не подтверждён. Quick Checks 46090656721: frozen install и api:check прошли, один formatter error в трёх утверждениях E2E исправлен по точному логу; typecheck в этом run skipped.
+
+P3.02: корневые README/CONTRIBUTING, infra, auth-local, registration-wizard и e2e приведены к текущему preview; исторические срезы не выдаются за актуальный runbook. Документированы email-first, private photo, OpenAPI, изолированные SMTP/PG/S3 тесты, доверенная IP-граница, worker и неизменные CI gates. Runtime, схема, зависимости и workflows не изменены. Полный quality, реальная браузерная матрица, ручная приёмка и production activation остаются открытыми.

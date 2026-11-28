@@ -114,7 +114,9 @@ for (const language of [
       const login = `/${language.locale}/login`;
       const reset = `/${language.locale}/reset-password?token=test-reset-token`;
       await page.goto(login);
-      await expect(page.getByText(language.done, { exact: true })).toHaveCount(0);
+      await expect(page.getByText(language.done, { exact: true })).toHaveCount(
+        0,
+      );
       if (theme === "light") {
         await page.getByRole("button", { name: language.light }).click();
       }
@@ -128,7 +130,9 @@ for (const language of [
         language.error,
       );
       await expect(page).toHaveURL(reset);
-      await expect(page.getByText(language.done, { exact: true })).toHaveCount(0);
+      await expect(page.getByText(language.done, { exact: true })).toHaveCount(
+        0,
+      );
       await expect(password).toHaveValue("");
       await password.fill("test-password");
       await submit.click();
@@ -147,7 +151,9 @@ for (const language of [
       await expect(page.getByRole("main").getByRole("status")).toHaveText(
         language.registered,
       );
-      await expect(page.getByText(language.done, { exact: true })).toHaveCount(0);
+      await expect(page.getByText(language.done, { exact: true })).toHaveCount(
+        0,
+      );
     });
   }
 }
