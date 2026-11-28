@@ -3,6 +3,11 @@ import type { Role } from "./results.js";
 const ru = {
   welcome: "Добро пожаловать в MOVARO. Зарегистрируйтесь или войдите на сайте.",
   register: "Зарегистрироваться",
+  signIn: "Войти",
+  accountExists: "У вас уже есть аккаунт MOVARO. Продолжить вход?",
+  accountMissing: "Аккаунт MOVARO не найден. Хотите зарегистрироваться?",
+  accountUnavailable: "Вход в этот аккаунт недоступен. Обратитесь в поддержку.",
+  alreadyRegistered: "Ваш аккаунт уже создан. Войдите через Telegram на сайте.",
   website: "Открыть MOVARO",
   share: "Поделитесь своим номером телефона через кнопку ниже.",
   contact: "Поделиться номером",
@@ -50,6 +55,11 @@ const ru = {
 const en: typeof ru = {
   welcome: "Welcome to MOVARO. Register or sign in on the website.",
   register: "Register",
+  signIn: "Sign in",
+  accountExists: "You already have a MOVARO account. Continue signing in?",
+  accountMissing: "No MOVARO account found. Would you like to register?",
+  accountUnavailable: "Sign-in is unavailable for this account. Contact support.",
+  alreadyRegistered: "Your account already exists. Sign in with Telegram on the website.",
   website: "Open MOVARO",
   share: "Share your own phone number using the button below.",
   contact: "Share phone number",

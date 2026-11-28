@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export type Locale = "ru" | "en";
+export const accountStateResult = z.enum(["unregistered", "active", "unavailable"]);
 export const role = z.enum(["COMPANY_OWNER", "DISPATCHER", "DRIVER"]);
 export type Role = z.infer<typeof role>;
 export const claimResult = z
@@ -11,6 +12,7 @@ export const claimResult = z
     displayCode: z.string().regex(/^[0-9]{6}$/),
     expiresAt: z.iso.datetime(),
     needsContact: z.boolean(),
+    accountState: accountStateResult,
   })
   .strict()
   .nullable();

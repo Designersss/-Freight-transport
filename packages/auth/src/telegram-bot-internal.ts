@@ -1,9 +1,11 @@
 import type { Pool } from "pg";
 import { z } from "zod";
 import {
+  changeTelegramBotIntent,
   claimTelegramBotRequest,
   prepareTelegramBotApproval,
   privateTelegramActor,
+  readTelegramBotAccountState,
   rejectTelegramBotRequest,
   saveTelegramBotContact,
 } from "./telegram-bot-requests.js";
@@ -49,6 +51,13 @@ export const telegramBotCommandInput = z.discriminatedUnion("action", [
     deepLink: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
     names,
   }),
+  z.strictObject({ action: z.literal("account-state"), actor }),
+  z.strictObject({
+    action: z.literal("change-intent"),
+    ...request,
+    intent: z.enum(["login", "register"]),
+    names,
+  }),
   z.strictObject({ action: z.literal("contact"), ...request, contact }),
   z.strictObject({ action: z.literal("approve"), ...request }),
   z.strictObject({ action: z.literal("reject"), ...request }),
@@ -91,13 +100,37 @@ export type TelegramBotCommand = z.infer<typeof telegramBotCommandInput>;
 async function execute(pool: Pool, command: TelegramBotCommand): Promise<unknown> {
   const access = { channel: "bot" as const, actor: command.actor };
   switch (command.action) {
-    case "claim":
-      return claimTelegramBotRequest(
+    case "account-state":
+      return readTelegramBotAccountState(pool, command.actor);
+    case "claim": {
+      const claimed = await claimTelegramBotRequest(
         pool,
         command.deepLink,
         command.actor,
         command.names,
       );
+      return claimed
+        ? {
+            ...claimed,
+            accountState: await readTelegramBotAccountState(pool, command.actor),
+          }
+        : null;
+    }
+    case "change-intent": {
+      const claimed = await changeTelegramBotIntent(
+        pool,
+        command.requestId,
+        command.actor,
+        command.intent,
+        command.names,
+      );
+      return claimed
+        ? {
+            ...claimed,
+            accountState: await readTelegramBotAccountState(pool, command.actor),
+          }
+        : null;
+    }
     case "contact":
       return saveTelegramBotContact(
         pool,

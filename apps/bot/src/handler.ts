@@ -9,6 +9,7 @@ import type { BotConfig } from "./config.js";
 import type { BotInternalApi } from "./internal-api.js";
 import { messages, roleLabel } from "./messages.js";
 import {
+  accountStateResult,
   type Claim,
   claimResult,
   completionResult,
@@ -324,6 +325,11 @@ export function createBotHandler(
   }
 
   async function register(actor: Actor, locale: Locale) {
+    const state = await api.send({ action: "account-state", actor }, accountStateResult);
+    if (state !== "unregistered") {
+      await accountNotice(actor, locale, state);
+      return;
+    }
     const existing = await find(actor);
     if (existing) return showDraft(actor, existing);
     await askContact(actor, locale, async (message) => {
@@ -351,8 +357,28 @@ export function createBotHandler(
     });
   }
 
+  async function accountNotice(
+    actor: Actor,
+    locale: Locale,
+    state: "active" | "unavailable",
+  ) {
+    const m = messages[locale];
+    await telegram.sendMessage(
+      actor.chatId,
+      state === "active" ? m.alreadyRegistered : m.accountUnavailable,
+      {
+        inline_keyboard: [[{
+          text: m.website,
+          url: new URL(`/${locale}/login`, config.AUTH_WEB_ORIGIN).href,
+        }]],
+      },
+    );
+  }
+
   async function welcome(actor: Actor, locale: Locale) {
     const m = messages[locale];
+    const state = await api.send({ action: "account-state", actor }, accountStateResult);
+    if (state !== "unregistered") return accountNotice(actor, locale, state);
     await buttons(actor, m.welcome, [
       { label: m.register, run: () => register(actor, locale) },
     ]);
@@ -433,6 +459,58 @@ export function createBotHandler(
     );
     if (!claim) {
       await say(actor, messages[locale].unavailable);
+      return;
+    }
+    return routeClaim(message, claim, locale, deepLink);
+  }
+
+  async function routeClaim(
+    message: PrivateMessage,
+    claim: Claim,
+    locale: Locale,
+    deepLink: string,
+  ): Promise<void> {
+    const { actor } = message;
+    const m = messages[claim.locale];
+    if (claim.accountState === "unavailable" ||
+        (claim.intent === "link" && claim.accountState !== "unregistered")) {
+      await api.send({ action: "reject", actor, requestId: claim.id }, z.boolean());
+      await say(actor, m.accountUnavailable);
+      return;
+    }
+    const nextIntent =
+      claim.intent === "login" && claim.accountState === "unregistered"
+        ? "register"
+        : claim.intent === "register" && claim.accountState === "active"
+          ? "login"
+          : null;
+    if (nextIntent) {
+      await buttons(actor, nextIntent === "register" ? m.accountMissing : m.accountExists, [
+        {
+          label: nextIntent === "register" ? m.register : m.signIn,
+          run: async () => {
+            const changed = await api.send({
+              action: "change-intent",
+              actor,
+              requestId: claim.id,
+              intent: nextIntent,
+              names: namesFrom(message),
+            }, claimResult);
+            if (changed) await routeClaim(message, changed, locale, deepLink);
+            else await say(actor, m.unavailable);
+          },
+        },
+        {
+          label: m.reject,
+          run: async () => {
+            const rejected = await api.send(
+              { action: "reject", actor, requestId: claim.id },
+              z.boolean(),
+            );
+            await say(actor, rejected ? m.rejected : m.unavailable);
+          },
+        },
+      ]);
       return;
     }
     if (!claim.needsContact) return choices(actor, claim);

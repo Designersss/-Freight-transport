@@ -43,6 +43,7 @@ function fixture() {
               displayCode: "123456",
               expiresAt: new Date(Date.now() + 300000).toISOString(),
               needsContact: false,
+              accountState: "active",
             }
           : command.action === "approve"
             ? proof

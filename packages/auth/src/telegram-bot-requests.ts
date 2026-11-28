@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomInt, randomUUID } from "node:crypto";
 import type { Pool } from "pg";
+import { telegramAccountCondition } from "./active-account.js";
 
 export type TelegramBotIntent = "login" | "register" | "link";
 type Locale = "ru" | "en";
@@ -145,6 +146,31 @@ function telegramPhone(value: unknown): string | null {
   return value.startsWith("+") ? value : `+${value}`;
 }
 
+export type TelegramBotAccountState = "unregistered" | "active" | "unavailable";
+
+// Only the trusted bot receives this classification for its own private actor.
+// An existing inactive, incomplete or administrative identity is not a new account.
+const activeBotAccount = `p.status = 'ACTIVE' AND p.role <> 'PLATFORM_ADMIN'
+  AND u.username IS NOT NULL
+  AND ((u."emailVerified" AND u.email NOT LIKE '%.invalid')
+    OR (${telegramAccountCondition}))`;
+
+export async function readTelegramBotAccountState(
+  pool: Pool,
+  actor: TelegramBotActor,
+): Promise<TelegramBotAccountState> {
+  if (!privateTelegramActor(actor)) return "unavailable";
+  const result = await pool.query<{ active: boolean }>(
+    `SELECT COALESCE((${activeBotAccount}), false) AS active
+     FROM "account" a JOIN "user" u ON u.id = a."userId"
+     LEFT JOIN user_profiles p ON p.user_id = u.id
+     WHERE a."providerId" = 'telegram' AND a."accountId" = 'bot:' || $1`,
+    [actor.userId],
+  );
+  const row = result.rows[0];
+  return !row ? "unregistered" : row.active ? "active" : "unavailable";
+}
+
 interface ClaimedRequest {
   id: string;
   intent: TelegramBotIntent;
@@ -183,7 +209,10 @@ export async function claimTelegramBotRequest(
       telegramName(names.lastName),
     ],
   );
-  const row = result.rows[0];
+  return claimedView(result.rows[0]);
+}
+
+function claimedView(row: ClaimedRequest | undefined) {
   return row
     ? {
         id: row.id,
@@ -194,6 +223,48 @@ export async function claimTelegramBotRequest(
         needsContact: row.needs_contact,
       }
     : null;
+}
+
+// A changed intent is an explicit private-chat decision, not a browser input.
+// Clear old contact and return proof, never extend the original expiry.
+export async function changeTelegramBotIntent(
+  pool: Pool,
+  requestId: string,
+  actor: TelegramBotActor,
+  intent: "login" | "register",
+  names: { firstName?: unknown; lastName?: unknown },
+) {
+  if (!privateTelegramActor(actor)) return null;
+  const result = await pool.query<ClaimedRequest>(
+    `UPDATE telegram_bot_requests r SET intent = $3, return_hash = NULL,
+       first_name = CASE WHEN $3 = 'register' THEN $4 ELSE NULL END,
+       last_name = CASE WHEN $3 = 'register' THEN $5 ELSE NULL END,
+       phone_number = NULL
+     WHERE r.id::text = $1 AND r.telegram_user_id = $2
+       AND r.status = 'claimed' AND r.expires_at > clock_timestamp()
+       AND r.intent IN ('login', 'register') AND r.intent <> $3
+       AND (
+         ($3 = 'register' AND NOT EXISTS (
+           SELECT 1 FROM "account" a WHERE a."providerId" = 'telegram'
+             AND a."accountId" = 'bot:' || $2
+         )) OR ($3 = 'login' AND EXISTS (
+           SELECT 1 FROM "account" a JOIN "user" u ON u.id = a."userId"
+           JOIN user_profiles p ON p.user_id = u.id
+           WHERE a."providerId" = 'telegram' AND a."accountId" = 'bot:' || $2
+             AND ${activeBotAccount}
+         ))
+       )
+     RETURNING id, intent, locale, display_code, expires_at,
+       (intent = 'register' AND phone_number IS NULL) AS needs_contact`,
+    [
+      requestId,
+      actor.userId,
+      intent,
+      telegramName(names.firstName),
+      telegramName(names.lastName),
+    ],
+  );
+  return claimedView(result.rows[0]);
 }
 
 export interface TelegramBotContact {
