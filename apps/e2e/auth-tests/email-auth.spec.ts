@@ -226,12 +226,30 @@ test("real signup, email ownership, login and session revocation", async ({
   await expect(
     photoSettings.getByRole("img", { name: "Фотография профиля" }),
   ).toBeVisible();
+  const invalidDelete = await page.request.delete("/api/auth/profile/photo", {
+    headers: { origin: new URL(page.url()).origin },
+    data: { unexpected: true },
+  });
+  expect(invalidDelete.status()).toBe(400);
+  const retainedPhoto = await page.request.get("/api/auth/profile/photo");
+  expect(retainedPhoto.status()).toBe(200);
   await photoSettings.getByRole("button", { name: "Удалить фото" }).click();
-  await photoSettings.getByRole("button", { name: "Подтвердить" }).click();
+  const [removedPhoto] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === "/api/auth/profile/photo" &&
+        response.request().method() === "DELETE",
+    ),
+    photoSettings.getByRole("button", { name: "Подтвердить" }).click(),
+  ]);
+  expect(removedPhoto.status()).toBe(200);
+  expect(await removedPhoto.json()).toEqual({ success: true });
   await expect(photoSettings.getByText("Фотография удалена.")).toBeVisible();
   await expect(
     photoSettings.getByRole("img", { name: "Без фотографии" }),
   ).toBeVisible();
+  const deletedPhoto = await page.request.get("/api/auth/profile/photo");
+  expect(deletedPhoto.status()).toBe(404);
   const settings = await page.request.get("/api/auth/username/settings");
   expect(settings.status()).toBe(200);
   expect(await settings.json()).toEqual({

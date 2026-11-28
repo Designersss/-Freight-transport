@@ -103,9 +103,17 @@ export async function forwardAuth(
     if (process.env.MOVARO_AUTH_PREVIEW !== "true") return authFailure(503);
     if (method !== "GET" && request.headers.get("origin") !== web)
       return authFailure(403);
-    if (method === "DELETE" && request.body) return authFailure(400);
     const encoding = request.headers.get("content-encoding");
     if (encoding && encoding !== "identity") return authFailure(415);
+    // Next.js exposes a stream even for an empty DELETE request.
+    // Accept zero bytes only; never forward a DELETE payload.
+    if (method === "DELETE" && request.body) {
+      try {
+        await boundedBody(request, 0);
+      } catch {
+        return authFailure(400);
+      }
+    }
     const headers = new Headers();
     if (
       !forwardTrustedProxyIp(
