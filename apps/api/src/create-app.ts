@@ -25,6 +25,9 @@ export async function createApp(
     ...auth,
     AUTH_TELEGRAM_BOT_INTERNAL_SECRET: telegramBotInternalSecret,
   });
+  if (auth?.AUTH_TELEGRAM_BOT_USERNAME && botSecret === undefined) {
+    throw new Error("Telegram bot Web API requires internal service secret");
+  }
   if (
     botSecret !== undefined &&
     (!auth ||
