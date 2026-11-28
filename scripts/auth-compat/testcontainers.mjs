@@ -75,6 +75,9 @@ try {
       ),
       fileURLToPath(new URL("./email-less-oauth.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./telegram-oidc.test.mjs", import.meta.url)),
+      fileURLToPath(
+        new URL("./telegram-bot-session.test.mjs", import.meta.url),
+      ),
       fileURLToPath(new URL("./telegram-settings.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./email-change.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./email-change-http.test.mjs", import.meta.url)),

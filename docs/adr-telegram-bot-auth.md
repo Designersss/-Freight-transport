@@ -43,3 +43,11 @@
 - https://grammy.dev/guide/deployment-types — long polling, без нового публичного ingress.
 
 На исходном ref 10aaad673382dbe403a72b4d35e596925a690113 отдельного apps/bot нет. Есть OIDC provider, start/callback, Telegram registration/settings, общий account/session schema, частичные ограничения Telegram identity и staging credentials. Точная версия grammY и способ Better Auth session issuance ещё не проверены, зависимости не добавлены. Документ не является доказательством реализации или прохождения тестов.
+
+## Compatibility spike: выдача штатной сессии
+
+В изолированный Testcontainers suite добавлен telegram-bot-session.test.mjs. Test-only plugin использует createAuthEndpoint, internalAdapter.consumeVerificationValue, createSession и setSessionCookie из той же установленной Better Auth 1.7.28, что и действующие hooks MOVARO. Синтетический grant моделирует уже подтверждённый браузерный запрос; не выдаётся публичным API. Старый OIDC plugin в этой фикстуре заменён, действующие session hooks, ограничения PostgreSQL, secure cookie и Admin остаются. Проверки: неверный browser proof и Origin, параллельный consume двумя экземплярами Better Auth, ровно одна сессия с telegramAccountId, отсутствие adminSession, подписанная host-only Secure/HttpOnly/SameSite=Lax cookie, изоляция Admin (включая переименование cookie), повтор, logout, expiry, отсутствие связи и деактивация. Fixture не отправляет почту и не обращается к Telegram.
+
+Источники закреплённой версии: https://github.com/better-auth/better-auth/blob/v1.7.28/packages/better-auth/src/plugins/magic-link/index.ts ; https://github.com/better-auth/better-auth/blob/v1.7.28/packages/better-auth/src/db/internal-adapter.ts ; https://github.com/better-auth/better-auth/blob/v1.7.28/packages/better-auth/src/cookies/index.ts ; https://github.com/better-auth/better-auth/blob/v1.7.28/packages/better-auth/package.json .
+
+Ограничение: consume и createSession в spike не объединены в общую транзакцию; при отказе после consume grant теряется, повтор запрещён. Это проверка at-most-once и совместимости сессии, не доказательство атомарности регистрации/привязки/consume. Для production design отдельно проверить транзакционную границу и отказ после consume, не ослаблять hooks. Реальный бот, модель запросов, browser handoff и link пока не реализованы. До фактического прогона spike gate открыт.
