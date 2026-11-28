@@ -19,7 +19,7 @@ pnpm check
 
 Lockfile хранится в Git. При изменении зависимостей обновите его отдельно и проверьте frozen install. В CI разрешена только воспроизводимая установка.
 
-Команды: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm check`. Они включают статические проверки, unit-тесты и сборку; для проверки реальных сценариев дополнительно нужны браузерные, HTTP, PostgreSQL, SMTP и S3 тесты. Для запуска PostgreSQL, SeaweedFS, API, worker, интеграционных проверок и ручной приёмки см. [инструкцию](infra/README.md). Политика зависимостей: [лицензии](docs/third-party-licenses.md). В полном CI также выполняется pnpm audit --audit-level=moderate. Quick Checks на Draft PR проверяет frozen install, OpenAPI, lint и typecheck; полный quality запускается на контрольной точке Ready for review. См. [AGENTS.md](AGENTS.md).
+Команды: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm check`. Они включают статические проверки, unit-тесты и сборку; для проверки реальных сценариев дополнительно нужны браузерные, HTTP, PostgreSQL, SMTP и S3 тесты. Для запуска PostgreSQL, SeaweedFS, API, worker, интеграционных проверок и ручной приёмки см. [инструкцию](infra/README.md). Политика зависимостей: [лицензии](docs/third-party-licenses.md). В полном CI также выполняется pnpm audit --audit-level=moderate. Quick Checks на Draft PR проверяет frozen install, OpenAPI, lint и typecheck; полный quality запускается на контрольной точке Ready for review и требует success независимых static, browser, integration и security jobs. См. [архитектуру тестирования](docs/testing-architecture.md). См. [AGENTS.md](AGENTS.md).
 
 Для локальной проверки авторизации RD-04 см. [инструкцию запуска и диагностики](docs/auth-local.md).
 

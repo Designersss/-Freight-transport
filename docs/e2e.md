@@ -11,7 +11,7 @@ pnpm build
 pnpm test:e2e
 ```
 
-В CI после build устанавливаем Chromium с системными зависимостями и запускаем E2E в том же обязательном quality job. Таймаут job 20 минут вместо 15, ни одна прежняя проверка не удалена. Тесты без retry и skip. При падении — trace/screenshot в игнорируемом test-results.
+В CI после полного build устанавливаем Chromium с системными зависимостями и запускаем controlled E2E в отдельном обязательном browser job. Real auth E2E выполняется в integration job с собственным runtime build и Chromium. Таймаут каждого job 20 минут, все результаты обязательны для quality. Тесты без retry и skip. При падении — trace/screenshot в игнорируемом test-results.
 
 Сценарии: RU/EN и query, cookie темы после reload и навигации, клавиатурный skip link, dev-admin anonymous login и отсутствие защищённой навигации, production admin закрыт (404), валидация формы Storybook в RU/dark и EN/light, семантика таблицы, отсутствие горизонтального переполнения, axe по тегам WCAG 2.0/2.1 A/AA. Два Chromium-проекта — desktop и эмуляция мобильного viewport 375px. Это не реальный мобильный браузер и не полноценный WCAG-аудит. WebKit/Firefox, другие компоненты/размеры, ручная проверка и реальные бизнес-сценарии после RD-04 остаются открытыми.
 
@@ -21,7 +21,7 @@ pnpm test:e2e
 
 ## CI runner compatibility
 
-Run 45881174837 прошёл frozen install, OpenAPI, lint, typecheck, unit и build, но не установил Chromium: ubuntu-latest использовал Ubuntu 26.04, которую Playwright 1.60.0 не поддерживает. Закрепляем ubuntu-24.04 для всего quality job, не исключая браузерные, лицензионные или интеграционные проверки. Источники: https://github.com/microsoft/playwright/blob/v1.60.0/packages/playwright-core/src/server/registry/nativeDeps.ts ; https://github.com/actions/runner-images . Повторный Linux CI обязателен.
+Run 45881174837 прошёл frozen install, OpenAPI, lint, typecheck, unit и build, но не установил Chromium: ubuntu-latest использовал Ubuntu 26.04, которую Playwright 1.60.0 не поддерживает. Закрепляем ubuntu-24.04 для всех рабочих CI jobs, не исключая браузерные, лицензионные или интеграционные проверки. Источники: https://github.com/microsoft/playwright/blob/v1.60.0/packages/playwright-core/src/server/registry/nativeDeps.ts ; https://github.com/actions/runner-images . Повторный Linux CI обязателен.
 
 ## RD-04 — реальная email-авторизация в браузере
 

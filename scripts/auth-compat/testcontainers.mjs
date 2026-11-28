@@ -70,7 +70,9 @@ try {
       fileURLToPath(new URL("./auth-schema.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./compat.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./email-auth-http.test.mjs", import.meta.url)),
-      fileURLToPath(new URL("./username-session-http.test.mjs", import.meta.url)),
+      fileURLToPath(
+        new URL("./username-session-http.test.mjs", import.meta.url),
+      ),
       fileURLToPath(new URL("./email-less-oauth.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./telegram-oidc.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./telegram-settings.test.mjs", import.meta.url)),
