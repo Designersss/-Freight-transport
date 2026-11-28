@@ -12,8 +12,7 @@ import {
 import { useRouter } from "@freight/ui/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { z } from "zod";
-import { waitStorageKey } from "../../lib/telegram-browser";
-import { startTelegramAuth } from "../../lib/telegram-oauth";
+import { startTelegramAuth, waitStorageKey } from "../../lib/telegram-browser";
 
 type Settings = z.infer<typeof publicTelegramSettings>;
 const endpoint = "/api/auth/telegram/settings";
@@ -118,10 +117,8 @@ export function TelegramSettings({
           handleFailure(result.status, result.code, t.telegramLinkFailed);
           return;
         }
-        if (result.kind === "bot") {
-          sessionStorage.setItem(waitStorageKey, JSON.stringify(result.wait));
-          router.push("/telegram/wait", { locale });
-        } else window.location.assign(result.url);
+        sessionStorage.setItem(waitStorageKey, JSON.stringify(result.wait));
+        router.push("/telegram/wait", { locale });
         redirecting = true;
       }
     } catch {

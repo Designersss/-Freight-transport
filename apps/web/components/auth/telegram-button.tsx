@@ -11,8 +11,7 @@ import {
 import { useRouter } from "@freight/ui/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { z } from "zod";
-import { waitStorageKey } from "../../lib/telegram-browser";
-import { startTelegramAuth } from "../../lib/telegram-oauth";
+import { startTelegramAuth, waitStorageKey } from "../../lib/telegram-browser";
 
 const statusResponse = z.object({ enabled: z.boolean() });
 
@@ -76,10 +75,8 @@ export function TelegramButton({
         setFailure(result.status === 429 ? t.limited : t.telegramError);
         return;
       }
-      if (result.kind === "bot") {
-        sessionStorage.setItem(waitStorageKey, JSON.stringify(result.wait));
-        router.push("/telegram/wait", { locale });
-      } else window.location.assign(result.url);
+      sessionStorage.setItem(waitStorageKey, JSON.stringify(result.wait));
+      router.push("/telegram/wait", { locale });
       redirecting = true;
     } catch {
       if (!controller.signal.aborted) setFailure(t.telegramError);

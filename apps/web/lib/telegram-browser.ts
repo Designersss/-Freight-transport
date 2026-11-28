@@ -1,3 +1,4 @@
+import type { Locale } from "@freight/i18n";
 import type { TelegramBrowserCommand } from "@freight/auth/telegram-browser-http";
 import { z } from "zod";
 
@@ -132,4 +133,42 @@ export function parseTelegramReturn(hash: string) {
       proof: params.get("proof"),
     });
   return parsed.success ? parsed.data : null;
+}
+
+export type TelegramIntent = "login" | "register" | "link";
+
+export type TelegramStartResult =
+  | { kind: "bot"; wait: TelegramWait }
+  | { kind: "error"; status: number; code?: string };
+
+const telegramStartError = z.object({ code: z.string() });
+
+export async function startTelegramAuth(
+  intent: TelegramIntent,
+  locale: Locale,
+  signal: AbortSignal,
+): Promise<TelegramStartResult> {
+  const response = await fetch("/api/auth/telegram-bot/browser", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    credentials: "same-origin",
+    cache: "no-store",
+    redirect: "error",
+    signal,
+    body: JSON.stringify({ action: "start", intent, locale }),
+  });
+  if (!response.ok) {
+    const parsed = telegramStartError.safeParse(
+      await response.json().catch(() => null),
+    );
+    return {
+      kind: "error",
+      status: response.status,
+      ...(parsed.success ? { code: parsed.data.code } : {}),
+    };
+  }
+  return {
+    kind: "bot",
+    wait: telegramWaitSchema.parse(await response.json()),
+  };
 }
