@@ -1,0 +1,27 @@
+# Explicit opt-in over base, preview and staging on a dedicated Linux VPS.
+services:
+  api:
+    env_file:
+      - .env.telegram-api
+      - .env.telegram-shared
+  bot:
+    image: movaro-staging:local
+    pull_policy: never
+    network_mode: host
+    init: true
+    restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    stop_grace_period: 60s
+    command: ["node", "apps/bot/dist/main.js"]
+    env_file:
+      - .env.telegram-shared
+      - .env.telegram-bot
+    environment:
+      NODE_ENV: development
+      AUTH_WEB_ORIGIN: ${STAGING_WEB_ORIGIN:?Set STAGING_WEB_ORIGIN}
+      TELEGRAM_BOT_API_ORIGIN: http://127.0.0.1:4000
+    depends_on:
+      api:
+        condition: service_healthy

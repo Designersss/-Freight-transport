@@ -13,7 +13,7 @@
 
 ## Конфигурация и проверки
 
-API получает AUTH_TELEGRAM_BOT_USERNAME без @. В закрытом dev/test окружении после согласованной активации используются отдельные TELEGRAM_BOT_TOKEN, AUTH_TELEGRAM_BOT_INTERNAL_SECRET, TELEGRAM_BOT_API_ORIGIN (loopback HTTP) и AUTH_WEB_ORIGIN (HTTPS). Не передавать Bot API token в Web/Admin или публичную сборку. Приватный маршрут /internal/telegram-bot запрещён на внешнем ingress.
+API получает AUTH_TELEGRAM_BOT_USERNAME без @. Для защищённого staging используется отдельный overlay и разделённые env files: [инструкция запуска](../../infra/staging.md#telegram-через-movaro-bot). В закрытом dev/test окружении после согласованной активации используются отдельные TELEGRAM_BOT_TOKEN, AUTH_TELEGRAM_BOT_INTERNAL_SECRET, TELEGRAM_BOT_API_ORIGIN (loopback HTTP) и AUTH_WEB_ORIGIN (HTTPS). Не передавать Bot API token в Web/Admin или публичную сборку. Приватный маршрут /internal/telegram-bot запрещён на внешнем ingress.
 
 Команды целевой проверки после обновления lockfile и установки:
 

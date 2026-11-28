@@ -1,8 +1,8 @@
 # Закрытый контейнерный preview RD-04
 
-Не production и не публичный staging. На выделенном Linux VPS используется существующий Compose project и его volumes. Все HTTP endpoints, PostgreSQL, S3 и Mailpit остаются на loopback. Нельзя проксировать этот режим наружу через Nginx. Для браузера допустим только SSH-туннель. Реальный внешний Telegram OAuth, HTTPS ingress и production runtime требуют отдельной реализации и проверки.
+Не production и не публичный staging. На выделенном Linux VPS используется существующий Compose project и его volumes. Все HTTP endpoints, PostgreSQL, S3 и Mailpit остаются на loopback. Нельзя проксировать этот режим наружу через Nginx. Для браузера допустим только SSH-туннель. Telegram через бота доступен только в отдельном защищённом HTTPS staging после согласования; см. [staging](staging.md). Production runtime требует отдельной проверки.
 
-Один общий образ собирает четыре приложения с закреплёнными Node/pnpm и frozen lockfile. Контейнеры запускаются от пользователя node с отдельными командами; секреты передаются только API и worker согласно их потребностям, не в build context и не в UI. Образ пока содержит dev dependencies. Host networking выбран только для закрытого preview: существующие PostgreSQL/S3/SMTP адреса loopback сохраняются, но отсутствует изоляция сетевого пространства от хоста. Не использовать на общем или production сервере. Next dev необходим для существующего запрета Admin auth в production. Никакие auth gates не меняются.
+Один общий образ собирает пять приложений (бот в preview не запускается) с закреплёнными Node/pnpm и frozen lockfile. Контейнеры запускаются от пользователя node с отдельными командами; секреты передаются только API и worker согласно их потребностям, не в build context и не в UI. Образ пока содержит dev dependencies. Host networking выбран только для закрытого preview: существующие PostgreSQL/S3/SMTP адреса loopback сохраняются, но отсутствует изоляция сетевого пространства от хоста. Не использовать на общем или production сервере. Next dev необходим для существующего запрета Admin auth в production. Никакие auth gates не меняются.
 
 ## Подготовка
 

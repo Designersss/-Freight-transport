@@ -74,7 +74,10 @@ export function TelegramReturn({ locale }: { locale: Locale }) {
       work.current = (async () => {
         if (!proof) return null;
         try {
-          await telegramBrowserRequest({ action: "confirm", ...proof }, success);
+          await telegramBrowserRequest(
+            { action: "confirm", ...proof },
+            success,
+          );
         } catch (error) {
           const { status } = await telegramBrowserRequest(
             { action: "status", requestId: proof.requestId },

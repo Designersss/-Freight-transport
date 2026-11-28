@@ -18,6 +18,7 @@ RUN pnpm install --frozen-lockfile \
   && pnpm exec turbo run build \
     --filter=@freight/api \
     --filter=@freight/worker \
+    --filter=@freight/bot \
     --filter=@freight/web \
     --filter=@freight/admin \
     --concurrency=1
