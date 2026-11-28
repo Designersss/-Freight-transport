@@ -108,6 +108,8 @@ model Session {
   ipAddress String?
   userAgent String?
   telegramAccountId String?
+  telegramBotRequestId String?
+  telegramBotBrowserHash String?
   emailLoginProof String?
   emailLoginRevision Int?
   adminSession Boolean @default(false)

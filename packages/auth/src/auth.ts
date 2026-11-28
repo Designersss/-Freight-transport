@@ -14,6 +14,7 @@ import {
 } from "./credential-login.js";
 import { type AuthMailer, isDeliverableEmail } from "./email.js";
 import { registrationContext } from "./registration-context.js";
+import { telegramBotLoginContext } from "./telegram-bot-login.js";
 import {
   createPublicBeforeHook,
   findTelegramLoginAccount,
@@ -65,6 +66,18 @@ export function createAuthOptions(
           returned: false,
         },
         telegramAccountId: {
+          type: "string",
+          required: false,
+          input: false,
+          returned: false,
+        },
+        telegramBotRequestId: {
+          type: "string",
+          required: false,
+          input: false,
+          returned: false,
+        },
+        telegramBotBrowserHash: {
           type: "string",
           required: false,
           input: false,
@@ -187,6 +200,22 @@ export function createAuthOptions(
       session: {
         create: {
           async before(session, context) {
+            const bot = telegramBotLoginContext.getStore();
+            if (bot) {
+              if (
+                context?.path !== "/telegram-bot/finish-login" ||
+                bot.userId !== session.userId ||
+                !(await canUsePublicSession(database, session.userId, true))
+              )
+                return false;
+              return {
+                data: {
+                  telegramAccountId: bot.telegramAccountId,
+                  telegramBotRequestId: bot.telegramBotRequestId,
+                  telegramBotBrowserHash: bot.telegramBotBrowserHash,
+                },
+              };
+            }
             if (
               !(await canUsePublicSession(
                 database,

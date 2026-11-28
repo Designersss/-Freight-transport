@@ -27,6 +27,7 @@ export const authMigrations = [
   "20261128060000_birth_date_validation",
   "20261128070000_admin_rate_limits",
   "20261128080000_telegram_bot_requests",
+  "20261128090000_telegram_bot_session_fence",
 ] as const;
 
 const columns = {
@@ -74,6 +75,8 @@ const columns = {
     "ipAddress",
     "userAgent",
     "telegramAccountId",
+    "telegramBotRequestId",
+    "telegramBotBrowserHash",
     "emailLoginProof",
     "emailLoginRevision",
     "adminSession",
@@ -156,6 +159,7 @@ const triggers = [
     "finalize_email_registration",
   ],
   ["session", "session_guard_telegram_login", "guard_telegram_login_session"],
+  ["session", "session_guard_bot_login", "guard_telegram_bot_session"],
   ["session", "session_guard_email_login", "guard_email_login_session"],
   ["session", "session_guard_admin_scope", "guard_admin_session"],
   ["session", "session_guard_account_status", "guard_session_account_status"],
@@ -192,6 +196,7 @@ const constraints = [
   ["session", "session_email_login_proof_consumed"],
   ["session", "session_email_login_revision_consumed"],
   ["session", "session_telegram_account_fkey"],
+  ["session", "session_telegram_bot_proof_consumed"],
   ["user_profiles", "user_profiles_birth_date_check"],
   ["user_profiles", "user_profiles_company_name_check"],
   ["telegram_bot_requests", "telegram_bot_requests_hash_check"],
