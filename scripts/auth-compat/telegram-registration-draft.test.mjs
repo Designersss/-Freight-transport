@@ -4,8 +4,8 @@ import { test } from "node:test";
 import pg from "pg";
 import {
   claimTelegramBotRequest,
-  createTelegramBrowserCapability,
   confirmTelegramBotApproval,
+  createTelegramBrowserCapability,
   prepareTelegramBotApproval,
   readTelegramBotRequest,
   saveTelegramBotContact,
