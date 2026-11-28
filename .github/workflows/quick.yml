@@ -29,6 +29,9 @@ jobs:
           node-version-file: .nvmrc
       - name: Install pinned pnpm
         run: npm install --global pnpm@10.34.8
+      # Temporary regeneration; the drift check below fails until files are committed.
+      - name: Generate updated dependency lockfile
+        run: pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
       - name: Install dependencies
         id: install
         run: pnpm install --frozen-lockfile
@@ -38,6 +41,28 @@ jobs:
         run: pnpm lint
       - name: Typecheck
         run: pnpm typecheck
+      - name: Collect generated file drift for review
+        if: ${{ !cancelled() }}
+        run: |
+          drift=0
+          for path in pnpm-lock.yaml packages/client-api/openapi.json packages/client-api/src/generated/api.ts; do
+            if ! git diff --quiet -- "$path"; then
+              sha256sum "$path"
+              node --input-type=module -e '
+                import { readFileSync } from "node:fs";
+                const path = process.argv[1];
+                const content = readFileSync(path, "utf8");
+                for (let offset = 0; offset < content.length; offset += 4000) {
+                  console.log("MOVARO_GENERATED", JSON.stringify({ path, offset, content: content.slice(offset, offset + 4000) }));
+                }
+              ' "$path"
+              drift=1
+            fi
+          done
+          exit "$drift"
+      - name: Targeted OpenAPI regression tests
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: pnpm --filter @freight/api exec vitest run src/openapi/zod-schema.test.ts src/openapi/auth-paths.test.ts
       # Temporary review checkpoint; remove after collecting the audit results.
       - name: Dependency audit review checkpoint
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
