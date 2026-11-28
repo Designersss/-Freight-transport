@@ -26,6 +26,7 @@ export const authMigrations = [
   "20261128050000_remove_registration_draft",
   "20261128060000_birth_date_validation",
   "20261128070000_admin_rate_limits",
+  "20261128080000_telegram_bot_requests",
 ] as const;
 
 const columns = {
@@ -113,6 +114,24 @@ const columns = {
     "expires_at",
   ],
   registration_email_proofs: ["token_hash", "email", "expires_at"],
+  telegram_bot_requests: [
+    "id",
+    "browser_hash",
+    "deep_link_hash",
+    "intent",
+    "locale",
+    "status",
+    "display_code",
+    "created_at",
+    "expires_at",
+    "telegram_user_id",
+    "first_name",
+    "last_name",
+    "phone_number",
+    "link_user_id",
+    "link_session_id",
+    "link_revision",
+  ],
   auth_mail_rate_limits: ["key", "count", "expires_at"],
   profile_photo_cleanup: ["key", "owner_id", "available_at", "attempts"],
   profile_photo_scan: ["id", "revision", "continuation_token"],
@@ -162,6 +181,8 @@ const uniqueIndexes = [
   ["admin_rate_limits", "admin_rate_limits_key_uidx"],
   ["user_profiles", "user_profiles_photo_key_uidx"],
   ["pending_email_change", "pending_email_change_token_hash_uidx"],
+  ["telegram_bot_requests", "telegram_bot_requests_browser_uidx"],
+  ["telegram_bot_requests", "telegram_bot_requests_deep_link_uidx"],
 ];
 
 const constraints = [
@@ -173,6 +194,12 @@ const constraints = [
   ["session", "session_telegram_account_fkey"],
   ["user_profiles", "user_profiles_birth_date_check"],
   ["user_profiles", "user_profiles_company_name_check"],
+  ["telegram_bot_requests", "telegram_bot_requests_hash_check"],
+  ["telegram_bot_requests", "telegram_bot_requests_intent_check"],
+  ["telegram_bot_requests", "telegram_bot_requests_expiry_check"],
+  ["telegram_bot_requests", "telegram_bot_requests_display_check"],
+  ["telegram_bot_requests", "telegram_bot_requests_link_check"],
+  ["telegram_bot_requests", "telegram_bot_requests_state_check"],
 ];
 
 // Read only metadata and migration history. Do not repair schema, invoke

@@ -242,3 +242,26 @@ model ProfilePhotoScan {
 
   @@map("profile_photo_scan")
 }
+
+// Short-lived bot approval request, never a Better Auth session.
+model TelegramBotRequest {
+  id             String   @id @db.Uuid
+  browserHash    String   @unique(map: "telegram_bot_requests_browser_uidx") @map("browser_hash")
+  deepLinkHash   String   @unique(map: "telegram_bot_requests_deep_link_uidx") @map("deep_link_hash")
+  intent         String
+  locale         String
+  status         String   @default("pending")
+  displayCode    String   @map("display_code")
+  createdAt      DateTime @map("created_at") @db.Timestamptz(6)
+  expiresAt      DateTime @map("expires_at") @db.Timestamptz(6)
+  telegramUserId String?  @map("telegram_user_id")
+  firstName      String?  @map("first_name")
+  lastName       String?  @map("last_name")
+  phoneNumber    String?  @map("phone_number")
+  linkUserId     String?  @map("link_user_id")
+  linkSessionId  String?  @map("link_session_id")
+  linkRevision   Int?     @map("link_revision")
+
+  @@index([expiresAt], map: "telegram_bot_requests_expiry_idx")
+  @@map("telegram_bot_requests")
+}
