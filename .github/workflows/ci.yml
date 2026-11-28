@@ -35,6 +35,8 @@ jobs:
         run: npm install --global pnpm@10.34.8
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Audit workspace dependencies
+        run: pnpm audit --audit-level=moderate
       - name: Verify OpenAPI and generated client
         run: pnpm api:check
       - name: Lint
