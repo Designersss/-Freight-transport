@@ -65,7 +65,7 @@ jobs:
       - name: Build
         run: pnpm build
       - name: Install Chromium and Linux browser dependencies
-        run: pnpm --filter @freight/e2e exec playwright install --with-deps chromium
+        run: pnpm --filter @freight/e2e exec playwright install --with-deps --only-shell chromium
       - name: Browser E2E and accessibility checks
         run: pnpm test:e2e
 
@@ -89,9 +89,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Build integration runtime and browser applications
-        run: pnpm exec turbo run build --filter=@freight/api --filter=@freight/worker --filter=@freight/client-api --filter=@freight/web --filter=@freight/admin
+        run: pnpm exec turbo run build --filter=@freight/api --filter=@freight/worker --filter=@freight/client-api --filter=@freight/web
       - name: Install Chromium and Linux browser dependencies
-        run: pnpm --filter @freight/e2e exec playwright install --with-deps chromium
+        run: pnpm --filter @freight/e2e exec playwright install --with-deps --only-shell chromium
       - name: Start isolated PostgreSQL and SeaweedFS
         env:
           POSTGRES_PASSWORD: ci-local-only

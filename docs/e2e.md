@@ -85,3 +85,5 @@ pnpm --filter @freight/e2e exec playwright test --list
 Выборочный запуск предназначен для локальной диагностики, не замена обязательной полной матрицы. Web servers из общей конфигурации пока стартуют даже при выборе одного файла. Новые результаты запуска ещё не подтверждены.
 
 Интеграционный runner отдельно создаёт disposable DB freight_auth_readiness (клон свежей мигрированной compat DB до тестовых записей) для DDL fault injection; обычные auth-compat тесты не используют её. Реальный браузер сохраняет отдельную свежую freight_auth_browser. Все группы пока последовательны. Результат новой изоляции требует полного CI.
+
+В полном CI оба browser-capable jobs устанавливают только Chromium headless shell с системными зависимостями (playwright install --with-deps --only-shell chromium). Текущие Playwright configs используют default headless Chromium, не custom channel. Локальная установка и ручной headed запуск не изменены. Admin real E2E использует next dev; повторный production build Admin в integration исключён, полный build и production Admin gate остаются в browser job. Фактический результат нового CI ещё открыт.
