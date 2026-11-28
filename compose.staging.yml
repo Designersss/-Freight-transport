@@ -9,6 +9,10 @@ x-staging-env: &staging-env
 services:
   api:
     image: movaro-staging:local
+    env_file:
+      - path: .env.telegram
+        required: false
+        format: raw
     environment:
       <<: *staging-env
       NODE_ENV: development
