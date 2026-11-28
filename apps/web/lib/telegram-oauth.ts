@@ -1,6 +1,6 @@
 import type { Locale } from "@freight/i18n";
 import { z } from "zod";
-import { telegramWaitSchema, type TelegramWait } from "./telegram-browser";
+import { type TelegramWait, telegramWaitSchema } from "./telegram-browser";
 
 export type TelegramIntent = "login" | "register" | "link";
 
@@ -22,18 +22,27 @@ export async function startTelegramAuth(
     signal,
   });
   if (!status.ok) return { kind: "error", status: status.status };
-  const mode = z.object({ enabled: z.boolean(), mode: z.literal("bot").optional() }).parse(await status.json());
+  const mode = z
+    .object({ enabled: z.boolean(), mode: z.literal("bot").optional() })
+    .parse(await status.json());
   if (!mode.enabled) return { kind: "error", status: 503 };
   const bot = mode.mode === "bot";
-  const response = await fetch(bot ? "/api/auth/telegram-bot/browser" : "/api/auth/telegram/start", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    credentials: "same-origin",
-    cache: "no-store",
-    redirect: "error",
-    signal,
-    body: JSON.stringify({ intent, locale, ...(bot ? { action: "start" } : {}) }),
-  });
+  const response = await fetch(
+    bot ? "/api/auth/telegram-bot/browser" : "/api/auth/telegram/start",
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "same-origin",
+      cache: "no-store",
+      redirect: "error",
+      signal,
+      body: JSON.stringify({
+        intent,
+        locale,
+        ...(bot ? { action: "start" } : {}),
+      }),
+    },
+  );
   if (!response.ok) {
     const parsed = errorResponse.safeParse(
       await response.json().catch(() => null),
@@ -44,7 +53,11 @@ export async function startTelegramAuth(
       ...(parsed.success ? { code: parsed.data.code } : {}),
     };
   }
-  if (bot) return { kind: "bot", wait: telegramWaitSchema.parse(await response.json()) };
+  if (bot)
+    return {
+      kind: "bot",
+      wait: telegramWaitSchema.parse(await response.json()),
+    };
   const result = startResponse.parse(await response.json());
   const target = new URL(result.url);
   if (

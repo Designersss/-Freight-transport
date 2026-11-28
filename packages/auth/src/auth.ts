@@ -302,26 +302,30 @@ export function createAuthOptions(
       },
     },
     ...(config.AUTH_TELEGRAM_BOT_USERNAME
-      ? { plugins: [createTelegramBotLoginPlugin(database, config.AUTH_WEB_ORIGIN)] }
+      ? {
+          plugins: [
+            createTelegramBotLoginPlugin(database, config.AUTH_WEB_ORIGIN),
+          ],
+        }
       : config.AUTH_TELEGRAM_CLIENT_ID && config.AUTH_TELEGRAM_CLIENT_SECRET
         ? {
-          plugins: [
-            genericOAuth({
-              config: [
-                {
-                  ...createTelegramProvider(
-                    config.AUTH_TELEGRAM_CLIENT_ID,
-                    config.AUTH_TELEGRAM_CLIENT_SECRET,
-                  ),
-                  redirectURI: new URL(
-                    "/api/auth/telegram/callback",
-                    config.AUTH_WEB_ORIGIN,
-                  ).href,
-                  responseMode: "query",
-                },
-              ],
-            }),
-          ],
+            plugins: [
+              genericOAuth({
+                config: [
+                  {
+                    ...createTelegramProvider(
+                      config.AUTH_TELEGRAM_CLIENT_ID,
+                      config.AUTH_TELEGRAM_CLIENT_SECRET,
+                    ),
+                    redirectURI: new URL(
+                      "/api/auth/telegram/callback",
+                      config.AUTH_WEB_ORIGIN,
+                    ).href,
+                    responseMode: "query",
+                  },
+                ],
+              }),
+            ],
           }
         : {}),
     emailAndPassword: {

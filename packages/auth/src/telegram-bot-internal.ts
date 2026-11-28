@@ -98,7 +98,10 @@ export type TelegramBotCommand = z.infer<typeof telegramBotCommandInput>;
 // Only the authenticated internal transport may invoke these commands.
 // Actor and contact evidence must come from genuine Telegram updates;
 // the bot must match contacts and callbacks to a live private prompt.
-async function execute(pool: Pool, command: TelegramBotCommand): Promise<unknown> {
+async function execute(
+  pool: Pool,
+  command: TelegramBotCommand,
+): Promise<unknown> {
   const access = { channel: "bot" as const, actor: command.actor };
   switch (command.action) {
     case "account-state":
@@ -144,7 +147,11 @@ async function execute(pool: Pool, command: TelegramBotCommand): Promise<unknown
     case "reject":
       return rejectTelegramBotRequest(pool, command.requestId, command.actor);
     case "draft-begin-chat":
-      return beginTelegramRegistrationInBot(pool, command.requestId, command.actor);
+      return beginTelegramRegistrationInBot(
+        pool,
+        command.requestId,
+        command.actor,
+      );
     case "draft-begin":
       return beginTelegramRegistrationDraft(
         pool,
@@ -177,8 +184,7 @@ async function execute(pool: Pool, command: TelegramBotCommand): Promise<unknown
         access,
       );
       if (
-        !current ||
-        current.channel !== "bot" ||
+        current?.channel !== "bot" ||
         !current.firstName ||
         !current.lastName
       )

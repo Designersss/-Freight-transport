@@ -31,17 +31,21 @@ const ru = {
     registrationEmailMethod: "Регистрация с подтверждением email",
     registrationTelegramMethod: "Регистрация через аккаунт Telegram",
     telegramBotTitle: "Подтвердите действие в Telegram",
-    telegramBotWait: "Откройте бота MOVARO и проверьте код. Не подтверждайте чужие запросы.",
+    telegramBotWait:
+      "Откройте бота MOVARO и проверьте код. Не подтверждайте чужие запросы.",
     telegramBotOpen: "Открыть Telegram",
     telegramBotWaiting: "Ожидаем подтверждения…",
     telegramBotReturn: "Проверяем подтверждение Telegram…",
-    telegramBotReturnError: "Не удалось подтвердить запрос. Откройте ссылку в исходном браузере или начните заново.",
+    telegramBotReturnError:
+      "Не удалось подтвердить запрос. Откройте ссылку в исходном браузере или начните заново.",
     telegramBotExpired: "Запрос отменён, отклонён или истёк.",
-    telegramBotConsumed: "Запрос завершён. Если вы выбрали чат, продолжите регистрацию в Telegram.",
+    telegramBotConsumed:
+      "Запрос завершён. Если вы выбрали чат, продолжите регистрацию в Telegram.",
     telegramBotCancel: "Отменить запрос",
     telegramBotRestart: "Начать заново",
     telegramBotDraft: "Продолжить регистрацию",
-    telegramBotChatActive: "Откройте бота MOVARO и отправьте /start, чтобы продолжить регистрацию в чате.",
+    telegramBotChatActive:
+      "Откройте бота MOVARO и отправьте /start, чтобы продолжить регистрацию в чате.",
     telegramBotSwitchChat: "Продолжить в Telegram",
     telegramBotSwitchWeb: "Продолжить на сайте",
     telegramBotRegistered: "Аккаунт создан. Войдите через Telegram.",
@@ -290,17 +294,21 @@ const en: typeof ru = {
     registrationEmailMethod: "Register by verifying your email",
     registrationTelegramMethod: "Register using your Telegram account",
     telegramBotTitle: "Confirm the action in Telegram",
-    telegramBotWait: "Open the MOVARO bot and compare the code. Never approve someone else's request.",
+    telegramBotWait:
+      "Open the MOVARO bot and compare the code. Never approve someone else's request.",
     telegramBotOpen: "Open Telegram",
     telegramBotWaiting: "Waiting for confirmation…",
     telegramBotReturn: "Checking your Telegram confirmation…",
-    telegramBotReturnError: "Unable to confirm this request. Open the link in the original browser or start again.",
+    telegramBotReturnError:
+      "Unable to confirm this request. Open the link in the original browser or start again.",
     telegramBotExpired: "The request was cancelled, declined or expired.",
-    telegramBotConsumed: "The request has ended. If you chose chat, continue registration in Telegram.",
+    telegramBotConsumed:
+      "The request has ended. If you chose chat, continue registration in Telegram.",
     telegramBotCancel: "Cancel request",
     telegramBotRestart: "Start again",
     telegramBotDraft: "Continue registration",
-    telegramBotChatActive: "Open the MOVARO bot and send /start to continue your registration in chat.",
+    telegramBotChatActive:
+      "Open the MOVARO bot and send /start to continue your registration in chat.",
     telegramBotSwitchChat: "Continue in Telegram",
     telegramBotSwitchWeb: "Continue on the website",
     telegramBotRegistered: "Account created. Sign in with Telegram.",

@@ -38,7 +38,11 @@ export const telegramBrowserCommandInput = z.discriminatedUnion("action", [
   telegramStartInput.extend({ action: z.literal("start") }),
   z.strictObject({ action: z.literal("status"), requestId }),
   z.strictObject({ action: z.literal("cancel"), requestId }),
-  z.strictObject({ action: z.literal("confirm"), requestId, proof: capability }),
+  z.strictObject({
+    action: z.literal("confirm"),
+    requestId,
+    proof: capability,
+  }),
   z.strictObject({ action: z.literal("finish"), requestId }),
   z.strictObject({ action: z.literal("draft-find") }),
   z.strictObject({ action: z.literal("draft-state"), draftId }),
@@ -53,7 +57,9 @@ export const telegramBrowserCommandInput = z.discriminatedUnion("action", [
   z.strictObject({ action: z.literal("draft-completion"), draftId }),
 ]);
 
-export type TelegramBrowserCommand = z.infer<typeof telegramBrowserCommandInput>;
+export type TelegramBrowserCommand = z.infer<
+  typeof telegramBrowserCommandInput
+>;
 
 // Only a single, well-formed host cookie may serve as a browser proof.
 // No query parameter, Authorization header or JSON body can substitute.
@@ -75,11 +81,7 @@ function setBrowserCookie(headers: Headers, value: string): void {
   );
 }
 
-async function approvedBrowserGrant(
-  pool: Pool,
-  browser: string,
-  id: string,
-) {
+async function approvedBrowserGrant(pool: Pool, browser: string, id: string) {
   const hash = telegramBotCapabilityHash(browser);
   if (!hash) return null;
   const result = await pool.query<{
@@ -191,11 +193,19 @@ export async function handleTelegramBrowser(
     switch (command.action) {
       case "status":
         return json({
-          status: await readTelegramBotRequest(pool, browser, command.requestId),
+          status: await readTelegramBotRequest(
+            pool,
+            browser,
+            command.requestId,
+          ),
         });
       case "cancel":
         return json({
-          success: await cancelTelegramBotRequest(pool, browser, command.requestId),
+          success: await cancelTelegramBotRequest(
+            pool,
+            browser,
+            command.requestId,
+          ),
         });
       case "confirm":
         return (await confirmTelegramBotApproval(
@@ -207,14 +217,21 @@ export async function handleTelegramBrowser(
           ? json({ success: true })
           : fail(403);
       case "finish": {
-        const grant = await approvedBrowserGrant(pool, browser, command.requestId);
+        const grant = await approvedBrowserGrant(
+          pool,
+          browser,
+          command.requestId,
+        );
         if (!grant) return fail(403);
         if (grant.intent === "login") {
           const forwarded = new Headers(request.headers);
           forwarded.delete("content-length");
           const response = await auth.handler(
             new Request(
-              new URL(`${AUTH_BASE_PATH}/telegram-bot/finish-login`, config.AUTH_BASE_URL),
+              new URL(
+                `${AUTH_BASE_PATH}/telegram-bot/finish-login`,
+                config.AUTH_BASE_URL,
+              ),
               {
                 method: "POST",
                 headers: forwarded,
@@ -272,7 +289,9 @@ export async function handleTelegramBrowser(
         return id ? json({ outcome: "registration", draftId: id }) : fail(409);
       }
       case "draft-find":
-        return json({ draft: await findTelegramRegistrationDraft(pool, access) });
+        return json({
+          draft: await findTelegramRegistrationDraft(pool, access),
+        });
       case "draft-state": {
         const draft = await readTelegramRegistrationDraft(pool, command.draftId, access);
         const completed = !draft && await readTelegramRegistrationCompletion(pool, command.draftId, browser);
@@ -297,7 +316,11 @@ export async function handleTelegramBrowser(
         )
           return fail(403);
         return json({
-          username: await suggestUsername(pool, draft.firstName, draft.lastName),
+          username: await suggestUsername(
+            pool,
+            draft.firstName,
+            draft.lastName,
+          ),
         });
       }
       case "draft-complete":

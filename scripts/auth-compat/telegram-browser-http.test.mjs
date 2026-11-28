@@ -230,13 +230,23 @@ test("Telegram Web runtime requires both proofs and completes registration befor
     });
     assert.equal(signIn.intent, "login");
     assert.equal(signIn.needsContact, false);
-    const loginProof = await bot({ action: "approve", requestId: login.requestId });
-    await expectWeb({ action: "confirm", requestId: login.requestId, proof: loginProof });
-    const signedIn = await expectWeb({ action: "finish", requestId: login.requestId });
+    const loginProof = await bot({
+      action: "approve",
+      requestId: login.requestId,
+    });
+    await expectWeb({
+      action: "confirm",
+      requestId: login.requestId,
+      proof: loginProof,
+    });
+    const signedIn = await expectWeb({
+      action: "finish",
+      requestId: login.requestId,
+    });
     assert.deepEqual(await signedIn.json(), { outcome: "logged-in" });
-    const session = signedIn.headers.getSetCookie().find(
-      (value) => value.startsWith("__Secure-better-auth.session_token="),
-    );
+    const session = signedIn.headers
+      .getSetCookie()
+      .find((value) => value.startsWith("__Secure-better-auth.session_token="));
     assert.ok(session);
     assert.match(session, /;\s*HttpOnly/);
     assert.doesNotMatch(session, /;\s*Domain=/i);

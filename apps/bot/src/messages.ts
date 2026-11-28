@@ -59,8 +59,10 @@ const en: typeof ru = {
   signIn: "Sign in",
   accountExists: "You already have a MOVARO account. Continue signing in?",
   accountMissing: "No MOVARO account found. Would you like to register?",
-  accountUnavailable: "Sign-in is unavailable for this account. Contact support.",
-  alreadyRegistered: "Your account already exists. Sign in with Telegram on the website.",
+  accountUnavailable:
+    "Sign-in is unavailable for this account. Contact support.",
+  alreadyRegistered:
+    "Your account already exists. Sign in with Telegram on the website.",
   website: "Open MOVARO",
   share: "Share your own phone number using the button below.",
   contact: "Share phone number",

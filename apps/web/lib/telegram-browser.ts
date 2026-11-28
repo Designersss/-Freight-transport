@@ -3,22 +3,25 @@ import { z } from "zod";
 
 export const telegramWaitSchema = z.strictObject({
   requestId: z.uuid(),
-  url: z.string().max(512).refine((value) => {
-    try {
-      const url = new URL(value);
-      return (
-        url.origin === "https://t.me" &&
-        !url.username &&
-        !url.password &&
-        !url.hash &&
-        /^\/[A-Za-z][A-Za-z0-9_]{1,28}[Bb][Oo][Tt]$/.test(url.pathname) &&
-        [...url.searchParams.keys()].length === 1 &&
-        /^[A-Za-z0-9_-]{43}$/.test(url.searchParams.get("start") ?? "")
-      );
-    } catch {
-      return false;
-    }
-  }),
+  url: z
+    .string()
+    .max(512)
+    .refine((value) => {
+      try {
+        const url = new URL(value);
+        return (
+          url.origin === "https://t.me" &&
+          !url.username &&
+          !url.password &&
+          !url.hash &&
+          /^\/[A-Za-z][A-Za-z0-9_]{1,28}[Bb][Oo][Tt]$/.test(url.pathname) &&
+          [...url.searchParams.keys()].length === 1 &&
+          /^[A-Za-z0-9_-]{43}$/.test(url.searchParams.get("start") ?? "")
+        );
+      } catch {
+        return false;
+      }
+    }),
   displayCode: z.string().regex(/^[0-9]{6}$/),
   expiresAt: z.iso.datetime(),
 });
@@ -28,7 +31,15 @@ export const waitStorageKey = "movaro.telegram.wait";
 
 export const telegramStatusResponse = z.object({
   status: z
-    .enum(["pending", "claimed", "approved", "rejected", "cancelled", "consumed", "expired"])
+    .enum([
+      "pending",
+      "claimed",
+      "approved",
+      "rejected",
+      "cancelled",
+      "consumed",
+      "expired",
+    ])
     .nullable(),
 });
 export const telegramFinishResponse = z.discriminatedUnion("outcome", [
