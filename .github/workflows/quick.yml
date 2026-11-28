@@ -29,22 +29,6 @@ jobs:
           node-version-file: .nvmrc
       - name: Install pinned pnpm
         run: npm install --global pnpm@10.34.8
-      # Temporary lockfile recovery using the pinned CI toolchain.
-      - name: Generate dependency lockfile for review
-        run: |
-          pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
-          if ! git diff --quiet -- pnpm-lock.yaml; then
-            sha256sum pnpm-lock.yaml
-            node --input-type=module -e '
-              import { readFileSync } from "node:fs";
-              const content = readFileSync("pnpm-lock.yaml", "utf8");
-              for (let offset = 0; offset < content.length; offset += 4000) {
-                console.log("MOVARO_LOCK", JSON.stringify({ offset, content: content.slice(offset, offset + 4000) }));
-              }
-            '
-            echo "Generated lockfile requires review and commit."
-            exit 1
-          fi
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Verify OpenAPI and generated client
