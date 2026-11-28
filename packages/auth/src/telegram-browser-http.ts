@@ -1,8 +1,7 @@
 import type { Pool } from "pg";
-import { z } from "zod";
 import { AUTH_BASE_PATH, type EmailAuth } from "./auth.js";
 import type { AuthConfig } from "./config.js";
-import { telegramStartInput } from "./contracts.js";
+import { telegramBrowserCapability, telegramBrowserCommandInput } from "./contracts.js";
 import { reserveTelegramBrowserRequest } from "./mail-rate-limit.js";
 import { finishTelegramBotLink } from "./telegram-bot-link.js";
 import { TELEGRAM_BOT_BROWSER_COOKIE } from "./telegram-bot-login.js";
@@ -22,44 +21,11 @@ import {
   readTelegramRegistrationCompletion,
   readTelegramRegistrationDraft,
   resumeTelegramRegistrationInBrowser,
-  telegramDraftMutationInput,
   updateTelegramRegistrationDraft,
 } from "./telegram-registration-draft.js";
 import { readTelegramSettings } from "./telegram-settings.js";
 import { suggestUsername } from "./username.js";
 import { readAuthSession } from "./verified-session.js";
-
-const requestId = z.uuid();
-const draftId = z.uuid();
-const revision = z.number().int().min(0).max(2_147_483_646);
-const capability = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
-
-export const telegramBrowserCommandInput = z.discriminatedUnion("action", [
-  telegramStartInput.extend({ action: z.literal("start") }),
-  z.strictObject({ action: z.literal("status"), requestId }),
-  z.strictObject({ action: z.literal("cancel"), requestId }),
-  z.strictObject({
-    action: z.literal("confirm"),
-    requestId,
-    proof: capability,
-  }),
-  z.strictObject({ action: z.literal("finish"), requestId }),
-  z.strictObject({ action: z.literal("draft-find") }),
-  z.strictObject({ action: z.literal("draft-state"), draftId }),
-  z.strictObject({
-    action: z.literal("draft-update"),
-    draftId,
-    mutation: telegramDraftMutationInput,
-  }),
-  z.strictObject({ action: z.literal("draft-suggest-username"), draftId }),
-  z.strictObject({ action: z.literal("draft-complete"), draftId, revision }),
-  z.strictObject({ action: z.literal("draft-cancel"), draftId, revision }),
-  z.strictObject({ action: z.literal("draft-completion"), draftId }),
-]);
-
-export type TelegramBrowserCommand = z.infer<
-  typeof telegramBrowserCommandInput
->;
 
 // Only a single, well-formed host cookie may serve as a browser proof.
 // No query parameter, Authorization header or JSON body can substitute.
@@ -70,7 +36,7 @@ export function readTelegramBrowserCookie(headers: Headers): string | null {
     .filter((part) => part.startsWith(`${TELEGRAM_BOT_BROWSER_COOKIE}=`));
   if (values.length !== 1) return null;
   const value = values[0]?.slice(TELEGRAM_BOT_BROWSER_COOKIE.length + 1);
-  const parsed = capability.safeParse(value);
+  const parsed = telegramBrowserCapability.safeParse(value);
   return parsed.success ? parsed.data : null;
 }
 

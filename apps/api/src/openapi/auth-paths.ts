@@ -19,11 +19,11 @@ import {
   registrationEmailRead,
   registrationEmailStart,
   sessionAction,
+  telegramBrowserCommandInput,
   usernameChangeInput,
   usernameInput,
   usernameRequest,
 } from "@freight/auth/contracts";
-import { telegramBrowserCommandInput } from "@freight/auth/telegram-browser-http";
 import type {
   OpenAPIObject,
   OperationObject,

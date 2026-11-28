@@ -1,5 +1,5 @@
+import type { TelegramBrowserCommand } from "@freight/auth/contracts";
 import type { Locale } from "@freight/i18n";
-import type { TelegramBrowserCommand } from "@freight/auth/telegram-browser-http";
 import { z } from "zod";
 
 export const telegramWaitSchema = z.strictObject({

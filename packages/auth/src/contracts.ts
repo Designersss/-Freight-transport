@@ -174,3 +174,55 @@ export const authBodies = {
     newPassword: password,
   }),
 };
+
+export const telegramDraftChannel = z.enum(["web", "bot"]);
+const editInput = z.strictObject({
+  action: z.literal("edit"),
+  revision: z.number().int().min(0).max(2_147_483_646),
+  firstName: profileSettingsInput.shape.firstName.optional(),
+  lastName: profileSettingsInput.shape.lastName.optional(),
+  role: publicRole.optional(),
+  birthDate: birthDateInput.optional(),
+  companyName: profileSettingsInput.shape.firstName.nullable().optional(),
+  username: usernameInput.optional(),
+});
+export const telegramDraftMutationInput = z.discriminatedUnion("action", [
+  editInput,
+  z.strictObject({
+    action: z.literal("switch"),
+    revision: z.number().int().min(0).max(2_147_483_646),
+    channel: telegramDraftChannel,
+  }),
+]);
+
+const requestId = z.uuid();
+const draftId = z.uuid();
+const revision = z.number().int().min(0).max(2_147_483_646);
+export const telegramBrowserCapability = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
+
+export const telegramBrowserCommandInput = z.discriminatedUnion("action", [
+  telegramStartInput.extend({ action: z.literal("start") }),
+  z.strictObject({ action: z.literal("status"), requestId }),
+  z.strictObject({ action: z.literal("cancel"), requestId }),
+  z.strictObject({
+    action: z.literal("confirm"),
+    requestId,
+    proof: telegramBrowserCapability,
+  }),
+  z.strictObject({ action: z.literal("finish"), requestId }),
+  z.strictObject({ action: z.literal("draft-find") }),
+  z.strictObject({ action: z.literal("draft-state"), draftId }),
+  z.strictObject({
+    action: z.literal("draft-update"),
+    draftId,
+    mutation: telegramDraftMutationInput,
+  }),
+  z.strictObject({ action: z.literal("draft-suggest-username"), draftId }),
+  z.strictObject({ action: z.literal("draft-complete"), draftId, revision }),
+  z.strictObject({ action: z.literal("draft-cancel"), draftId, revision }),
+  z.strictObject({ action: z.literal("draft-completion"), draftId }),
+]);
+
+export type TelegramBrowserCommand = z.infer<
+  typeof telegramBrowserCommandInput
+>;

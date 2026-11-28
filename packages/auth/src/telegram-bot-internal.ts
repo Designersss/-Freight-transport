@@ -1,5 +1,6 @@
 import type { Pool } from "pg";
 import { z } from "zod";
+import { telegramDraftMutationInput } from "./contracts.js";
 import { reserveTelegramActorRequest } from "./mail-rate-limit.js";
 import {
   changeTelegramBotIntent,
@@ -19,7 +20,6 @@ import {
   findTelegramRegistrationDraft,
   readTelegramRegistrationDraft,
   resumeTelegramRegistrationInBrowser,
-  telegramDraftMutationInput,
   updateTelegramRegistrationDraft,
 } from "./telegram-registration-draft.js";
 import { suggestUsername } from "./username.js";

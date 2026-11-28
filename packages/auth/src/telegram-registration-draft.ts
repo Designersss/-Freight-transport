@@ -2,11 +2,10 @@ import { createHash, randomUUID } from "node:crypto";
 import type { Pool } from "pg";
 import { z } from "zod";
 import {
-  birthDateInput,
-  profileSettingsInput,
   publicRole,
   registrationInput,
-  usernameInput,
+  telegramDraftChannel,
+  telegramDraftMutationInput,
 } from "./contracts.js";
 import { telegramBotAccountId } from "./telegram-bot-link.js";
 import {
@@ -18,31 +17,11 @@ import {
   verifiedTelegramContact,
 } from "./telegram-bot-requests.js";
 
-const channelInput = z.enum(["web", "bot"]);
-type Channel = z.infer<typeof channelInput>;
+type Channel = z.infer<typeof telegramDraftChannel>;
 
 type DraftAccess =
   | { channel: "web"; browserCapability: unknown }
   | { channel: "bot"; actor: TelegramBotActor };
-
-const editInput = z.strictObject({
-  action: z.literal("edit"),
-  revision: z.number().int().min(0).max(2_147_483_646),
-  firstName: profileSettingsInput.shape.firstName.optional(),
-  lastName: profileSettingsInput.shape.lastName.optional(),
-  role: publicRole.optional(),
-  birthDate: birthDateInput.optional(),
-  companyName: profileSettingsInput.shape.firstName.nullable().optional(),
-  username: usernameInput.optional(),
-});
-export const telegramDraftMutationInput = z.discriminatedUnion("action", [
-  editInput,
-  z.strictObject({
-    action: z.literal("switch"),
-    revision: z.number().int().min(0).max(2_147_483_646),
-    channel: channelInput,
-  }),
-]);
 
 interface DraftView {
   id: string;
@@ -81,7 +60,7 @@ export async function beginTelegramRegistrationDraft(
   actor: TelegramBotActor,
   channel: unknown,
 ): Promise<string | null> {
-  const selected = channelInput.safeParse(channel);
+  const selected = telegramDraftChannel.safeParse(channel);
   if (!selected.success || !privateTelegramActor(actor)) return null;
   const result = await pool.query<{ id: string }>(
     `WITH approved_grant AS (
