@@ -84,7 +84,7 @@ export async function beginTelegramRegistrationDraft(
   const selected = channelInput.safeParse(channel);
   if (!selected.success || !privateTelegramActor(actor)) return null;
   const result = await pool.query<{ id: string }>(
-    `WITH grant AS (
+    `WITH approved_grant AS (
        SELECT r.id, r.browser_hash, r.telegram_user_id, r.locale,
          r.phone_number, r.first_name, r.last_name
        FROM telegram_bot_requests r
@@ -104,7 +104,7 @@ export async function beginTelegramRegistrationDraft(
        SELECT id, browser_hash, telegram_user_id, locale, $3, phone_number,
          first_name, last_name, statement_timestamp(),
          statement_timestamp() + interval '30 minutes'
-       FROM grant ON CONFLICT DO NOTHING RETURNING id
+       FROM approved_grant ON CONFLICT DO NOTHING RETURNING id
      )
      UPDATE telegram_bot_requests r SET status = 'consumed',
        telegram_user_id = NULL, first_name = NULL, last_name = NULL,
@@ -172,7 +172,7 @@ export async function resumeTelegramRegistrationInBrowser(
     return null;
   try {
     const result = await pool.query<{ id: string }>(
-      `WITH grant AS (
+      `WITH approved_grant AS (
          SELECT r.id, r.browser_hash, r.telegram_user_id, r.phone_number
          FROM telegram_bot_requests r
          WHERE r.id::text = $1 AND r.telegram_user_id = $2
@@ -185,7 +185,7 @@ export async function resumeTelegramRegistrationInBrowser(
            revision = d.revision + 1,
            expires_at = LEAST(d.created_at + interval '2 hours',
              clock_timestamp() + interval '30 minutes')
-         FROM grant g
+         FROM approved_grant g
          WHERE d.id::text = $3 AND d.telegram_user_id = g.telegram_user_id
            AND d.revision = $4 AND d.expires_at > clock_timestamp()
            AND d.phone_number = g.phone_number
