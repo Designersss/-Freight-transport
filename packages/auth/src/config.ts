@@ -36,7 +36,7 @@ const schema = z
     SMTP_FROM: z.email(),
     AUTH_TELEGRAM_BOT_USERNAME: z
       .string()
-      .regex(/^[A-Za-z][A-Za-z0-9_]{3,28}[Bb][Oo][Tt]$/)
+      .regex(/^[A-Za-z][A-Za-z0-9_]{1,28}[Bb][Oo][Tt]$/)
       .max(32)
       .optional(),
     AUTH_TELEGRAM_CLIENT_ID: z
