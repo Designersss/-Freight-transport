@@ -159,6 +159,27 @@ export function reserveTelegramRequest(
   );
 }
 
+// Separate browser/IP and global admission budgets for the bot Web flow.
+export function reserveTelegramBrowserRequest(
+  pool: Pool,
+  secret: string,
+  action: "start" | "poll" | "write",
+  ip: string | null,
+): Promise<number | null> {
+  const digest = createHmac("sha256", secret)
+    .update(rateLimitClient(ip))
+    .digest("hex");
+  const max = action === "start" ? 5 : action === "poll" ? 60 : 30;
+  return reserveBuckets(
+    pool,
+    [
+      { key: `telegram:browser:${action}:global`, seconds: 60, max: max * 20 },
+      { key: `telegram:browser:${action}:ip:${digest}`, seconds: 60, max },
+    ],
+    "telegram",
+  );
+}
+
 export function reserveEmailChangeRequest(
   pool: Pool,
   secret: string,
