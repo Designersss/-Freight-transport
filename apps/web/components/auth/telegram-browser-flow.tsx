@@ -34,12 +34,17 @@ async function finish(requestId: string): Promise<Destination> {
 
 // Another tab may already have consumed the same approval. Only actual
 // server state, not the mere "consumed" status, allows navigation.
-async function recover(): Promise<Destination | null> {
+async function recover(requestId: string): Promise<Destination | null> {
+  const state = await telegramBrowserRequest(
+    { action: "status", requestId },
+    telegramStatusResponse,
+  ).catch(() => null);
+  if (state?.status !== "consumed") return null;
   const draft = await telegramBrowserRequest(
     { action: "draft-find" },
     telegramDraftResponse,
   ).catch(() => null);
-  if (draft?.draft) return "/telegram/registration";
+  if (draft?.draft?.id === requestId) return "/telegram/registration";
   const session = await fetch("/api/auth/get-session", {
     cache: "no-store",
     credentials: "same-origin",
@@ -73,7 +78,7 @@ export function TelegramReturn({ locale }: { locale: Locale }) {
         try {
           return await finish(proof.requestId);
         } catch {
-          return recover();
+          return recover(proof.requestId);
         }
       })().catch(() => null);
     }
@@ -147,8 +152,8 @@ export function TelegramWaitScreen({ locale }: { locale: Locale }) {
         if (status === "approved" || status === "consumed") {
           const destination =
             status === "approved"
-              ? await finish(wait.requestId).catch(recover)
-              : await recover();
+              ? await finish(wait.requestId).catch(() => recover(wait.requestId))
+              : await recover(wait.requestId);
           if (controller.signal.aborted) return;
           if (destination) {
             forgetTelegramWait();
