@@ -448,8 +448,14 @@ test("Cancel and complete compete without publishing a false completion", async 
       username: `tg_${randomBytes(8).toString("hex")}`,
     });
     assert.equal(edited?.revision, 1);
-    assert.equal(await cancelTelegramRegistrationDraft(pool, id, web, 1), false);
-    assert.equal(await cancelTelegramRegistrationDraft(pool, id, bot, 0), false);
+    assert.equal(
+      await cancelTelegramRegistrationDraft(pool, id, web, 1),
+      false,
+    );
+    assert.equal(
+      await cancelTelegramRegistrationDraft(pool, id, bot, 0),
+      false,
+    );
     const [cancelled, completed] = await Promise.all([
       cancelTelegramRegistrationDraft(pool, id, bot, 1),
       completeTelegramRegistrationDraft(pool, id, bot, 1),
