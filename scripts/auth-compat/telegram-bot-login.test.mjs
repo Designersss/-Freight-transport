@@ -4,12 +4,10 @@ import { createRequire } from "node:module";
 import { test } from "node:test";
 import { pathToFileURL } from "node:url";
 import pg from "pg";
+import { createAdminAuth } from "../../packages/auth/dist/admin-auth.js";
 import { createAuthOptions } from "../../packages/auth/dist/auth.js";
 import { parseAuthConfig } from "../../packages/auth/dist/config.js";
-import {
-  createTelegramBotLoginPlugin,
-  TELEGRAM_BOT_BROWSER_COOKIE,
-} from "../../packages/auth/dist/telegram-bot-login.js";
+import { TELEGRAM_BOT_BROWSER_COOKIE } from "../../packages/auth/dist/telegram-bot-login.js";
 import {
   claimTelegramBotRequest,
   confirmTelegramBotApproval,
@@ -27,6 +25,7 @@ const { betterAuth } = await import(
 );
 const origin = "https://web.example.test";
 const base = "/api/v1/auth";
+const adminOrigin = "https://admin.example.test";
 
 test("Native bot login consumes its browser grant with the session INSERT", async () => {
   const databaseUrl = process.env.AUTH_COMPAT_DATABASE_URL;
@@ -39,6 +38,9 @@ test("Native bot login consumes its browser grant with the session INSERT", asyn
     NODE_ENV: "test",
     AUTH_BASE_URL: origin,
     AUTH_WEB_ORIGIN: origin,
+    AUTH_ADMIN_ORIGIN: adminOrigin,
+    AUTH_ADMIN_SECRET: randomBytes(32).toString("hex"),
+    AUTH_TELEGRAM_BOT_USERNAME: "synthetic_movaro_bot",
     AUTH_SECRET: randomBytes(32).toString("hex"),
     SMTP_HOST: "127.0.0.1",
     SMTP_PORT: "1025",
@@ -50,13 +52,11 @@ test("Native bot login consumes its browser grant with the session INSERT", asyn
       assert.fail("Bot login must not send email");
     },
   });
-  const instance = () =>
-    betterAuth({
-      ...options,
-      plugins: [createTelegramBotLoginPlugin(pool, origin)],
-    });
+  const instance = () => betterAuth(options);
   const auth = instance();
   const peer = instance();
+  const admin = createAdminAuth(config, pool);
+  assert.ok(admin);
   const telegramId = String(randomBytes(6).readUIntBE(0, 6) + 1);
   const accountId = randomUUID();
   const userId = randomUUID();
@@ -203,6 +203,52 @@ test("Native bot login consumes its browser grant with the session INSERT", asyn
     );
     assert.equal(
       (await finish(auth, request, browser, "198.51.100.45")).status,
+      403,
+    );
+    // The real plugin, not the removed spike, must isolate admin cookies.
+    for (const candidate of [
+      cookie,
+      cookie.replace(
+        "__Secure-better-auth.session_token=",
+        "__Secure-movaro-admin.session_token=",
+      ),
+    ]) {
+      const adminSession = await admin.handler(
+        new Request(`${adminOrigin}${base}/admin/get-session`, {
+          headers: { cookie: candidate, "x-movaro-client-ip": "198.51.100.220" },
+        }),
+      );
+      assert.equal(adminSession.status, 200);
+      assert.equal(await adminSession.json(), null);
+    }
+    const logout = await auth.handler(
+      new Request(`${origin}${base}/sign-out`, {
+        method: "POST",
+        headers: {
+          origin,
+          cookie,
+          "content-type": "application/json",
+          "x-movaro-client-ip": "198.51.100.47",
+        },
+        body: "{}",
+      }),
+    );
+    assert.equal(logout.status, 200);
+    const afterLogout = await auth.handler(
+      new Request(`${origin}${base}/get-session`, {
+        headers: { cookie, "x-movaro-client-ip": "198.51.100.48" },
+      }),
+    );
+    assert.equal(await afterLogout.json(), null);
+    const cancelled = await approve();
+    await pool.query(
+      `UPDATE telegram_bot_requests SET status = 'cancelled',
+         telegram_user_id = NULL, first_name = NULL, last_name = NULL,
+         phone_number = NULL, return_hash = NULL WHERE id = $1`,
+      [cancelled.id],
+    );
+    assert.equal(
+      (await finish(auth, cancelled, browser, "198.51.100.49")).status,
       403,
     );
     const next = await approve();

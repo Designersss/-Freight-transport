@@ -12,12 +12,12 @@ import {
   readCredentialProof,
 } from "./credential-login.js";
 import { type AuthMailer, isDeliverableEmail } from "./email.js";
+import { createPublicBeforeHook } from "./public-before-hook.js";
 import { registrationContext } from "./registration-context.js";
 import {
   createTelegramBotLoginPlugin,
   telegramBotLoginContext,
 } from "./telegram-bot-login.js";
-import { createPublicBeforeHook } from "./public-before-hook.js";
 
 export const AUTH_BASE_PATH = "/api/v1/auth";
 export const RESET_PASSWORD_TTL_SECONDS = 15 * 60;
@@ -211,7 +211,7 @@ export function createAuthOptions(
               !(await canUsePublicSession(
                 database,
                 session.userId,
-                telegramEnabled(config),
+                false,
               ))
             )
               return false;

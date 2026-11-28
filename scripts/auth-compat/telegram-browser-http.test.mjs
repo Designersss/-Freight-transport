@@ -96,6 +96,23 @@ test("Telegram Web runtime requires both proofs and completes registration befor
   }
 
   try {
+    for (const [path, method] of [
+      ["/telegram/start", "POST"],
+      ["/telegram/callback?code=synthetic&state=synthetic", "GET"],
+      ["/telegram/registration", "POST"],
+      ["/sign-in/social", "POST"],
+      ["/link-social", "POST"],
+    ]) {
+      const response = await runtime.handle(
+        new Request(`${origin}${base}${path}`, {
+          method,
+          headers: { origin, "content-type": "application/json" },
+          ...(method === "POST" ? { body: "{}" } : {}),
+        }),
+      );
+      assert.equal(response.status, 404);
+      assert.equal(response.headers.get("set-cookie"), null);
+    }
     await expectWeb(
       { action: "start", intent: "register", locale: "en" },
       403,

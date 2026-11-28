@@ -77,11 +77,7 @@ function post(path: string, data: unknown, signal?: AbortSignal) {
   });
 }
 
-export function SignupWizard({
-  locale,
-}: {
-  locale: Locale;
-}) {
+export function SignupWizard({ locale }: { locale: Locale }) {
   const t = messages[locale].auth;
   const router = useRouter();
   const [step, setStep] = useState<Step>("method");
@@ -698,14 +694,14 @@ export function SignupWizard({
           {t.back}
         </Button>
       )}
-        <div className="mt-5 text-center">
-          <Link
-            className="font-semibold text-primary hover:underline"
-            href="/login"
-          >
-            {t.backLogin}
-          </Link>
-        </div>
+      <div className="mt-5 text-center">
+        <Link
+          className="font-semibold text-primary hover:underline"
+          href="/login"
+        >
+          {t.backLogin}
+        </Link>
+      </div>
     </AuthPanel>
   );
 }

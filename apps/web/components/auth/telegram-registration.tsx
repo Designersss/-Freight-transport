@@ -229,7 +229,8 @@ function TelegramDraftForm({
   const stepIndex = step === "role" ? 1 : step === "profile" ? 2 : 3;
 
   useEffect(() => {
-    heading.current?.focus();
+    const element = heading.current;
+    if (element?.textContent === title) element.focus();
   }, [title]);
 
   useEffect(() => {

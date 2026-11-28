@@ -23,7 +23,7 @@ export async function readPublicPrincipal(
 ): Promise<PublicPrincipal | null> {
   const result = await database.query<{ role: unknown }>(
     `SELECT p.role ${eligibleAccount}
-       AND u.username IS NOT NULL
+       AND u.username IS NOT NULL AND NOT s."adminSession"
        AND ($3::boolean OR u."emailVerified")`,
     [identity.userId, identity.sessionId, allowTelegram],
   );
