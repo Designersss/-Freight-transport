@@ -30,7 +30,10 @@ export const RegistrationMethod: Story = {
     />
   ),
   play: async ({ canvas, userEvent, args }) => {
-    await userEvent.click(canvas.getByRole("button"));
+    const button = canvas.getByRole("button", {
+      name: /^(Email address Register by verifying your email|Электронная почта Регистрация с подтверждением email)$/,
+    });
+    await userEvent.click(button);
     await expect(args.onSelect).toHaveBeenCalledTimes(1);
   },
 };

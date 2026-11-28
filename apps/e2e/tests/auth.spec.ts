@@ -51,9 +51,7 @@ test("registration, recovery and invalid reset link are navigable", async ({
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Create an account",
   );
-  await page
-    .getByRole("button", { name: "Email address", exact: true })
-    .click();
+  await page.getByRole("button", { name: /^Email address / }).click();
   await expect(page.getByLabel("Email address")).toBeVisible();
   await page.getByRole("link", { name: "Back to sign in" }).click();
   await page.getByRole("link", { name: "Forgot password?" }).click();

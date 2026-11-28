@@ -93,9 +93,7 @@ test("real signup, email ownership, login and session revocation", async ({
   try {
     const other = await requester.newPage();
     await other.goto("http://127.0.0.1:3110/ru/signup");
-    await other
-      .getByRole("button", { name: "Электронная почта", exact: true })
-      .click();
+    await other.getByRole("button", { name: /^Электронная почта / }).click();
     await expect(other.getByLabel("Пароль", { exact: true })).toHaveCount(0);
     await other.getByLabel("Электронная почта").fill(email);
     await other
@@ -142,7 +140,7 @@ test("real signup, email ownership, login and session revocation", async ({
   await page.getByLabel("Пароль", { exact: true }).fill(password);
   const next = page.getByRole("button", { name: "Продолжить", exact: true });
   await next.click();
-  await page.getByRole("button", { name: "Водитель", exact: true }).click();
+  await page.getByRole("button", { name: /^Водитель / }).click();
   await page.getByLabel("Имя", { exact: true }).fill("Test");
   await page.getByLabel("Фамилия", { exact: true }).fill("Driver");
   await page.getByLabel("Дата рождения").fill("15.05.1998");

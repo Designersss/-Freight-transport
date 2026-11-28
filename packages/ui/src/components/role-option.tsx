@@ -8,7 +8,6 @@ import {
   Send,
   Truck,
 } from "lucide-react";
-import { useId } from "react";
 import { Button } from "./button";
 
 const icons = {
@@ -34,14 +33,11 @@ export function ChoiceOption({
   disabled,
   onSelect,
 }: ChoiceOptionProps) {
-  const descriptionId = useId();
   const Icon = icons[choice];
   return (
     <Button
       variant="outline"
       className="movaro-choice-option h-auto min-h-16 w-full justify-start gap-3 whitespace-normal p-3 text-left"
-      aria-label={title}
-      aria-describedby={descriptionId}
       disabled={disabled}
       onClick={onSelect}
     >
@@ -50,10 +46,7 @@ export function ChoiceOption({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block font-semibold">{title}</span>
-        <span
-          id={descriptionId}
-          className="block text-xs font-normal text-muted-foreground"
-        >
+        <span className="block text-xs font-normal text-muted-foreground">
           {description}
         </span>
       </span>

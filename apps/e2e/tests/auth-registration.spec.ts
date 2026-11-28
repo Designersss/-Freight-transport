@@ -60,9 +60,7 @@ test("registration wizard preserves profile after conflict and network failure",
   });
   await page.goto("/en/signup");
   await expect(page.getByText(/^Step \d+ of \d+$/)).toHaveCount(0);
-  await page
-    .getByRole("button", { name: "Email address", exact: true })
-    .click();
+  await page.getByRole("button", { name: /^Email address / }).click();
   await page.getByRole("button", { name: "Light theme" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   const email = page.getByLabel("Email address");
@@ -88,7 +86,7 @@ test("registration wizard preserves profile after conflict and network failure",
   await expect(heading).toHaveText("Choose your role");
   await expect(page.getByText("Step 2 of 4", { exact: true })).toBeVisible();
   await expect(heading).toBeFocused();
-  await page.getByRole("button", { name: "Driver", exact: true }).click();
+  await page.getByRole("button", { name: /^Driver / }).click();
   await expect(heading).toHaveText("Complete your profile");
   await expect(page.locator('input[type="file"]')).toHaveCount(0);
   const first = page.getByLabel("First name", { exact: true });
@@ -98,14 +96,12 @@ test("registration wizard preserves profile after conflict and network failure",
   await page.getByLabel("Date of birth").fill("05/15/1998");
   await expect(page.getByLabel("Company name")).toHaveCount(0);
   await back.click();
-  await page.getByRole("button", { name: "Dispatcher", exact: true }).click();
+  await page.getByRole("button", { name: /^Dispatcher / }).click();
   await expect(first).toHaveValue("Test");
   await expect(page.locator('input[type="file"]')).toHaveCount(0);
   await expect(page.getByLabel("Company name")).toHaveCount(0);
   await back.click();
-  await page
-    .getByRole("button", { name: "Company owner", exact: true })
-    .click();
+  await page.getByRole("button", { name: /^Company owner / }).click();
   await expect(last).toHaveValue("User");
   await expect(page.locator('input[type="file"]')).toHaveCount(0);
   await expect(page.getByLabel("Date of birth")).toHaveValue("05/15/1998");
@@ -148,8 +144,7 @@ test("registration method navigation respects reduced motion and keyboard", asyn
   await page.goto("/en/signup");
   const step = page.locator(".movaro-signup-step");
   const email = page.getByRole("button", {
-    name: "Email address",
-    exact: true,
+    name: /^Email address /,
   });
   await expect(step).toHaveCSS("animation-name", "movaro-signup-step-in");
   await email.focus();

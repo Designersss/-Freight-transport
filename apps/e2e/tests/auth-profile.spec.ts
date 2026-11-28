@@ -184,9 +184,7 @@ test("missing email profile never opens obsolete onboarding", async ({
     await page.goto("/en/account");
     await expect(page.getByRole("main").getByRole("alert")).toBeVisible();
     await expect(page.getByLabel("First name")).toHaveCount(0);
-    await expect(
-      page.getByRole("button", { name: "Driver", exact: true }),
-    ).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^Driver / })).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "Sign out", exact: true }),
     ).toBeVisible();
