@@ -25,6 +25,10 @@ export class AuthService implements OnModuleDestroy {
     return this.runtime.handle(request);
   }
 
+  handleTelegramBotCommand(payload: unknown): Promise<Response> {
+    return this.runtime.handleTelegramBotCommand(payload);
+  }
+
   checkReadiness(): Promise<void> {
     return this.runtime.checkReadiness();
   }
