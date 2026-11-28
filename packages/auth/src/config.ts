@@ -34,6 +34,11 @@ const schema = z
     SMTP_USER: z.string().min(1).optional(),
     SMTP_PASSWORD: z.string().min(1).optional(),
     SMTP_FROM: z.email(),
+    AUTH_TELEGRAM_BOT_USERNAME: z
+      .string()
+      .regex(/^[A-Za-z][A-Za-z0-9_]{3,28}[Bb][Oo][Tt]$/)
+      .max(32)
+      .optional(),
     AUTH_TELEGRAM_CLIENT_ID: z
       .string()
       .regex(/^\d{1,32}$/)
@@ -89,6 +94,18 @@ const schema = z
         message: "Telegram OAuth requires an HTTPS Web origin",
       });
     }
+    if (
+      config.AUTH_TELEGRAM_BOT_USERNAME &&
+      (config.AUTH_TELEGRAM_CLIENT_ID ||
+        config.AUTH_TELEGRAM_CLIENT_SECRET ||
+        !config.AUTH_WEB_ORIGIN.startsWith("https://"))
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["AUTH_TELEGRAM_BOT_USERNAME"],
+        message: "Telegram bot requires HTTPS and exclusive auth mode",
+      });
+    }
     if (config.NODE_ENV === "production") {
       for (const field of ["AUTH_BASE_URL", "AUTH_WEB_ORIGIN"] as const) {
         if (!config[field].startsWith("https://")) {
@@ -135,6 +152,7 @@ export function parseAuthConfig(env: Record<string, unknown>): AuthConfig {
 
 export function telegramEnabled(config: AuthConfig): boolean {
   return Boolean(
-    config.AUTH_TELEGRAM_CLIENT_ID && config.AUTH_TELEGRAM_CLIENT_SECRET,
+    config.AUTH_TELEGRAM_BOT_USERNAME ||
+      (config.AUTH_TELEGRAM_CLIENT_ID && config.AUTH_TELEGRAM_CLIENT_SECRET),
   );
 }
