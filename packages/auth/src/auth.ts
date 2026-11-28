@@ -14,7 +14,10 @@ import {
 } from "./credential-login.js";
 import { type AuthMailer, isDeliverableEmail } from "./email.js";
 import { registrationContext } from "./registration-context.js";
-import { telegramBotLoginContext } from "./telegram-bot-login.js";
+import {
+  createTelegramBotLoginPlugin,
+  telegramBotLoginContext,
+} from "./telegram-bot-login.js";
 import {
   createPublicBeforeHook,
   findTelegramLoginAccount,
@@ -298,8 +301,10 @@ export function createAuthOptions(
         allowUnlinkingAll: false,
       },
     },
-    ...(config.AUTH_TELEGRAM_CLIENT_ID && config.AUTH_TELEGRAM_CLIENT_SECRET
-      ? {
+    ...(config.AUTH_TELEGRAM_BOT_USERNAME
+      ? { plugins: [createTelegramBotLoginPlugin(database, config.AUTH_WEB_ORIGIN)] }
+      : config.AUTH_TELEGRAM_CLIENT_ID && config.AUTH_TELEGRAM_CLIENT_SECRET
+        ? {
           plugins: [
             genericOAuth({
               config: [
@@ -317,8 +322,8 @@ export function createAuthOptions(
               ],
             }),
           ],
-        }
-      : {}),
+          }
+        : {}),
     emailAndPassword: {
       enabled: true,
       minPasswordLength: PASSWORD_MIN_LENGTH,
