@@ -35,13 +35,7 @@ type Draft = z.infer<typeof telegramDraftSchema>;
 type Step = "role" | "profile" | "username";
 
 const completionResponse = z.strictObject({
-  outcome: z.enum([
-    "created",
-    "invalid",
-    "denied",
-    "username-taken",
-    "identity-taken",
-  ]),
+  outcome: z.enum(["created", "invalid", "denied", "username-taken", "identity-taken"]),
 });
 
 function initialStep(draft: Draft): Step {
@@ -60,9 +54,7 @@ export function TelegramRegistration({ locale }: { locale: Locale }) {
   const t = messages[locale].auth;
   const [draft, setDraft] = useState<Draft | null>(null);
   const [draftFailure, setDraftFailure] = useState("");
-  const [state, setState] = useState<"loading" | "ready" | "error" | "created">(
-    "loading",
-  );
+  const [state, setState] = useState<"loading" | "ready" | "error" | "created">("loading");
 
   const knownDraftId = useRef<string | null>(null);
   const mutating = useRef(false);
@@ -159,10 +151,7 @@ export function TelegramRegistration({ locale }: { locale: Locale }) {
     );
 
   return (
-    <AuthPanel
-      title={t.telegramBotDraft}
-      description={t.signupProfileDescription}
-    >
+    <AuthPanel title={t.telegramBotDraft} description={t.signupProfileDescription}>
       <div className="flex flex-col gap-3">
         {state === "loading" ? (
           <p role="status">{t.submitting}</p>
@@ -170,9 +159,7 @@ export function TelegramRegistration({ locale }: { locale: Locale }) {
           <>
             <Alert variant={state === "created" ? "default" : "destructive"}>
               <AlertDescription>
-                {state === "created"
-                  ? t.telegramBotRegistered
-                  : t.telegramBotReturnError}
+                {state === "created" ? t.telegramBotRegistered : t.telegramBotReturnError}
               </AlertDescription>
             </Alert>
             {state === "error" && (
@@ -218,9 +205,7 @@ function TelegramDraftForm({
       role: draft.role ?? "",
       firstName: draft.firstName ?? "",
       lastName: draft.lastName ?? "",
-      birthDate: draft.birthDate
-        ? formatDateInput(draft.birthDate, locale)
-        : "",
+      birthDate: draft.birthDate ? formatDateInput(draft.birthDate, locale) : "",
       companyName: draft.companyName ?? "",
     },
   });
@@ -244,13 +229,11 @@ function TelegramDraftForm({
   const stepIndex = step === "role" ? 1 : step === "profile" ? 2 : 3;
 
   useEffect(() => {
-    const element = heading.current;
-    if (element?.textContent === title) element.focus();
+    heading.current?.focus();
   }, [title]);
 
   useEffect(() => {
-    if (step !== "username" || draft.channel !== "web" || draft.username)
-      return;
+    if (step !== "username" || draft.channel !== "web" || draft.username) return;
     const controller = new AbortController();
     void telegramBrowserRequest(
       { action: "draft-suggest-username", draftId: draft.id },
@@ -300,11 +283,7 @@ function TelegramDraftForm({
   }
 
   async function saveRole(role: (typeof roles)[number]) {
-    const next = await update({
-      action: "edit",
-      revision: draft.revision,
-      role,
-    });
+    const next = await update({ action: "edit", revision: draft.revision, role });
     if (next) onChanged(next);
   }
 
@@ -322,11 +301,7 @@ function TelegramDraftForm({
   async function complete(values: { username: string }) {
     const parsed = usernameInput.safeParse(values.username);
     if (!parsed.success) {
-      names.setError(
-        "username",
-        { message: t.usernameInvalid },
-        { shouldFocus: true },
-      );
+      names.setError("username", { message: t.usernameInvalid }, { shouldFocus: true });
       return;
     }
     const next = await update({
@@ -358,11 +333,7 @@ function TelegramDraftForm({
   }
 
   async function switchChannel(channel: "web" | "bot") {
-    const next = await update({
-      action: "switch",
-      revision: draft.revision,
-      channel,
-    });
+    const next = await update({ action: "switch", revision: draft.revision, channel });
     if (next) onChanged(next);
   }
 
@@ -377,25 +348,16 @@ function TelegramDraftForm({
 
   if (draft.channel === "bot")
     return (
-      <AuthPanel
-        title={t.telegramBotDraft}
-        description={t.telegramBotChatActive}
-      >
+      <AuthPanel title={t.telegramBotDraft} description={t.telegramBotChatActive}>
         <div className="flex flex-col gap-3">
-          <Button
-            size="lg"
-            disabled={busy}
-            onClick={() => void act(() => switchChannel("web"))}
-          >
+          <Button size="lg" disabled={busy} onClick={() => void act(() => switchChannel("web"))}>
             {t.telegramBotSwitchWeb}
           </Button>
           <Button variant="outline" disabled={busy} onClick={onRefresh}>
             {t.telegramRefresh}
           </Button>
           {failure && (
-            <Alert variant="destructive">
-              <AlertDescription>{failure}</AlertDescription>
-            </Alert>
+            <Alert variant="destructive"><AlertDescription>{failure}</AlertDescription></Alert>
           )}
         </div>
       </AuthPanel>
@@ -407,10 +369,7 @@ function TelegramDraftForm({
         <p className="text-xs text-muted-foreground" role="status">
           {t.signupStep} {stepIndex} {t.signupOf} 3
         </p>
-        <div
-          className="h-1 overflow-hidden rounded-full bg-muted"
-          aria-hidden="true"
-        >
+        <div className="h-1 overflow-hidden rounded-full bg-muted" aria-hidden="true">
           <div
             className="movaro-signup-progress h-full rounded-full bg-primary"
             style={{ width: `${(stepIndex / 3) * 100}%` }}
@@ -436,23 +395,17 @@ function TelegramDraftForm({
           <form
             noValidate
             className="flex flex-col gap-5"
-            onSubmit={profile.handleSubmit((values) =>
-              act(() => saveProfile(values)),
-            )}
+            onSubmit={profile.handleSubmit((values) => act(() => saveProfile(values)))}
           >
             <ProfileFields form={profile} locale={locale} disabled={busy} />
-            <Button type="submit" size="lg" disabled={busy}>
-              {t.continue}
-            </Button>
+            <Button type="submit" size="lg" disabled={busy}>{t.continue}</Button>
           </form>
         )}
         {step === "username" && (
           <form
             noValidate
             className="flex flex-col gap-5"
-            onSubmit={names.handleSubmit((values) =>
-              act(() => complete(values)),
-            )}
+            onSubmit={names.handleSubmit((values) => act(() => complete(values)))}
           >
             <Field data-invalid={Boolean(names.formState.errors.username)}>
               <FieldLabel htmlFor="username">{t.username}</FieldLabel>
@@ -473,14 +426,10 @@ function TelegramDraftForm({
                   },
                 })}
               />
-              <p id="username-hint" className="text-xs text-muted-foreground">
-                {t.usernameHint}
-              </p>
-              <FieldError id="username-error">
-                {names.formState.errors.username?.message}
-              </FieldError>
+              <p id="username-hint" className="text-xs text-muted-foreground">{t.usernameHint}</p>
+              <FieldError id="username-error">{names.formState.errors.username?.message}</FieldError>
             </Field>
-            <Button type="submit" size="lg" disabled={busy}>
+            <Button type="submit" size="lg" disabled={busy}>{busy ? t.submitting : t.signupAction}</Button>
           </form>
         )}
       </div>

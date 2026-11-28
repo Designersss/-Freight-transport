@@ -367,14 +367,10 @@ export function createBotHandler(
       actor.chatId,
       state === "active" ? m.alreadyRegistered : m.accountUnavailable,
       {
-        inline_keyboard: [
-          [
-            {
-              text: m.website,
-              url: new URL(`/${locale}/login`, config.AUTH_WEB_ORIGIN).href,
-            },
-          ],
-        ],
+        inline_keyboard: [[{
+          text: m.website,
+          url: new URL(`/${locale}/login`, config.AUTH_WEB_ORIGIN).href,
+        }]],
       },
     );
   }
@@ -488,14 +484,9 @@ export function createBotHandler(
   ): Promise<void> {
     const { actor } = message;
     const m = messages[claim.locale];
-    if (
-      claim.accountState === "unavailable" ||
-      (claim.intent === "link" && claim.accountState !== "unregistered")
-    ) {
-      await api.send(
-        { action: "reject", actor, requestId: claim.id },
-        z.boolean(),
-      );
+    if (claim.accountState === "unavailable" ||
+        (claim.intent === "link" && claim.accountState !== "unregistered")) {
+      await api.send({ action: "reject", actor, requestId: claim.id }, z.boolean());
       await say(actor, m.accountUnavailable);
       return;
     }
@@ -506,36 +497,29 @@ export function createBotHandler(
           ? "login"
           : null;
     if (nextIntent) {
-      await buttons(
-        actor,
-        nextIntent === "register" ? m.accountMissing : m.accountExists,
-        [
-          {
-            label: nextIntent === "register" ? m.register : m.signIn,
-            run: async () => {
-              const changed = await api.send(
-                {
-                  action: "change-intent",
-                  actor,
-                  requestId: claim.id,
-                  intent: nextIntent,
-                  names: namesFrom(message),
-                },
-                claimResult,
-              );
-              if (changed) await routeClaim(message, changed, locale, deepLink);
-              else await say(actor, m.unavailable);
-            },
+      await buttons(actor, nextIntent === "register" ? m.accountMissing : m.accountExists, [
+        {
+          label: nextIntent === "register" ? m.register : m.signIn,
+          run: async () => {
+            const changed = await api.send({
+              action: "change-intent",
+              actor,
+              requestId: claim.id,
+              intent: nextIntent,
+              names: namesFrom(message),
+            }, claimResult);
+            if (changed) await routeClaim(message, changed, locale, deepLink);
+            else await say(actor, m.unavailable);
           },
-          {
-            label: m.reject,
-            run: async () => {
-              const rejected = await api.send(
-                { action: "reject", actor, requestId: claim.id },
-                z.boolean(),
-              );
-              await say(actor, rejected ? m.rejected : m.unavailable);
-            },
+        },
+        {
+          label: m.reject,
+          run: async () => {
+            const rejected = await api.send(
+              { action: "reject", actor, requestId: claim.id },
+              z.boolean(),
+            );
+            await say(actor, rejected ? m.rejected : m.unavailable);
           },
         },
       ]);
