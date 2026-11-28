@@ -307,3 +307,41 @@ test("Telegram bot signup waits, returns with a fragment and resumes the shared 
   await expectAccessible(page);
   await expectNoHorizontalOverflow(page);
 });
+
+test("Telegram registration reports completion only after a verified receipt", async ({ page }) => {
+  const draftId = "1b7a89d1-1b4a-4a76-8a5a-548744bcac44";
+  let completed = false;
+  const draft = {
+    id: draftId,
+    channel: "bot",
+    locale: "en",
+    revision: 2,
+    expiresAt: new Date(Date.now() + 1800000).toISOString(),
+    firstName: "Synthetic",
+    lastName: "Driver",
+    role: "DRIVER",
+    birthDate: "1990-01-01",
+    companyName: null,
+    username: "synthetic_driver",
+  };
+  await page.route("**/api/auth/telegram-bot/browser", (route) => {
+    const command = route.request().postDataJSON();
+    if (command.action === "draft-find")
+      return route.fulfill({ json: { draft } });
+    if (command.action === "draft-state") {
+      expect(command.draftId).toBe(draftId);
+      return route.fulfill({
+        json: { draft: completed ? null : draft, completed },
+      });
+    }
+    return route.fulfill({ status: 400, json: { code: "INVALID_REQUEST" } });
+  });
+  await page.goto("/en/telegram/registration");
+  await expect(page.getByRole("button", { name: "Continue on the website" })).toBeVisible();
+  await expect(page.getByText("Account created. Sign in with Telegram.")).toHaveCount(0);
+  completed = true;
+  await expect(page.getByText("Account created. Sign in with Telegram.")).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(page.getByRole("link", { name: "Sign in with Telegram" })).toBeVisible();
+});

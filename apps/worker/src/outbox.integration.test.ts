@@ -211,6 +211,74 @@ describe("Transactional outbox and pg-boss", () => {
     }
   }, 40000);
 
+  it("cleans expired Telegram requests, drafts and receipts without deleting live records", async () => {
+    const expired = randomUUID();
+    const live = randomUUID();
+    const ids = [expired, live];
+    const hash = () => randomBytes(32).toString("hex");
+    const created = new Date();
+    const old = new Date(created.getTime() - 3_600_000);
+    const expiry = (start: Date) => new Date(start.getTime() + 300_000);
+    let worker: Awaited<ReturnType<typeof startWorker>> | undefined;
+    try {
+      for (const [id, createdAt] of [[expired, old], [live, created]] as const) {
+        const browserHash = hash();
+        await database.telegramBotRequest.create({
+          data: {
+            id,
+            browserHash,
+            deepLinkHash: hash(),
+            intent: "register",
+            locale: "en",
+            displayCode: "123456",
+            createdAt,
+            expiresAt: expiry(createdAt),
+          },
+        });
+        await database.telegramRegistrationDraft.create({
+          data: {
+            id,
+            browserHash,
+            telegramUserId: String(randomBytes(6).readUIntBE(0, 6) + 1),
+            locale: "en",
+            channel: "web",
+            phoneNumber: "+12025550123",
+            createdAt,
+            expiresAt: new Date(createdAt.getTime() + 1_800_000),
+          },
+        });
+        await database.telegramRegistrationCompletion.create({
+          data: { id, browserHash, createdAt, expiresAt: expiry(createdAt) },
+        });
+      }
+      worker = await startWorker(config, storageConfig);
+      await vi.waitFor(
+        async () => {
+          const where = { id: { in: ids } };
+          expect(await database.telegramBotRequest.findMany({
+            where, select: { id: true },
+          })).toEqual([{ id: live }]);
+          expect(await database.telegramRegistrationDraft.findMany({
+            where, select: { id: true },
+          })).toEqual([{ id: live }]);
+          expect(await database.telegramRegistrationCompletion.findMany({
+            where, select: { id: true },
+          })).toEqual([{ id: live }]);
+        },
+        { timeout: 15000, interval: 100 },
+      );
+    } finally {
+      try {
+        await worker?.stop();
+      } finally {
+        const where = { id: { in: ids } };
+        await database.telegramBotRequest.deleteMany({ where });
+        await database.telegramRegistrationDraft.deleteMany({ where });
+        await database.telegramRegistrationCompletion.deleteMany({ where });
+      }
+    }
+  }, 30000);
+
   it("deletes retired profile photos through the real scheduled worker", async () => {
     const storage = new PrivateStorage(storageConfig);
     const keys: string[] = [];

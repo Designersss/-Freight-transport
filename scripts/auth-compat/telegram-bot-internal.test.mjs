@@ -195,3 +195,65 @@ test("Chat-only continuation never attaches the unconfirmed browser", async () =
     await pool.end();
   }
 });
+
+test("Only a claimed private actor may change intent; a bot actor has a bounded budget", async () => {
+  const databaseUrl = process.env.AUTH_COMPAT_DATABASE_URL;
+  assert.ok(databaseUrl);
+  const target = new URL(databaseUrl);
+  assert.equal(target.hostname, "127.0.0.1");
+  assert.equal(target.pathname, "/freight_auth_compat");
+  const pool = new pg.Pool({ connectionString: databaseUrl });
+  const userId = String(randomBytes(6).readUIntBE(0, 6) + 1);
+  const actor = { chatType: "private", chatId: userId, userId };
+  const secret = randomBytes(32).toString("hex");
+  const browser = createTelegramBrowserCapability();
+  const send = (payload) => handleTelegramBotCommand(pool, payload, secret);
+  async function result(payload) {
+    const response = await send(payload);
+    assert.equal(response.status, 200);
+    return (await response.json()).result;
+  }
+  try {
+    const request = await startTelegramBotRequest(pool, browser, {
+      intent: "login",
+      locale: "en",
+    });
+    const command = {
+      action: "change-intent",
+      actor,
+      requestId: request.id,
+      intent: "register",
+      names: { firstName: "Synthetic", lastName: "Driver" },
+    };
+    assert.equal(await result(command), null);
+    const claimed = await result({
+      action: "claim",
+      actor,
+      deepLink: request.deepLink,
+      names: {},
+    });
+    assert.equal(claimed.accountState, "unregistered");
+    const otherId = String(Number(userId) + 1);
+    assert.equal(
+      await result({
+        ...command,
+        actor: { chatType: "private", chatId: otherId, userId: otherId },
+      }),
+      null,
+    );
+    const changed = await result(command);
+    assert.equal(changed.intent, "register");
+    assert.equal(changed.needsContact, true);
+    assert.equal(await result(command), null);
+    assert.equal(await result({ ...command, intent: "login" }), null);
+    // Five valid calls above were charged to this actor, including denied operations.
+    for (let index = 0; index < 55; index++) {
+      assert.equal(await result({ action: "account-state", actor }), "unregistered");
+    }
+    const limited = await send({ action: "account-state", actor });
+    assert.equal(limited.status, 429);
+    assert.match(limited.headers.get("retry-after"), /^[1-9][0-9]*$/);
+  } finally {
+    await pool.end();
+  }
+});

@@ -105,8 +105,19 @@ test("Telegram Web runtime requires both proofs and completes registration befor
       { action: "start", intent: "register", locale: "en", userId },
       400,
     );
-    const register = await start("register");
-    assert.equal((await claim(register)).needsContact, true);
+    const register = await start("login");
+    const unknown = await claim(register);
+    assert.equal(unknown.accountState, "unregistered");
+    assert.equal(unknown.needsContact, false);
+    const changed = await bot({
+      action: "change-intent",
+      requestId: register.requestId,
+      intent: "register",
+      names: { firstName: "Synthetic", lastName: "Driver" },
+    });
+    assert.equal(changed.intent, "register");
+    assert.equal(changed.needsContact, true);
+    assert.equal(changed.expiresAt, unknown.expiresAt);
     assert.equal(
       await bot({
         action: "contact",
@@ -175,19 +186,50 @@ test("Telegram Web runtime requires both proofs and completes registration befor
       ).draft,
       null,
     );
+    const switched = await bot({
+      action: "draft-update",
+      draftId,
+      mutation: { action: "switch", revision: 1, channel: "bot" },
+    });
+    assert.equal(switched.revision, 2);
+    const state = { action: "draft-state", draftId };
+    const waiting = await (await expectWeb(state)).json();
+    assert.equal(waiting.draft.channel, "bot");
+    assert.equal(waiting.completed, false);
     assert.deepEqual(
       await (
-        await expectWeb({
-          action: "draft-complete",
-          draftId,
-          revision: 1,
+        await expectWeb({ action: "draft-complete", draftId, revision: 2 })
+      ).json(),
+      { outcome: "denied" },
+    );
+    assert.equal(
+      await bot({ action: "draft-complete", draftId, revision: 2 }),
+      "created",
+    );
+    assert.deepEqual(await (await expectWeb(state)).json(), {
+      draft: null,
+      completed: true,
+    });
+    assert.deepEqual(
+      await (
+        await expectWeb(state, 200, {
+          cookie: `${TELEGRAM_BOT_BROWSER_COOKIE}=${register.deepLink}`,
         })
       ).json(),
-      { outcome: "created" },
+      { draft: null, completed: false },
     );
 
-    const login = await start("login");
-    assert.equal((await claim(login)).needsContact, false);
+    const login = await start("register");
+    const existing = await claim(login);
+    assert.equal(existing.accountState, "active");
+    const signIn = await bot({
+      action: "change-intent",
+      requestId: login.requestId,
+      intent: "login",
+      names: {},
+    });
+    assert.equal(signIn.intent, "login");
+    assert.equal(signIn.needsContact, false);
     const loginProof = await bot({ action: "approve", requestId: login.requestId });
     await expectWeb({ action: "confirm", requestId: login.requestId, proof: loginProof });
     const signedIn = await expectWeb({ action: "finish", requestId: login.requestId });
