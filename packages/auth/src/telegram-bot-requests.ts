@@ -54,6 +54,7 @@ export async function startTelegramBotRequest(
        $7, $8, $9 FROM (SELECT clock_timestamp() AS issued_at) AS issued
      ON CONFLICT (browser_hash) DO UPDATE SET
        id = EXCLUDED.id, deep_link_hash = EXCLUDED.deep_link_hash,
+       return_hash = NULL,
        intent = EXCLUDED.intent, locale = EXCLUDED.locale,
        display_code = EXCLUDED.display_code, status = 'pending',
        created_at = EXCLUDED.created_at, expires_at = EXCLUDED.expires_at,
@@ -105,7 +106,7 @@ export async function cancelTelegramBotRequest(
   const browserHash = telegramBotCapabilityHash(browserCapability);
   if (!browserHash) return false;
   const result = await pool.query(
-    `UPDATE telegram_bot_requests SET status = 'cancelled',
+    `UPDATE telegram_bot_requests SET status = 'cancelled', return_hash = NULL,
        telegram_user_id = NULL, first_name = NULL, last_name = NULL,
        phone_number = NULL
      WHERE browser_hash = $1 AND id::text = $2
@@ -235,30 +236,64 @@ export async function saveTelegramBotContact(
   return result.rowCount === 1;
 }
 
-// A decision is not session issuance. The browser still has to finish with
-// its independent capability and the server must revalidate account access.
-export async function decideTelegramBotRequest(
+// The bot delivers the independent return capability only to the same
+// private Telegram actor. A repeated explicit approval rotates the proof.
+// The request remains claimed until the original browser redeems it.
+export async function prepareTelegramBotApproval(
   pool: Pool,
   requestId: string,
   actor: TelegramBotActor,
-  decision: "approve" | "reject",
-): Promise<boolean> {
-  if (
-    !privateTelegramActor(actor) ||
-    (decision !== "approve" && decision !== "reject")
-  )
-    return false;
+): Promise<string | null> {
+  if (!privateTelegramActor(actor)) return null;
+  const proof = randomBytes(32).toString("base64url");
+  const hash = createHash("sha256").update(proof).digest("hex");
   const result = await pool.query(
-    `UPDATE telegram_bot_requests SET
-       status = CASE WHEN $3 = 'approve' THEN 'approved' ELSE 'rejected' END,
-       telegram_user_id = CASE WHEN $3 = 'approve' THEN telegram_user_id ELSE NULL END,
-       first_name = CASE WHEN $3 = 'approve' THEN first_name ELSE NULL END,
-       last_name = CASE WHEN $3 = 'approve' THEN last_name ELSE NULL END,
-       phone_number = CASE WHEN $3 = 'approve' THEN phone_number ELSE NULL END
+    `UPDATE telegram_bot_requests SET return_hash = $3
      WHERE id::text = $1 AND telegram_user_id = $2 AND status = 'claimed'
        AND expires_at > clock_timestamp()
-       AND ($3 = 'reject' OR intent <> 'register' OR phone_number IS NOT NULL)`,
-    [requestId, actor.userId, decision],
+       AND (intent <> 'register' OR phone_number IS NOT NULL)`,
+    [requestId, actor.userId, hash],
+  );
+  return result.rowCount === 1 ? proof : null;
+}
+
+// Internal only: the HTTP boundary must require the trusted Web Origin,
+// host-only browser cookie and the proof delivered by the bot, not by polling.
+// A successful confirmation erases the proof atomically.
+export async function confirmTelegramBotApproval(
+  pool: Pool,
+  browserCapability: unknown,
+  requestId: string,
+  returnCapability: unknown,
+): Promise<boolean> {
+  const browserHash = telegramBotCapabilityHash(browserCapability);
+  const returnHash = telegramBotCapabilityHash(returnCapability);
+  if (!browserHash || !returnHash || browserHash === returnHash) return false;
+  const result = await pool.query(
+    `UPDATE telegram_bot_requests SET status = 'approved', return_hash = NULL
+     WHERE id::text = $1 AND browser_hash = $2 AND return_hash = $3
+       AND status = 'claimed' AND expires_at > clock_timestamp()
+       AND (intent <> 'register' OR phone_number IS NOT NULL)`,
+    [requestId, browserHash, returnHash],
+  );
+  return result.rowCount === 1;
+}
+
+// Rejecting does not need a browser confirmation and removes all personal
+// data and any outstanding return capability.
+export async function rejectTelegramBotRequest(
+  pool: Pool,
+  requestId: string,
+  actor: TelegramBotActor,
+): Promise<boolean> {
+  if (!privateTelegramActor(actor)) return false;
+  const result = await pool.query(
+    `UPDATE telegram_bot_requests SET status = 'rejected',
+       return_hash = NULL, telegram_user_id = NULL, first_name = NULL,
+       last_name = NULL, phone_number = NULL
+     WHERE id::text = $1 AND telegram_user_id = $2 AND status = 'claimed'
+       AND expires_at > clock_timestamp()`,
+    [requestId, actor.userId],
   );
   return result.rowCount === 1;
 }
