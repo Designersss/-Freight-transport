@@ -34,7 +34,11 @@ const callback = z.object({
   data: z.string().max(64).optional(),
 });
 const update = z.object({
-  update_id: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER - 1),
+  update_id: z
+    .number()
+    .int()
+    .nonnegative()
+    .max(Number.MAX_SAFE_INTEGER - 1),
   message: z.unknown().optional(),
   callback_query: z.unknown().optional(),
 });
@@ -102,7 +106,11 @@ export interface TelegramTransport {
     offset: number | undefined,
     signal: AbortSignal,
   ): Promise<TelegramUpdate[]>;
-  sendMessage(chatId: string, text: string, markup?: ReplyMarkup): Promise<number>;
+  sendMessage(
+    chatId: string,
+    text: string,
+    markup?: ReplyMarkup,
+  ): Promise<number>;
   answerCallback(id: string): Promise<void>;
 }
 

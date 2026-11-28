@@ -249,7 +249,11 @@ test("Telegram bot signup waits, returns with a fragment and resumes the shared 
   await page.route("**/api/auth/telegram-bot/browser", (route) => {
     const command = route.request().postDataJSON();
     if (command.action === "start") {
-      expect(command).toEqual({ action: "start", intent: "register", locale: "en" });
+      expect(command).toEqual({
+        action: "start",
+        intent: "register",
+        locale: "en",
+      });
       return route.fulfill({
         json: {
           requestId,
@@ -260,7 +264,9 @@ test("Telegram bot signup waits, returns with a fragment and resumes the shared 
       });
     }
     if (command.action === "status")
-      return route.fulfill({ json: { status: confirmed ? "approved" : "pending" } });
+      return route.fulfill({
+        json: { status: confirmed ? "approved" : "pending" },
+      });
     if (command.action === "confirm") {
       expect(command).toEqual({ action: "confirm", requestId, proof });
       expect(route.request().url()).not.toContain(proof);
@@ -269,7 +275,9 @@ test("Telegram bot signup waits, returns with a fragment and resumes the shared 
     }
     if (command.action === "finish") {
       expect(confirmed).toBe(true);
-      return route.fulfill({ json: { outcome: "registration", draftId: requestId } });
+      return route.fulfill({
+        json: { outcome: "registration", draftId: requestId },
+      });
     }
     if (command.action === "draft-find")
       return route.fulfill({ json: { draft } });
@@ -279,7 +287,9 @@ test("Telegram bot signup waits, returns with a fragment and resumes the shared 
   await page.getByRole("button", { name: "Register with Telegram" }).click();
   await expect(page).toHaveURL(/\/en\/telegram\/wait$/);
   await expect(page.getByText("123456", { exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open Telegram" })).toHaveAttribute(
+  await expect(
+    page.getByRole("link", { name: "Open Telegram" }),
+  ).toHaveAttribute(
     "href",
     `https://t.me/synthetic_movaro_bot?start=${deepLink}`,
   );
@@ -287,7 +297,9 @@ test("Telegram bot signup waits, returns with a fragment and resumes the shared 
   await expectNoHorizontalOverflow(page);
   await page.goto(`/en/telegram/return#requestId=${requestId}&proof=${proof}`);
   await expect(page).toHaveURL(/\/en\/telegram\/registration$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Choose your role");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Choose your role",
+  );
   await expect(page.getByText("Step 1 of 3", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Password", { exact: true })).toHaveCount(0);
   await expect(page.locator('input[type="file"]')).toHaveCount(0);

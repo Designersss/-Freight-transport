@@ -33,7 +33,10 @@ export const draftResult = z
   .nullable();
 export type Draft = NonNullable<z.infer<typeof draftResult>>;
 export const draftIdResult = z.uuid().nullable();
-export const proofResult = z.string().regex(/^[A-Za-z0-9_-]{43}$/).nullable();
+export const proofResult = z
+  .string()
+  .regex(/^[A-Za-z0-9_-]{43}$/)
+  .nullable();
 export const usernameResult = z
   .string()
   .regex(/^[a-z][a-z0-9_]{2,31}$/)

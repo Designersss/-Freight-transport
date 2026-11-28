@@ -54,11 +54,13 @@ function fixture() {
   const sent: { id: number; markup: ReplyMarkup | undefined }[] = [];
   const telegram: TelegramTransport = {
     getUpdates: vi.fn(async () => []),
-    sendMessage: vi.fn(async (_chatId: string, _text: string, markup?: ReplyMarkup) => {
-      const id = ++messageId;
-      sent.push({ id, markup });
-      return id;
-    }),
+    sendMessage: vi.fn(
+      async (_chatId: string, _text: string, markup?: ReplyMarkup) => {
+        const id = ++messageId;
+        sent.push({ id, markup });
+        return id;
+      },
+    ),
     answerCallback: vi.fn(async () => undefined),
   };
   return {

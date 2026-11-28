@@ -26,9 +26,13 @@ export async function pollTelegram(
         error instanceof TelegramPollError
           ? (error.retryAfterSeconds ?? 0) * 1000
           : 0;
-      await sleep(Math.min(2_147_483_647, Math.max(delay, retryAfter)), undefined, {
-        signal,
-      }).catch(() => undefined);
+      await sleep(
+        Math.min(2_147_483_647, Math.max(delay, retryAfter)),
+        undefined,
+        {
+          signal,
+        },
+      ).catch(() => undefined);
       delay = Math.min(delay * 2, 30000);
       continue;
     }

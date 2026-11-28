@@ -28,7 +28,12 @@ import {
 } from "./telegram.js";
 
 type Actor = { chatType: "private"; chatId: string; userId: string };
-type Field = "firstName" | "lastName" | "birthDate" | "companyName" | "username";
+type Field =
+  | "firstName"
+  | "lastName"
+  | "birthDate"
+  | "companyName"
+  | "username";
 type Choice = { label: string; run: () => Promise<void> };
 type PrivateMessage = NonNullable<ReturnType<typeof privateMessage>>;
 type Prompt =
@@ -223,26 +228,28 @@ export function createBotHandler(
   async function showDraft(actor: Actor, draft: Draft): Promise<void> {
     const m = messages[draft.locale];
     if (draft.channel === "web") {
-      await buttons(actor, m.webActive, [{
-        label: m.switch,
-        run: async () => {
-          const updated = await api.send(
-            {
-              action: "draft-update",
-              actor,
-              draftId: draft.id,
-              mutation: {
-                action: "switch",
-                revision: draft.revision,
-                channel: "bot",
+      await buttons(actor, m.webActive, [
+        {
+          label: m.switch,
+          run: async () => {
+            const updated = await api.send(
+              {
+                action: "draft-update",
+                actor,
+                draftId: draft.id,
+                mutation: {
+                  action: "switch",
+                  revision: draft.revision,
+                  channel: "bot",
+                },
               },
-            },
-            draftResult,
-          );
-          if (updated) await showDraft(actor, updated);
-          else await resume(actor, draft.locale);
+              draftResult,
+            );
+            if (updated) await showDraft(actor, updated);
+            else await resume(actor, draft.locale);
+          },
         },
-      }]);
+      ]);
       return;
     }
     if (!draft.firstName) return fieldPrompt(actor, draft, "firstName");
@@ -378,7 +385,8 @@ export function createBotHandler(
 
   async function choices(actor: Actor, claim: Claim) {
     const m = messages[claim.locale];
-    const intent = claim.intent === "register" ? m.registration : m[claim.intent];
+    const intent =
+      claim.intent === "register" ? m.registration : m[claim.intent];
     const actions: Choice[] = [
       { label: m.approve, run: () => approve(actor, claim) },
       {
@@ -406,7 +414,11 @@ export function createBotHandler(
         },
       });
     }
-    await buttons(actor, `${intent}: ${claim.displayCode}\n${m.verify}`, actions);
+    await buttons(
+      actor,
+      `${intent}: ${claim.displayCode}\n${m.verify}`,
+      actions,
+    );
   }
 
   async function claimRequest(
@@ -434,9 +446,13 @@ export function createBotHandler(
         { action: "contact", actor, requestId: claim.id, contact },
         z.boolean(),
       );
-      await telegram.sendMessage(actor.chatId, messages[claim.locale].startAgain, {
-        remove_keyboard: true,
-      });
+      await telegram.sendMessage(
+        actor.chatId,
+        messages[claim.locale].startAgain,
+        {
+          remove_keyboard: true,
+        },
+      );
       if (saved) await choices(actor, claim);
       else await say(actor, messages[claim.locale].unavailable);
     });

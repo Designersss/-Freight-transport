@@ -52,18 +52,18 @@ describe("Telegram bot internal authentication", () => {
   it.each(["127.0.0.1", "::1", "::ffff:127.0.0.1"])(
     "accepts a direct authenticated local peer: %s",
     (peer) => {
-      expect(
-        authorizeTelegramBotInternalRequest(secret, peer, headers),
-      ).toBe(true);
+      expect(authorizeTelegramBotInternalRequest(secret, peer, headers)).toBe(
+        true,
+      );
     },
   );
 
   it.each(["192.0.2.1", "127.0.0.2", "::ffff:192.0.2.1", undefined])(
     "rejects a non-local or unknown peer: %s",
     (peer) => {
-      expect(
-        authorizeTelegramBotInternalRequest(secret, peer, headers),
-      ).toBe(false);
+      expect(authorizeTelegramBotInternalRequest(secret, peer, headers)).toBe(
+        false,
+      );
     },
   );
 
@@ -74,9 +74,9 @@ describe("Telegram bot internal authentication", () => {
     { raw: ["Authorization"] },
     { raw: ["Authorization", `Bearer ${secret},Bearer ${secret}`] },
   ])("rejects missing, invalid or ambiguous credentials", ({ raw }) => {
-    expect(
-      authorizeTelegramBotInternalRequest(secret, "127.0.0.1", raw),
-    ).toBe(false);
+    expect(authorizeTelegramBotInternalRequest(secret, "127.0.0.1", raw)).toBe(
+      false,
+    );
   });
 
   it.each([

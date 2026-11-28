@@ -34,12 +34,14 @@ const ru = {
   complete: "Создать аккаунт",
   cancel: "Отменить регистрацию",
   cancelled: "Регистрация отменена.",
-  created: "Аккаунт создан. Для входа на сайт начните новую авторизацию через Telegram.",
+  created:
+    "Аккаунт создан. Для входа на сайт начните новую авторизацию через Telegram.",
   conflict: "Не удалось создать аккаунт. Проверьте данные или войдите на сайт.",
   usernameTaken: "Username занят. Выберите другой.",
   invalid: "Данные не приняты. Проверьте формат и повторите.",
   switch: "Продолжить заполнение в Telegram",
-  webActive: "Регистрация открыта на сайте. Чтобы редактировать здесь, переключите канал.",
+  webActive:
+    "Регистрация открыта на сайте. Чтобы редактировать здесь, переключите канал.",
   company: "Владелец компании",
   dispatcher: "Диспетчер",
   driver: "Водитель",
@@ -59,7 +61,8 @@ const en: typeof ru = {
   login: "Sign in",
   registration: "Registration",
   link: "Link Telegram",
-  verify: "Check the code on the website. Never approve someone else's request.",
+  verify:
+    "Check the code on the website. Never approve someone else's request.",
   return: "Open this link in the original browser. Never forward it.",
   rejected: "Request rejected.",
   startAgain: "Continue with /start.",
@@ -68,7 +71,8 @@ const en: typeof ru = {
   birthDate: "Enter your date of birth as YYYY-MM-DD.",
   companyName: "Enter your company name.",
   role: "Choose your role.",
-  username: "Enter a username (Latin letters, numbers and underscores, 3–32 characters).",
+  username:
+    "Enter a username (Latin letters, numbers and underscores, 3–32 characters).",
   editFirstName: "First name",
   editLastName: "Last name",
   editBirthDate: "Date of birth",
@@ -79,12 +83,15 @@ const en: typeof ru = {
   complete: "Create account",
   cancel: "Cancel registration",
   cancelled: "Registration cancelled.",
-  created: "Account created. To sign in on the website, start a new Telegram sign-in.",
-  conflict: "Could not create the account. Check your details or sign in on the website.",
+  created:
+    "Account created. To sign in on the website, start a new Telegram sign-in.",
+  conflict:
+    "Could not create the account. Check your details or sign in on the website.",
   usernameTaken: "Username is taken. Choose another.",
   invalid: "The data was not accepted. Check the format and try again.",
   switch: "Continue editing in Telegram",
-  webActive: "Registration is open on the website. Switch channels to edit here.",
+  webActive:
+    "Registration is open on the website. Switch channels to edit here.",
   company: "Company owner",
   dispatcher: "Dispatcher",
   driver: "Driver",

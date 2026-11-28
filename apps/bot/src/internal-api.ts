@@ -28,7 +28,9 @@ export function createBotInternalApi(
           signal: AbortSignal.timeout(8000),
         });
         if (!response.ok) throw new Error("Internal request rejected");
-        const parsed = z.strictObject({ result }).safeParse(await response.json());
+        const parsed = z
+          .strictObject({ result })
+          .safeParse(await response.json());
         if (!parsed.success) throw new Error("Invalid internal response");
         return parsed.data.result;
       } catch {
