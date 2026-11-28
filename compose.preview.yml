@@ -1,0 +1,115 @@
+# Closed RD-04 preview on a dedicated Linux VPS. Not a public deployment.
+x-runtime: &runtime
+  image: movaro-preview:local
+  pull_policy: never
+  network_mode: host
+  init: true
+  restart: unless-stopped
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  stop_grace_period: 30s
+
+x-server-env: &server-env
+  NODE_ENV: development
+  DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+  LOG_LEVEL: info
+  S3_ENDPOINT: http://127.0.0.1:${S3_PORT:-8333}
+  S3_BUCKET: ${S3_BUCKET:?Set S3_BUCKET in .env}
+  S3_REGION: ${S3_REGION:-us-east-1}
+  S3_ACCESS_KEY: ${S3_ACCESS_KEY:?Set S3_ACCESS_KEY in .env}
+  S3_SECRET_KEY: ${S3_SECRET_KEY:?Set S3_SECRET_KEY in .env}
+
+x-web-env: &web-env
+  NODE_ENV: development
+  AUTH_BASE_URL: http://127.0.0.1:4000
+  MOVARO_AUTH_PREVIEW: "true"
+
+services:
+  postgres:
+    restart: unless-stopped
+  seaweedfs:
+    restart: unless-stopped
+  mailpit:
+    restart: unless-stopped
+
+  api:
+    <<: *runtime
+    build:
+      context: .
+      dockerfile: infra/preview.Dockerfile
+    command: ["node", "apps/api/dist/main.js"]
+    environment:
+      <<: *server-env
+      API_HOST: 127.0.0.1
+      API_PORT: "4000"
+      AUTH_ENABLED: "true"
+      AUTH_BASE_URL: http://127.0.0.1:4000
+      AUTH_WEB_ORIGIN: http://127.0.0.1:3000
+      AUTH_ADMIN_ORIGIN: http://127.0.0.1:3001
+      AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET in .env}
+      AUTH_ADMIN_SECRET: ${AUTH_ADMIN_SECRET:?Set AUTH_ADMIN_SECRET in .env}
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: "1025"
+      SMTP_SECURITY: local
+      SMTP_FROM: auth@movaro.test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      seaweedfs:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/api/v1/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 6
+
+  worker:
+    <<: *runtime
+    command: ["node", "apps/worker/dist/main.js"]
+    environment:
+      <<: *server-env
+      PROFILE_PHOTO_SCAN_ENABLED: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      seaweedfs:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+
+  web:
+    <<: *runtime
+    working_dir: /app/apps/web
+    command: ["node", "node_modules/next/dist/bin/next", "dev", "--hostname", "127.0.0.1", "--port", "3000"]
+    environment:
+      <<: *web-env
+      AUTH_WEB_ORIGIN: http://127.0.0.1:3000
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/auth/get-session').then(async r=>{if(!r.ok||await r.json()!==null)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 10s
+      start_period: 90s
+      retries: 6
+
+  admin:
+    <<: *runtime
+    working_dir: /app/apps/admin
+    command: ["node", "node_modules/next/dist/bin/next", "dev", "--hostname", "127.0.0.1", "--port", "3001"]
+    environment:
+      <<: *web-env
+      AUTH_ADMIN_ORIGIN: http://127.0.0.1:3001
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/auth/get-session').then(async r=>{if(!r.ok||await r.json()!==null)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 10s
+      start_period: 90s
+      retries: 6
