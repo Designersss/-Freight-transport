@@ -15,6 +15,18 @@ import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
   title: "MOVARO",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "MOVARO",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: [{ url: "/pwa/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [
+      { url: "/pwa/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 interface LayoutProps {

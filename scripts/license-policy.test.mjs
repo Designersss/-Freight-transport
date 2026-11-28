@@ -143,3 +143,16 @@ test("allows reviewed axe-core version only", () => {
     false,
   );
 });
+
+test("allows reviewed Nodemailer version only", () => {
+  assert.equal(isAllowedLicense("nodemailer@10.6.1", "MIT-0", workspace), true);
+  assert.equal(
+    isAllowedLicense("nodemailer@10.6.2", "MIT-0", workspace),
+    false,
+  );
+  assert.equal(
+    isAllowedLicense("nodemailer@10.6.1", "MIT-0", compatibility),
+    false,
+  );
+  assert.equal(isAllowedLicense("example@1.0.0", "MIT-0", workspace), false);
+});

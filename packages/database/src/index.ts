@@ -10,6 +10,17 @@ export function createDatabaseClient(databaseUrl: string): DatabaseClient {
 
 export { appendOutboxEvent, relayOutboxBatch } from "./outbox.js";
 export {
+  claimProfilePhotoCleanup,
+  completeProfilePhotoCleanup,
+  deferProfilePhotoCleanup,
+  type ProfilePhotoCleanupClaim,
+} from "./profile-photo-cleanup.js";
+export {
+  type ProfilePhotoInventoryEntry,
+  recordProfilePhotoInventory,
+} from "./profile-photo-scan.js";
+export { deleteExpiredRegistrationProofs } from "./registration-proof-cleanup.js";
+export {
   appendUserInvalidation,
   getUserEventHead,
   readUserInvalidations,

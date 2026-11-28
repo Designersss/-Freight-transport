@@ -8,6 +8,17 @@ describe("Worker configuration", () => {
     expect(parseWorkerConfig(env).OUTBOX_BATCH_SIZE).toBe(100);
   });
 
+  it("requires explicit opt-in for private photo inventory", () => {
+    expect(parseWorkerConfig(env).PROFILE_PHOTO_SCAN_ENABLED).toBe(false);
+    expect(
+      parseWorkerConfig({ ...env, PROFILE_PHOTO_SCAN_ENABLED: "true" })
+        .PROFILE_PHOTO_SCAN_ENABLED,
+    ).toBe(true);
+    expect(() =>
+      parseWorkerConfig({ ...env, PROFILE_PHOTO_SCAN_ENABLED: "yes" }),
+    ).toThrow("PROFILE_PHOTO_SCAN_ENABLED");
+  });
+
   it.each([0, 1001, 1.5, "invalid"])(
     "rejects invalid batch size %s",
     (size) => {

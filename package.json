@@ -27,12 +27,14 @@
     "storybook": "pnpm --filter @freight/storybook dev",
     "storybook:build": "pnpm --filter @freight/storybook build",
     "test:e2e": "pnpm --filter @freight/e2e test:e2e",
-    "e2e:install": "pnpm --filter @freight/e2e browsers:install"
+    "e2e:install": "pnpm --filter @freight/e2e browsers:install",
+    "dev:bot": "turbo run build --filter=@freight/bot && pnpm --filter @freight/bot dev"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.8",
     "turbo": "2.11.5",
     "typescript": "5.9.3",
+    "@types/node-fetch": "2.6.13",
     "@types/pg": "8.15.6"
   }
 }

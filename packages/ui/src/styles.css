@@ -36,6 +36,12 @@
   --font-sans: "Manrope Variable", system-ui, sans-serif;
   --font-body: 13px;
   --font-small: 12px;
+  --motion-press: 100ms;
+  --motion-control: 150ms;
+  --motion-option: 180ms;
+  --motion-theme: 200ms;
+  --motion-step: 220ms;
+  --motion-progress: 250ms;
 }
 
 :root[data-theme="light"] {
@@ -63,14 +69,26 @@ body {
   line-height: 1.6;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+@layer base {
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 }
 
 :focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 3px;
+}
+
+/* Inputs have a single visible focus border; retain keyboard focus on other controls. */
+[data-slot="input"]:focus-visible {
+  outline: none;
+  border-color: var(--ring);
+}
+
+[data-slot="input"][aria-invalid="true"]:focus-visible {
+  border-color: var(--destructive);
 }
 
 .movaro-skip {
@@ -243,5 +261,88 @@ a {
 
   .movaro-sidebar-brand {
     padding: 0 12px 8px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  body,
+  .movaro-header,
+  .movaro-sidebar,
+  [data-slot="card"] {
+    transition:
+      background-color var(--motion-theme) ease,
+      border-color var(--motion-theme) ease,
+      color var(--motion-theme) ease;
+  }
+
+  [data-slot="button"] {
+    transition:
+      background-color var(--motion-control) ease,
+      border-color var(--motion-control) ease,
+      color var(--motion-control) ease,
+      scale var(--motion-press) ease-out;
+  }
+
+  [data-slot="button"]:active:not(:disabled) {
+    scale: 0.985;
+  }
+
+  [data-slot="input"],
+  [data-slot="textarea"] {
+    transition:
+      background-color var(--motion-control) ease,
+      border-color var(--motion-control) ease,
+      color var(--motion-control) ease;
+  }
+
+  .movaro-language a,
+  .movaro-sidebar-link,
+  .movaro-choice-option {
+    transition-duration: var(--motion-option);
+    transition-property: background-color, border-color, color, scale;
+    transition-timing-function: ease;
+  }
+
+  .movaro-choice-chevron {
+    transition: transform var(--motion-option) ease-out;
+  }
+
+  [data-slot="field-error"],
+  [data-slot="alert"] {
+    animation: movaro-feedback-in var(--motion-option) ease-out;
+  }
+
+  [data-slot="popover-content"][data-state="open"] {
+    animation: movaro-popover-in var(--motion-option) ease-out;
+  }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .movaro-choice-option:not(:disabled):hover {
+    border-color: var(--ring);
+  }
+
+  .movaro-choice-option:not(:disabled):hover .movaro-choice-chevron {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes movaro-feedback-in {
+  from {
+    transform: translateY(3px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes movaro-popover-in {
+  from {
+    opacity: 0;
+    scale: 0.98;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
   }
 }

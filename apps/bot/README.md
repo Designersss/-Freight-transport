@@ -1,0 +1,48 @@
+# MOVARO Telegram bot (RD-04)
+
+Статус: незавершённый срез Draft PR #24. Не запускать на рабочем стенде до проверки Web-return, прав, лимитов, синхронизации, лицензий и прохождения контрольных проверок.
+
+## Архитектура
+
+- Отдельный процесс `@freight/bot`, grammY 1.45.1, Long Polling, один экземпляр на токен, без webhook и прямого доступа к PostgreSQL.
+- `telegram.ts` изолирует внешний API и валидирует update; `polling.ts` последовательно обрабатывает update ID, учитывает retry_after и завершает процесс при неверном токене или конфликте polling.
+- `internal-api.ts` использует общий тип команд `@freight/auth/telegram-bot-internal`, проверяет ответы и обращается только к локальному приватному API.
+- `handler.ts` хранит только краткоживущие prompts. Данные и revision черновика принадлежат серверу. После рестарта старые кнопки не работают; /start повторно читает черновик. Exactly-once доставки Telegram не гарантируется.
+- `messages.ts` — RU/EN, сообщения с персональными данными защищены protect_content. Логи содержат только названия безопасных событий.
+- При выборе регистрации в чате непроверенный исходный браузер не получает browser_hash. Для последующего подключения браузера требуется отдельное подтверждение.
+
+## Конфигурация и проверки
+
+API получает AUTH_TELEGRAM_BOT_USERNAME без @. Для защищённого staging используется отдельный overlay и разделённые env files: [инструкция запуска](../../infra/staging.md#telegram-через-movaro-bot). В закрытом dev/test окружении после согласованной активации используются отдельные TELEGRAM_BOT_TOKEN, AUTH_TELEGRAM_BOT_INTERNAL_SECRET, TELEGRAM_BOT_API_ORIGIN (loopback HTTP) и AUTH_WEB_ORIGIN (HTTPS). Не передавать Bot API token в Web/Admin или публичную сборку. Приватный маршрут /internal/telegram-bot запрещён на внешнем ingress.
+
+Команды целевой проверки после обновления lockfile и установки:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm exec turbo run build --filter=@freight/bot --filter=@freight/api
+pnpm --filter @freight/bot typecheck
+pnpm --filter @freight/bot test
+pnpm --filter @freight/api test
+pnpm lint
+pnpm licenses:report
+pnpm licenses:check
+```
+
+Отдельно выполнить совместимые тесты scripts/auth-compat на изолированной PostgreSQL 17, включая telegram-bot-internal.test.mjs. Не использовать рабочую базу.
+
+## Открытые пункты
+
+- Frozen install проходил в Quick Checks на предыдущих коммитах; подтвердить актуальный head, Biome, strict typecheck, unit/HTTP/DB проверки, обновление лицензионного отчёта и advisories.
+- Реализован выбор регистрации при неизвестном login и входа при существующем register; необходима сквозная проверка.
+- Web-return, исходная вкладка и общая форма черновика реализованы в следующем срезе; требуется сквозная проверка, включая открытие ссылки в другом браузере. Кнопка URL не гарантирует принудительный переход или выбор исходного браузера. После создания аккаунта требуется свежий login grant; отдельная автоматическая сессия регистрации не выдаётся.
+- Лимиты и очистка временных записей подключены; проверить устойчивость polling, постоянный контейнер, конфигурацию ingress и закрытого staging, отказоустойчивость после сбоя.
+- Старый Telegram OIDC удалён из runtime и Web. Открыты регенерация API, проверка DB identity fences и старых тестовых записей, общая регрессия. До окончательного review и ручной приёмки production activation запрещена.
+
+## Источники
+
+- [grammY 1.45.1 package.json](https://github.com/grammyjs/grammY/blob/v1.45.1/package.json)
+- [grammY 1.45.1 API](https://github.com/grammyjs/grammY/blob/v1.45.1/src/core/api.ts)
+- [grammY 1.45.1 client options](https://github.com/grammyjs/grammY/blob/v1.45.1/src/core/client.ts)
+- [grammY upstream package-lock](https://github.com/grammyjs/commands/blob/main/package-lock.json)
+- [Telegram Bot API](https://core.telegram.org/bots/api)
+- [ADR](../../docs/adr-telegram-bot-auth.md)

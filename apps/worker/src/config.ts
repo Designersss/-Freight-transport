@@ -6,6 +6,10 @@ import { z } from "zod";
 
 const schema = serverEnvironmentSchema.extend({
   OUTBOX_BATCH_SIZE: z.coerce.number().int().min(1).max(1000).default(100),
+  PROFILE_PHOTO_SCAN_ENABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
 });
 
 export type WorkerConfig = z.infer<typeof schema>;

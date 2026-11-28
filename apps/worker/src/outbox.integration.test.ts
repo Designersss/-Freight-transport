@@ -1,15 +1,22 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import {
   appendOutboxEvent,
   createDatabaseClient,
+  deleteExpiredRegistrationProofs,
   relayOutboxBatch,
 } from "@freight/database";
+import {
+  PrivateStorage,
+  parseStorageConfig,
+  type StorageConfig,
+} from "@freight/storage";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { parseWorkerConfig, type WorkerConfig } from "./config.js";
 import { startWorker } from "./worker.js";
 
 describe("Transactional outbox and pg-boss", () => {
   let config: WorkerConfig;
+  let storageConfig: StorageConfig;
   let database: ReturnType<typeof createDatabaseClient>;
   const aggregateId = randomUUID();
 
@@ -25,6 +32,7 @@ describe("Transactional outbox and pg-boss", () => {
       LOG_LEVEL: "silent",
       DATABASE_URL: process.env.TEST_DATABASE_URL,
     });
+    storageConfig = parseStorageConfig(process.env);
     database = createDatabaseClient(config.DATABASE_URL);
   });
 
@@ -81,7 +89,7 @@ describe("Transactional outbox and pg-boss", () => {
     const id = await database.$transaction((tx) =>
       appendOutboxEvent(tx, event()),
     );
-    const worker = await startWorker(config);
+    const worker = await startWorker(config, storageConfig);
     try {
       await vi.waitFor(
         async () => {
@@ -100,4 +108,242 @@ describe("Transactional outbox and pg-boss", () => {
       await worker.stop();
     }
   }, 30000);
+
+  it("cleans expired registration proofs in bounded concurrent batches", async () => {
+    const email = `${randomUUID()}@example.test`;
+    const hashes = Array.from({ length: 5 }, () =>
+      randomBytes(32).toString("hex"),
+    );
+    const locked = randomBytes(32).toString("hex");
+    const valid = randomBytes(32).toString("hex");
+    const where = { email };
+    try {
+      await database.registrationEmailProof.createMany({
+        data: [
+          ...hashes.map((tokenHash) => ({
+            tokenHash,
+            email,
+            expiresAt: new Date(1),
+          })),
+          { tokenHash: locked, email, expiresAt: new Date(0) },
+          {
+            tokenHash: valid,
+            email,
+            expiresAt: new Date("2099-01-01T00:00:00Z"),
+          },
+        ],
+      });
+      for (const limit of [0, -1, 1.5, 1001]) {
+        await expect(
+          deleteExpiredRegistrationProofs(database, limit),
+        ).rejects.toThrow("Invalid registration proof cleanup batch size");
+      }
+
+      // Keep one expired proof locked on an independent connection.
+      await database.$transaction(async (tx) => {
+        await tx.$queryRaw`
+          SELECT token_hash FROM registration_email_proofs
+          WHERE token_hash = ${locked}
+          FOR UPDATE
+        `;
+        const counts = await Promise.all([
+          deleteExpiredRegistrationProofs(database, 2),
+          deleteExpiredRegistrationProofs(database, 2),
+        ]);
+        expect(counts).toEqual([2, 2]);
+        expect(await database.registrationEmailProof.count({ where })).toBe(3);
+        expect(
+          await tx.registrationEmailProof.findUnique({
+            where: { tokenHash: locked },
+          }),
+        ).not.toBeNull();
+      });
+
+      expect(await deleteExpiredRegistrationProofs(database, 2)).toBe(2);
+      expect(await deleteExpiredRegistrationProofs(database, 2)).toBe(0);
+      const remaining = await database.registrationEmailProof.findMany({
+        where,
+        select: { tokenHash: true },
+      });
+      expect(remaining).toEqual([{ tokenHash: valid }]);
+    } finally {
+      await database.registrationEmailProof.deleteMany({ where });
+    }
+  });
+
+  it("cleans expired proofs on worker startup and restart without signup", async () => {
+    const email = `${randomUUID()}@example.test`;
+    const valid = randomBytes(32).toString("hex");
+    let worker: Awaited<ReturnType<typeof startWorker>> | undefined;
+    try {
+      await database.registrationEmailProof.create({
+        data: {
+          tokenHash: valid,
+          email,
+          expiresAt: new Date("2099-01-01T00:00:00Z"),
+        },
+      });
+      for (let run = 0; run < 2; run += 1) {
+        const expired = randomBytes(32).toString("hex");
+        await database.registrationEmailProof.create({
+          data: { tokenHash: expired, email, expiresAt: new Date(0) },
+        });
+        worker = await startWorker(config, storageConfig);
+        await vi.waitFor(
+          async () => {
+            const remaining = await database.registrationEmailProof.findMany({
+              where: { email },
+              select: { tokenHash: true },
+            });
+            expect(remaining).toEqual([{ tokenHash: valid }]);
+          },
+          { timeout: 15000, interval: 100 },
+        );
+        await worker.stop();
+        worker = undefined;
+      }
+    } finally {
+      try {
+        await worker?.stop();
+      } finally {
+        await database.registrationEmailProof.deleteMany({ where: { email } });
+      }
+    }
+  }, 40000);
+
+  it("cleans expired Telegram requests, drafts and receipts without deleting live records", async () => {
+    const expired = randomUUID();
+    const live = randomUUID();
+    const ids = [expired, live];
+    const hash = () => randomBytes(32).toString("hex");
+    const created = new Date();
+    const old = new Date(created.getTime() - 3_600_000);
+    const expiry = (start: Date) => new Date(start.getTime() + 300_000);
+    let worker: Awaited<ReturnType<typeof startWorker>> | undefined;
+    try {
+      for (const [id, createdAt] of [
+        [expired, old],
+        [live, created],
+      ] as const) {
+        const browserHash = hash();
+        await database.telegramBotRequest.create({
+          data: {
+            id,
+            browserHash,
+            deepLinkHash: hash(),
+            intent: "register",
+            locale: "en",
+            displayCode: "123456",
+            createdAt,
+            expiresAt: expiry(createdAt),
+          },
+        });
+        await database.telegramRegistrationDraft.create({
+          data: {
+            id,
+            browserHash,
+            telegramUserId: String(randomBytes(6).readUIntBE(0, 6) + 1),
+            locale: "en",
+            channel: "web",
+            phoneNumber: "+12025550123",
+            createdAt,
+            expiresAt: new Date(createdAt.getTime() + 1_800_000),
+          },
+        });
+        await database.telegramRegistrationCompletion.create({
+          data: { id, browserHash, createdAt, expiresAt: expiry(createdAt) },
+        });
+      }
+      worker = await startWorker(config, storageConfig);
+      await vi.waitFor(
+        async () => {
+          const where = { id: { in: ids } };
+          expect(
+            await database.telegramBotRequest.findMany({
+              where,
+              select: { id: true },
+            }),
+          ).toEqual([{ id: live }]);
+          expect(
+            await database.telegramRegistrationDraft.findMany({
+              where,
+              select: { id: true },
+            }),
+          ).toEqual([{ id: live }]);
+          expect(
+            await database.telegramRegistrationCompletion.findMany({
+              where,
+              select: { id: true },
+            }),
+          ).toEqual([{ id: live }]);
+        },
+        { timeout: 15000, interval: 100 },
+      );
+    } finally {
+      try {
+        await worker?.stop();
+      } finally {
+        const where = { id: { in: ids } };
+        await database.telegramBotRequest.deleteMany({ where });
+        await database.telegramRegistrationDraft.deleteMany({ where });
+        await database.telegramRegistrationCompletion.deleteMany({ where });
+      }
+    }
+  }, 30000);
+
+  it("deletes retired profile photos through the real scheduled worker", async () => {
+    const storage = new PrivateStorage(storageConfig);
+    const keys: string[] = [];
+    let worker: Awaited<ReturnType<typeof startWorker>> | undefined;
+    try {
+      const png = Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAGUlEQVR4nGPUiKpgIAUwkaR6VMOohiGlAQAvmQEab3goXgAAAABJRU5ErkJggg==",
+        "base64",
+      );
+      const { key } = await storage.putProfilePhoto(png, "image/png");
+      keys.push(key);
+      const absent = `profile-photos/${randomUUID()}`;
+      keys.push(absent);
+      await database.profilePhotoCleanup.createMany({
+        data: keys.map((key) => ({ key, availableAt: new Date(0) })),
+      });
+      const scan = await database.profilePhotoScan.findUniqueOrThrow({
+        where: { id: 1 },
+      });
+      worker = await startWorker(
+        { ...config, PROFILE_PHOTO_SCAN_ENABLED: true },
+        storageConfig,
+      );
+      await vi.waitFor(
+        async () => {
+          const inventory = await database.profilePhotoScan.findUniqueOrThrow({
+            where: { id: 1 },
+          });
+          expect(inventory.revision).toBeGreaterThan(scan.revision);
+          expect(
+            await database.profilePhotoCleanup.count({
+              where: { key: { in: keys } },
+            }),
+          ).toBe(0);
+        },
+        { timeout: 20000, interval: 100 },
+      );
+      await expect(storage.getProfilePhoto(key)).rejects.toMatchObject({
+        $metadata: { httpStatusCode: 404 },
+      });
+    } finally {
+      try {
+        await worker?.stop();
+      } finally {
+        try {
+          for (const key of keys) await storage.deleteProfilePhoto(key);
+          await database.profilePhotoCleanup.deleteMany({
+            where: { key: { in: keys } },
+          });
+        } finally {
+          storage.close();
+        }
+      }
+    }
+  }, 40000);
 });

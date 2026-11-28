@@ -30,6 +30,18 @@
         "S3_ACCESS_KEY",
         "S3_SECRET_KEY"
       ]
+    },
+    "@freight/web#typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "@freight/admin#typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "@freight/storybook#typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
     }
   }
 }

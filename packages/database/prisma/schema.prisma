@@ -10,13 +10,13 @@ datasource db {
 
 // Transactional outbox; processedAt denotes committed publication, not external delivery.
 model OutboxEvent {
-  id          String    @id @default(uuid()) @db.Uuid
-  eventType   String    @map("event_type")
-  aggregateId String    @map("aggregate_id")
+  id          String            @id @default(uuid()) @db.Uuid
+  eventType   String            @map("event_type")
+  aggregateId String            @map("aggregate_id")
   payload     Json
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  processedAt DateTime? @map("processed_at") @db.Timestamptz(6)
-  attempts    Int       @default(0)
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  processedAt DateTime?         @map("processed_at") @db.Timestamptz(6)
+  attempts    Int               @default(0)
   publication EventPublication?
 
   @@index([processedAt, createdAt], map: "outbox_events_pending_idx")
@@ -33,8 +33,8 @@ model EventPublication {
 }
 
 model UserEventStream {
-  userId       String                  @id @map("user_id")
-  lastSequence BigInt                  @default(0) @map("last_sequence")
+  userId        String                  @id @map("user_id")
+  lastSequence  BigInt                  @default(0) @map("last_sequence")
   invalidations UserEventInvalidation[]
 
   @@map("user_event_streams")
@@ -47,4 +47,259 @@ model UserEventInvalidation {
 
   @@id([userId, sequence])
   @@map("user_event_invalidations")
+}
+
+// Better Auth 1.7.28 core tables, managed exclusively by Prisma migrations.
+model User {
+  id                String       @id
+  name              String
+  email             String       @unique(map: "user_email_uidx")
+  emailVerified     Boolean      @default(false)
+  image             String?
+  username          String?      @unique(map: "user_username_uidx")
+  usernameChangedAt DateTime?    @map("username_changed_at") @db.Timestamptz(6)
+  telegramLinkRevision Int      @default(0)
+  credentialRevision Int        @default(0)
+  createdAt         DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime     @default(now()) @updatedAt @db.Timestamptz(6)
+  accounts          Account[]
+  sessions          Session[]
+  profile           UserProfile?
+  pendingEmailChange PendingEmailChange?
+
+  @@map("user")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime? @db.Timestamptz(6)
+  refreshTokenExpiresAt DateTime? @db.Timestamptz(6)
+  scope                 String?
+  linkSessionId         String?
+  linkRevision          Int?
+  registrationProofHash String?
+  registrationProfile   String?
+  rotationUserId        String?
+  rotationEmail         String?
+  rotationRevision      Int?
+  telegramSessions      Session[] @relation("TelegramLoginAccount")
+  password              String?
+  createdAt             DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId], map: "account_providerId_accountId_uidx")
+  @@index([userId], map: "account_userId_idx")
+  @@map("account")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime @db.Timestamptz(6)
+  token     String   @unique(map: "session_token_uidx")
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  ipAddress String?
+  userAgent String?
+  telegramAccountId String?
+  telegramBotRequestId String?
+  telegramBotBrowserHash String?
+  emailLoginProof String?
+  emailLoginRevision Int?
+  adminSession Boolean @default(false)
+  telegramAccount Account? @relation("TelegramLoginAccount", fields: [telegramAccountId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "session_telegram_account_fkey")
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  pendingEmailChanges PendingEmailChange[]
+
+  @@index([userId], map: "session_userId_idx")
+  @@index([telegramAccountId], map: "session_telegram_account_idx")
+  @@map("session")
+}
+
+model PendingEmailChange {
+  userId     String   @id @map("user_id")
+  sessionId  String   @map("session_id")
+  oldEmail   String   @map("old_email")
+  newEmail   String   @map("new_email")
+  tokenHash  String   @unique(map: "pending_email_change_token_hash_uidx") @map("token_hash")
+  stage      String
+  locale     String
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(6)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session    Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId], map: "pending_email_change_session_idx")
+  @@map("pending_email_change")
+}
+
+// Proof of mailbox ownership before any credential account is created.
+model RegistrationEmailProof {
+  tokenHash String   @id @map("token_hash")
+  email     String
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+
+  @@index([expiresAt], map: "registration_email_proofs_expiry_idx")
+  @@map("registration_email_proofs")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  resetEmail String?
+  resetRevision Int?
+  expiresAt  DateTime @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([identifier], map: "verification_identifier_idx")
+  @@map("verification")
+}
+
+model RateLimit {
+  id          String @id
+  key         String @unique(map: "rateLimit_key_uidx")
+  count       Int
+  lastRequest BigInt
+
+  @@map("rateLimit")
+}
+
+model AdminRateLimit {
+  id          String @id
+  key         String @unique(map: "admin_rate_limits_key_uidx")
+  count       Int
+  lastRequest BigInt
+
+  @@map("admin_rate_limits")
+}
+
+enum UserRole {
+  PLATFORM_ADMIN
+  COMPANY_OWNER
+  DISPATCHER
+  DRIVER
+
+  @@map("user_role")
+}
+
+enum UserStatus {
+  ACTIVE
+  DEACTIVATED
+
+  @@map("user_status")
+}
+
+// Absence of a profile means onboarding is incomplete, not an authorized role.
+model UserProfile {
+  userId      String     @id @map("user_id")
+  firstName   String     @map("first_name")
+  lastName    String     @map("last_name")
+  role        UserRole
+  status      UserStatus @default(ACTIVE)
+  birthDate   DateTime   @map("birth_date") @db.Date
+  companyName String?    @map("company_name")
+  telegramPhoneNumber String? @map("telegram_phone_number")
+  photoKey    String?    @unique(map: "user_profiles_photo_key_uidx") @map("photo_key")
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@map("user_profiles")
+}
+
+// Application-level limits independent of Better Auth's per-IP buckets.
+model AuthMailRateLimit {
+  key       String   @id
+  count     Int
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+
+  @@index([expiresAt], map: "auth_mail_rate_limits_expiry_idx")
+  @@map("auth_mail_rate_limits")
+}
+
+// Staged upload reservations and retired objects awaiting private S3 cleanup.
+model ProfilePhotoCleanup {
+  key         String   @id
+  ownerId     String?  @map("owner_id")
+  availableAt DateTime @map("available_at") @db.Timestamptz(6)
+  attempts    Int      @default(0)
+
+  @@index([availableAt, key], map: "profile_photo_cleanup_available_idx")
+  @@map("profile_photo_cleanup")
+}
+
+// A single durable cursor for the private profile photo inventory.
+model ProfilePhotoScan {
+  id                Int     @id
+  revision          Int     @default(0)
+  continuationToken String? @map("continuation_token")
+
+  @@map("profile_photo_scan")
+}
+
+// Short-lived bot approval request, never a Better Auth session.
+model TelegramBotRequest {
+  id             String   @id @db.Uuid
+  browserHash    String   @unique(map: "telegram_bot_requests_browser_uidx") @map("browser_hash")
+  deepLinkHash   String   @unique(map: "telegram_bot_requests_deep_link_uidx") @map("deep_link_hash")
+  returnHash     String?  @map("return_hash")
+  intent         String
+  locale         String
+  status         String   @default("pending")
+  displayCode    String   @map("display_code")
+  createdAt      DateTime @map("created_at") @db.Timestamptz(6)
+  expiresAt      DateTime @map("expires_at") @db.Timestamptz(6)
+  telegramUserId String?  @map("telegram_user_id")
+  firstName      String?  @map("first_name")
+  lastName       String?  @map("last_name")
+  phoneNumber    String?  @map("phone_number")
+  linkUserId     String?  @map("link_user_id")
+  linkSessionId  String?  @map("link_session_id")
+  linkRevision   Int?     @map("link_revision")
+  registrationDraftId String? @map("registration_draft_id") @db.Uuid
+
+  @@index([expiresAt], map: "telegram_bot_requests_expiry_idx")
+  @@map("telegram_bot_requests")
+}
+
+// A shared, short-lived registration form; no account or session exists yet.
+model TelegramRegistrationDraft {
+  id             String   @id @db.Uuid
+  browserHash    String?  @unique(map: "telegram_registration_drafts_browser_uidx") @map("browser_hash")
+  telegramUserId String   @unique(map: "telegram_registration_drafts_actor_uidx") @map("telegram_user_id")
+  locale         String
+  channel        String
+  revision       Int      @default(0)
+  createdAt      DateTime @map("created_at") @db.Timestamptz(6)
+  expiresAt      DateTime @map("expires_at") @db.Timestamptz(6)
+  phoneNumber    String   @map("phone_number")
+  firstName      String?  @map("first_name")
+  lastName       String?  @map("last_name")
+  role           String?
+  birthDate      DateTime? @map("birth_date") @db.Date
+  companyName    String?  @map("company_name")
+  username       String?
+
+  @@index([expiresAt], map: "telegram_registration_drafts_expiry_idx")
+  @@map("telegram_registration_drafts")
+}
+
+// Short-lived notification only, never an identity or session grant.
+model TelegramRegistrationCompletion {
+  id          String   @id @db.Uuid
+  browserHash String   @map("browser_hash")
+  createdAt   DateTime @map("created_at") @db.Timestamptz(6)
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(6)
+
+  @@index([expiresAt], map: "telegram_registration_completions_expiry_idx")
+  @@map("telegram_registration_completions")
 }

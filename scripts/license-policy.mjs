@@ -49,6 +49,13 @@ export function isReviewedWorkspaceLicense(name, license, sources) {
 
 export function isAllowedLicense(name, license, sources) {
   if (allowedLicenses.has(license)) return true;
+  if (
+    name === "nodemailer@10.6.1" &&
+    license === "MIT-0" &&
+    sources.size === 1 &&
+    sources.has("workspace")
+  )
+    return true;
   if (isReviewedWorkspaceLicense(name, license, sources)) return true;
   if (
     name === "@fontsource-variable/manrope@5.3.0" &&

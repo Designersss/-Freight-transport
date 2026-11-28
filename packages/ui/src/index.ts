@@ -2,6 +2,7 @@ export { AppShell } from "./app-shell";
 export { Alert, AlertDescription, AlertTitle } from "./components/alert";
 export { Badge, badgeVariants } from "./components/badge";
 export { Button, buttonVariants } from "./components/button";
+export { Calendar } from "./components/calendar";
 export {
   Card,
   CardAction,
@@ -11,6 +12,7 @@ export {
   CardHeader,
   CardTitle,
 } from "./components/card";
+export { DatePicker } from "./components/date-picker";
 export {
   Empty,
   EmptyContent,
@@ -33,6 +35,13 @@ export {
 } from "./components/field";
 export { Input } from "./components/input";
 export { Label } from "./components/label";
+export {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+  PopoverTrigger,
+} from "./components/popover";
+export { ChoiceOption, RoleOption } from "./components/role-option";
 export { Separator } from "./components/separator";
 export { Skeleton } from "./components/skeleton";
 export {
@@ -47,6 +56,7 @@ export {
 } from "./components/table";
 export { Textarea } from "./components/textarea";
 export { Header } from "./header";
+export { formatDateInput, parseDateInput } from "./lib/date-input";
 export { cn } from "./lib/utils";
 export { PageLayout } from "./page-layout";
 export { UiProvider } from "./provider";

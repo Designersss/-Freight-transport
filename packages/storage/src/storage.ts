@@ -3,6 +3,7 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadBucketCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -10,10 +11,25 @@ import type { StorageConfig } from "./config.js";
 import {
   type AllowedContentType,
   assertObjectKey,
+  assertProfilePhotoKey,
   createObjectKey,
+  createProfilePhotoKey,
   MAX_FILE_BYTES,
+  MAX_PROFILE_PHOTO_BYTES,
   validateFile,
+  validateProfilePhoto,
 } from "./file-policy.js";
+import {
+  normalizeProfilePhoto,
+  ProfilePhotoBusyError,
+} from "./profile-photo.js";
+
+export class InvalidProfilePhotoError extends Error {
+  constructor() {
+    super("Invalid profile photo");
+    this.name = "InvalidProfilePhotoError";
+  }
+}
 
 const REQUEST_TIMEOUT_MS = 15000;
 
@@ -48,6 +64,15 @@ export class PrivateStorage {
   ): Promise<{ key: string; contentType: AllowedContentType; size: number }> {
     validateFile(contentType, bytes);
     const key = createObjectKey();
+    await this.write(key, bytes, contentType);
+    return { key, contentType, size: bytes.byteLength };
+  }
+
+  private async write(
+    key: string,
+    bytes: Uint8Array,
+    contentType: AllowedContentType,
+  ): Promise<void> {
     await this.client.send(
       new PutObjectCommand({
         Bucket: this.config.S3_BUCKET,
@@ -58,13 +83,102 @@ export class PrivateStorage {
       }),
       { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
     );
-    return { key, contentType, size: bytes.byteLength };
+  }
+
+  async putProfilePhoto(
+    bytes: Uint8Array,
+    contentType: string,
+    key = createProfilePhotoKey(),
+  ): Promise<{
+    key: string;
+    contentType: "image/jpeg";
+    size: number;
+  }> {
+    assertProfilePhotoKey(key);
+    const photo = await normalizeProfilePhoto(bytes, contentType).catch(
+      (error: unknown) => {
+        if (error instanceof ProfilePhotoBusyError) throw error;
+        throw new InvalidProfilePhotoError();
+      },
+    );
+    await this.write(key, photo.bytes, photo.contentType);
+    return {
+      key,
+      contentType: photo.contentType,
+      size: photo.bytes.byteLength,
+    };
   }
 
   async get(
     key: string,
   ): Promise<{ bytes: Uint8Array; contentType: AllowedContentType }> {
     assertObjectKey(key);
+    return this.read(key, MAX_FILE_BYTES);
+  }
+
+  // A bounded internal inventory of this namespace only. Never read or
+  // delete other file types during profile photo reconciliation.
+  async listProfilePhotos(
+    continuationToken: string | null,
+    limit = 100,
+  ): Promise<{
+    objects: { key: string; lastModified: Date }[];
+    nextToken: string | null;
+  }> {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100)
+      throw new Error("Invalid profile photo inventory limit");
+    const result = await this.client.send(
+      new ListObjectsV2Command({
+        Bucket: this.config.S3_BUCKET,
+        Prefix: "profile-photos/",
+        MaxKeys: limit,
+        ...(continuationToken === null
+          ? {}
+          : { ContinuationToken: continuationToken }),
+      }),
+      { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
+    );
+    const nextToken = result.IsTruncated ? result.NextContinuationToken : null;
+    if (result.IsTruncated && (!nextToken || nextToken === continuationToken))
+      throw new Error("Invalid profile photo inventory cursor");
+    const objects: { key: string; lastModified: Date }[] = [];
+    for (const object of result.Contents ?? []) {
+      if (
+        !object.Key ||
+        !object.LastModified ||
+        !Number.isFinite(object.LastModified.getTime())
+      )
+        continue;
+      try {
+        assertProfilePhotoKey(object.Key);
+      } catch {
+        continue;
+      }
+      objects.push({ key: object.Key, lastModified: object.LastModified });
+    }
+    if (objects.length > limit)
+      throw new Error("Invalid profile photo inventory size");
+    return { objects, nextToken: nextToken ?? null };
+  }
+
+  async getProfilePhoto(
+    key: string,
+  ): Promise<{ bytes: Uint8Array; contentType: "image/jpeg" }> {
+    assertProfilePhotoKey(key);
+    const { bytes, contentType } = await this.read(
+      key,
+      MAX_PROFILE_PHOTO_BYTES,
+    );
+    validateProfilePhoto(contentType, bytes);
+    if (contentType !== "image/jpeg")
+      throw new Error("Unsupported stored profile photo content type");
+    return { bytes, contentType };
+  }
+
+  private async read(
+    key: string,
+    maxBytes: number,
+  ): Promise<{ bytes: Uint8Array; contentType: AllowedContentType }> {
     const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
     const result = await this.client.send(
       new GetObjectCommand({ Bucket: this.config.S3_BUCKET, Key: key }),
@@ -77,7 +191,7 @@ export class PrivateStorage {
       addAbortSignal(signal, body);
       if (
         result.ContentLength !== undefined &&
-        (result.ContentLength < 1 || result.ContentLength > MAX_FILE_BYTES)
+        (result.ContentLength < 1 || result.ContentLength > maxBytes)
       ) {
         throw new Error("Invalid stored file size");
       }
@@ -87,7 +201,7 @@ export class PrivateStorage {
         if (!Buffer.isBuffer(chunk))
           throw new Error("Invalid object stream chunk");
         size += chunk.byteLength;
-        if (size > MAX_FILE_BYTES) throw new Error("Invalid stored file size");
+        if (size > maxBytes) throw new Error("Invalid stored file size");
         chunks.push(chunk);
       }
       const bytes = Buffer.concat(chunks, size);
@@ -101,6 +215,15 @@ export class PrivateStorage {
 
   async delete(key: string): Promise<void> {
     assertObjectKey(key);
+    await this.remove(key);
+  }
+
+  async deleteProfilePhoto(key: string): Promise<void> {
+    assertProfilePhotoKey(key);
+    await this.remove(key);
+  }
+
+  private async remove(key: string): Promise<void> {
     await this.client.send(
       new DeleteObjectCommand({ Bucket: this.config.S3_BUCKET, Key: key }),
       { abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },

@@ -12,15 +12,17 @@
     "test:integration": "vitest run src/outbox.integration.test.ts"
   },
   "dependencies": {
+    "@freight/auth": "workspace:*",
     "@freight/database": "workspace:*",
+    "@freight/storage": "workspace:*",
     "pg-boss": "12.39.0",
     "pino": "10.4.0",
-    "zod": "4.1.12",
+    "zod": "4.6.7",
     "@freight/config": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.0.0",
     "typescript": "5.9.3",
-    "vitest": "4.0.18"
+    "vitest": "4.1.12"
   }
 }

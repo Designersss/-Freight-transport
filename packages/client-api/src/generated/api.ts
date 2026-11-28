@@ -43,6 +43,1225 @@ export type GetReadiness503 = {
   error: GetReadiness503Error;
 };
 
+export type SignInEmailBody = {
+  /** @pattern ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$ */
+  email: string;
+  /**
+     * @minLength 6
+     * @maxLength 128
+     */
+  password: string;
+};
+
+export type SignInEmail200 = {
+  success: true;
+};
+
+export type SignInEmail400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignInEmail401 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignInEmail403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignInEmail429 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignInEmail500 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignOutBody = { [key: string]: never };
+
+export type SignOut200 = {
+  success: true;
+};
+
+export type SignOut400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignOut401 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignOut403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignOut429 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignOut503 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetAuthSession200User = {
+  id: string;
+  name: string;
+  /** @nullable */
+  email: string | null;
+  emailVerified: boolean;
+};
+
+export type GetAuthSession200Session = {
+  expiresAt: string;
+};
+
+/**
+ * @nullable
+ */
+export type GetAuthSession200 = {
+  user: GetAuthSession200User;
+  session: GetAuthSession200Session;
+} | null;
+
+export type GetAuthSession400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetAuthSession403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetAuthSession500 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ChangePasswordBody = {
+  /**
+     * @minLength 6
+     * @maxLength 128
+     */
+  currentPassword: string;
+  /**
+     * @minLength 6
+     * @maxLength 128
+     */
+  newPassword: string;
+};
+
+export type ChangePassword200 = {
+  success: true;
+};
+
+export type ChangePassword400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ChangePassword401 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ChangePassword403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ChangePassword429 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ChangePassword500 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type RequestPasswordResetBodyLocale = typeof RequestPasswordResetBodyLocale[keyof typeof RequestPasswordResetBodyLocale];
+
+
+export const RequestPasswordResetBodyLocale = {
+  ru: 'ru',
+  en: 'en',
+} as const;
+
+export type RequestPasswordResetBody = {
+  /** @pattern ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$ */
+  email: string;
+  locale?: RequestPasswordResetBodyLocale;
+};
+
+export type RequestPasswordReset200 = {
+  success: true;
+};
+
+export type RequestPasswordReset400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type RequestPasswordReset403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type RequestPasswordReset429 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type RequestPasswordReset500 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type RequestPasswordReset503 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ResetPasswordBody = {
+  /**
+     * @minLength 1
+     * @maxLength 512
+     */
+  token: string;
+  /**
+     * @minLength 6
+     * @maxLength 128
+     */
+  newPassword: string;
+};
+
+export type ResetPassword200 = {
+  success: true;
+};
+
+export type ResetPassword400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ResetPassword403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ResetPassword429 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ResetPassword500 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type StartEmailRegistrationBodyLocale = typeof StartEmailRegistrationBodyLocale[keyof typeof StartEmailRegistrationBodyLocale];
+
+
+export const StartEmailRegistrationBodyLocale = {
+  ru: 'ru',
+  en: 'en',
+} as const;
+
+export type StartEmailRegistrationBody = {
+  /** @pattern ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$ */
+  email: string;
+  locale?: StartEmailRegistrationBodyLocale;
+};
+
+export type StartEmailRegistration200 = {
+  success: true;
+};
+
+export type StartEmailRegistration400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type StartEmailRegistration403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type StartEmailRegistration429 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type StartEmailRegistration503 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ReadEmailRegistrationBody = {
+  /** @pattern ^[A-Za-z0-9_-]{43}$ */
+  token: string;
+};
+
+export type ReadEmailRegistration200 = {
+  /** @pattern ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$ */
+  email: string;
+};
+
+export type ReadEmailRegistration400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ReadEmailRegistration403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ReadEmailRegistration409 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ReadEmailRegistration429 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ReadEmailRegistration503 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type CompleteEmailRegistrationBodyRegistrationProfileRole = typeof CompleteEmailRegistrationBodyRegistrationProfileRole[keyof typeof CompleteEmailRegistrationBodyRegistrationProfileRole];
+
+
+export const CompleteEmailRegistrationBodyRegistrationProfileRole = {
+  COMPANY_OWNER: 'COMPANY_OWNER',
+  DISPATCHER: 'DISPATCHER',
+  DRIVER: 'DRIVER',
+} as const;
+
+export type CompleteEmailRegistrationBodyRegistrationProfile = {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  firstName: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  lastName: string;
+  role: CompleteEmailRegistrationBodyRegistrationProfileRole;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$ */
+  birthDate: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  companyName?: string;
+};
+
+export type CompleteEmailRegistrationBodyRegistration = {
+  profile: CompleteEmailRegistrationBodyRegistrationProfile;
+  /** @pattern ^[A-Za-z][A-Za-z0-9_]{2,31}$ */
+  username: string;
+};
+
+export type CompleteEmailRegistrationBody = {
+  /** @pattern ^[A-Za-z0-9_-]{43}$ */
+  token: string;
+  /**
+     * @minLength 6
+     * @maxLength 128
+     */
+  password: string;
+  registration: CompleteEmailRegistrationBodyRegistration;
+};
+
+export type CompleteEmailRegistration200 = {
+  success: true;
+};
+
+export type CompleteEmailRegistration400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type CompleteEmailRegistration403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type CompleteEmailRegistration409 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type CompleteEmailRegistration429 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type CompleteEmailRegistration503 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetAuthProfile200Role = typeof GetAuthProfile200Role[keyof typeof GetAuthProfile200Role];
+
+
+export const GetAuthProfile200Role = {
+  COMPANY_OWNER: 'COMPANY_OWNER',
+  DISPATCHER: 'DISPATCHER',
+  DRIVER: 'DRIVER',
+} as const;
+
+export type GetAuthProfile200 = {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  firstName: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  lastName: string;
+  role: GetAuthProfile200Role;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$ */
+  birthDate: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     * @nullable
+     */
+  companyName: string | null;
+};
+
+export type GetAuthProfile400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetAuthProfile401 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetAuthProfile403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetAuthProfile500 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type UpdateAuthProfileBody = {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  firstName: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  lastName: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$ */
+  birthDate: string;
+};
+
+export type UpdateAuthProfile200Role = typeof UpdateAuthProfile200Role[keyof typeof UpdateAuthProfile200Role];
+
+
+export const UpdateAuthProfile200Role = {
+  COMPANY_OWNER: 'COMPANY_OWNER',
+  DISPATCHER: 'DISPATCHER',
+  DRIVER: 'DRIVER',
+} as const;
+
+export type UpdateAuthProfile200 = {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  firstName: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  lastName: string;
+  role: UpdateAuthProfile200Role;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$ */
+  birthDate: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     * @nullable
+     */
+  companyName: string | null;
+};
+
+export type UpdateAuthProfile400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type UpdateAuthProfile401 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type UpdateAuthProfile403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type UpdateAuthProfile500 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type CheckOrSuggestUsernameBody = {
+  action: 'check';
+  /** @pattern ^[A-Za-z][A-Za-z0-9_]{2,31}$ */
+  username: string;
+} | {
+  action: 'suggest';
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  firstName: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  lastName: string;
+};
+
+export type CheckOrSuggestUsername200 = {
+  available: boolean;
+} | {
+  /** @pattern ^[A-Za-z][A-Za-z0-9_]{2,31}$ */
+  username: string;
+};
+
+export type CheckOrSuggestUsername400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type CheckOrSuggestUsername403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type CheckOrSuggestUsername429 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type CheckOrSuggestUsername503 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetUsernameSettings200 = {
+  /**
+     * @nullable
+     * @pattern ^[A-Za-z][A-Za-z0-9_]{2,31}$
+     */
+  username: string | null;
+  /**
+     * @nullable
+     * @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+     */
+  nextChangeAt: string | null;
+};
+
+export type GetUsernameSettings400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetUsernameSettings401 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetUsernameSettings403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetUsernameSettings500 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ChangeUsernameBody = {
+  /** @pattern ^[A-Za-z][A-Za-z0-9_]{2,31}$ */
+  username: string;
+};
+
+export type ChangeUsername200 = {
+  /**
+     * @nullable
+     * @pattern ^[A-Za-z][A-Za-z0-9_]{2,31}$
+     */
+  username: string | null;
+  /**
+     * @nullable
+     * @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+     */
+  nextChangeAt: string | null;
+};
+
+export type ChangeUsername400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ChangeUsername401 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ChangeUsername403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ChangeUsername409 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ChangeUsername500 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetActiveSessions200SessionsItem = {
+  /**
+     * @minLength 1
+     * @maxLength 128
+     */
+  id: string;
+  current: boolean;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  createdAt: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  expiresAt: string;
+  /**
+     * @maxLength 256
+     * @nullable
+     */
+  userAgent: string | null;
+};
+
+export type GetActiveSessions200 = {
+  sessions: GetActiveSessions200SessionsItem[];
+  hasMore: boolean;
+};
+
+export type GetActiveSessions400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetActiveSessions401 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetActiveSessions403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetActiveSessions429 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetActiveSessions503 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type RevokeActiveSessionsBody = {
+  action: 'revoke';
+  /**
+     * @minLength 1
+     * @maxLength 128
+     */
+  id: string;
+} | {
+  action: 'revokeOthers';
+};
+
+export type RevokeActiveSessions200 = {
+  success: true;
+};
+
+export type RevokeActiveSessions400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type RevokeActiveSessions401 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type RevokeActiveSessions403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type RevokeActiveSessions404 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type RevokeActiveSessions409 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type RevokeActiveSessions500 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type RevokeActiveSessions503 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type StartEmailChangeBodyLocale = typeof StartEmailChangeBodyLocale[keyof typeof StartEmailChangeBodyLocale];
+
+
+export const StartEmailChangeBodyLocale = {
+  ru: 'ru',
+  en: 'en',
+} as const;
+
+export type StartEmailChangeBody = {
+  /** @pattern ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$ */
+  newEmail: string;
+  locale?: StartEmailChangeBodyLocale;
+};
+
+export type StartEmailChange200Stage = typeof StartEmailChange200Stage[keyof typeof StartEmailChange200Stage];
+
+
+export const StartEmailChange200Stage = {
+  'old-sent': 'old-sent',
+  'new-sent': 'new-sent',
+  completed: 'completed',
+} as const;
+
+export type StartEmailChange200 = {
+  stage: StartEmailChange200Stage;
+};
+
+export type StartEmailChange400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type StartEmailChange401 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type StartEmailChange403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type StartEmailChange429 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type StartEmailChange503 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ConfirmEmailChangeBody = {
+  /** @pattern ^[A-Za-z0-9_-]{43}$ */
+  token: string;
+};
+
+export type ConfirmEmailChange200Stage = typeof ConfirmEmailChange200Stage[keyof typeof ConfirmEmailChange200Stage];
+
+
+export const ConfirmEmailChange200Stage = {
+  'old-sent': 'old-sent',
+  'new-sent': 'new-sent',
+  completed: 'completed',
+} as const;
+
+export type ConfirmEmailChange200 = {
+  stage: ConfirmEmailChange200Stage;
+};
+
+export type ConfirmEmailChange400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ConfirmEmailChange403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ConfirmEmailChange429 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type ConfirmEmailChange503 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type DeactivateAccountBody = {
+  confirm: true;
+};
+
+export type DeactivateAccount200 = {
+  success: true;
+};
+
+export type DeactivateAccount400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type DeactivateAccount401 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type DeactivateAccount403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type DeactivateAccount503 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetTelegramStatus200 = {
+  enabled: boolean;
+};
+
+export type GetTelegramStatus400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetTelegramStatus403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetTelegramSettings200 = {
+  linked: boolean;
+  canLink: boolean;
+  requiresFreshSession: boolean;
+};
+
+export type GetTelegramSettings400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetTelegramSettings401 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetTelegramSettings403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetTelegramSettings503 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetCompanyOwnerCabinet200Role = typeof GetCompanyOwnerCabinet200Role[keyof typeof GetCompanyOwnerCabinet200Role];
+
+
+export const GetCompanyOwnerCabinet200Role = {
+  COMPANY_OWNER: 'COMPANY_OWNER',
+  DISPATCHER: 'DISPATCHER',
+  DRIVER: 'DRIVER',
+} as const;
+
+export type GetCompanyOwnerCabinet200 = {
+  role: GetCompanyOwnerCabinet200Role;
+};
+
+export type GetCompanyOwnerCabinet400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetCompanyOwnerCabinet401 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetCompanyOwnerCabinet403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetCompanyOwnerCabinet503 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetDispatcherCabinet200Role = typeof GetDispatcherCabinet200Role[keyof typeof GetDispatcherCabinet200Role];
+
+
+export const GetDispatcherCabinet200Role = {
+  COMPANY_OWNER: 'COMPANY_OWNER',
+  DISPATCHER: 'DISPATCHER',
+  DRIVER: 'DRIVER',
+} as const;
+
+export type GetDispatcherCabinet200 = {
+  role: GetDispatcherCabinet200Role;
+};
+
+export type GetDispatcherCabinet400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetDispatcherCabinet401 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetDispatcherCabinet403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetDispatcherCabinet503 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetDriverCabinet200Role = typeof GetDriverCabinet200Role[keyof typeof GetDriverCabinet200Role];
+
+
+export const GetDriverCabinet200Role = {
+  COMPANY_OWNER: 'COMPANY_OWNER',
+  DISPATCHER: 'DISPATCHER',
+  DRIVER: 'DRIVER',
+} as const;
+
+export type GetDriverCabinet200 = {
+  role: GetDriverCabinet200Role;
+};
+
+export type GetDriverCabinet400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetDriverCabinet401 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetDriverCabinet403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetDriverCabinet503 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignInAdminBody = {
+  /** @pattern ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$ */
+  email: string;
+  /**
+     * @minLength 1
+     * @maxLength 128
+     */
+  password: string;
+};
+
+export type SignInAdmin200 = {
+  success: true;
+};
+
+export type SignInAdmin400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignInAdmin401 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignInAdmin403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignInAdmin404 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignInAdmin429 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignInAdmin503 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignOutAdminBody = { [key: string]: never };
+
+export type SignOutAdmin200 = {
+  success: true;
+};
+
+export type SignOutAdmin400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignOutAdmin401 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignOutAdmin403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignOutAdmin404 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignOutAdmin429 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type SignOutAdmin503 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetAdminSession200Role = typeof GetAdminSession200Role[keyof typeof GetAdminSession200Role];
+
+
+export const GetAdminSession200Role = {
+  PLATFORM_ADMIN: 'PLATFORM_ADMIN',
+} as const;
+
+/**
+ * @nullable
+ */
+export type GetAdminSession200 = {
+  name: string;
+  role: GetAdminSession200Role;
+  expiresAt: string;
+} | null;
+
+export type GetAdminSession400 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetAdminSession401 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetAdminSession403 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetAdminSession404 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type GetAdminSession503 = {
+  code: string;
+  /** @pattern ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$ */
+  nextChangeAt?: string;
+};
+
+export type HTTPStatusCode1xx = 100 | 101 | 102 | 103;
+export type HTTPStatusCode2xx = 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207;
+export type HTTPStatusCode3xx = 300 | 301 | 302 | 303 | 304 | 305 | 307 | 308;
+export type HTTPStatusCode4xx = 400 | 401 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 410 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418 | 419 | 420 | 421 | 422 | 423 | 424 | 426 | 428 | 429 | 431 | 451;
+export type HTTPStatusCode5xx = 500 | 501 | 502 | 503 | 504 | 505 | 507 | 511;
+export type HTTPStatusCodes = HTTPStatusCode1xx | HTTPStatusCode2xx | HTTPStatusCode3xx | HTTPStatusCode4xx | HTTPStatusCode5xx;
+
 export type getLivenessResponse200 = {
   data: GetLiveness200
   status: 200
@@ -132,4 +1351,2209 @@ export const getReadiness = async ( options?: RequestInit, fetchFn?: typeof glob
 
   const data: getReadinessResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getReadinessResponse
+}
+
+
+
+export type signInEmailResponse200 = {
+  data: SignInEmail200
+  status: 200
+}
+
+export type signInEmailResponse400 = {
+  data: SignInEmail400
+  status: 400
+}
+
+export type signInEmailResponse401 = {
+  data: SignInEmail401
+  status: 401
+}
+
+export type signInEmailResponse403 = {
+  data: SignInEmail403
+  status: 403
+}
+
+export type signInEmailResponse429 = {
+  data: SignInEmail429
+  status: 429
+}
+
+export type signInEmailResponse500 = {
+  data: SignInEmail500
+  status: 500
+}
+
+export type signInEmailResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 401 | 403 | 429 | 500>
+}
+
+export type signInEmailResponseSuccess = (signInEmailResponse200) & {
+  headers: Headers;
+};
+export type signInEmailResponseError = (signInEmailResponse400 | signInEmailResponse401 | signInEmailResponse403 | signInEmailResponse429 | signInEmailResponse500 | signInEmailResponseDefault) & {
+  headers: Headers;
+};
+
+export type signInEmailResponse = (signInEmailResponseSuccess | signInEmailResponseError)
+
+export const getSignInEmailUrl = () => {
+
+
+
+
+  return `/api/v1/auth/sign-in/email`
+}
+
+/**
+ * @summary Sign in with email
+ */
+export const signInEmail = async (signInEmailBody: SignInEmailBody, options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<signInEmailResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await (fetchFn ?? fetch)(getSignInEmailUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(signInEmailBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: signInEmailResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as signInEmailResponse
+}
+
+
+
+export type signOutResponse200 = {
+  data: SignOut200
+  status: 200
+}
+
+export type signOutResponse400 = {
+  data: SignOut400
+  status: 400
+}
+
+export type signOutResponse401 = {
+  data: SignOut401
+  status: 401
+}
+
+export type signOutResponse403 = {
+  data: SignOut403
+  status: 403
+}
+
+export type signOutResponse429 = {
+  data: SignOut429
+  status: 429
+}
+
+export type signOutResponse503 = {
+  data: SignOut503
+  status: 503
+}
+
+export type signOutResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 401 | 403 | 429 | 503>
+}
+
+export type signOutResponseSuccess = (signOutResponse200) & {
+  headers: Headers;
+};
+export type signOutResponseError = (signOutResponse400 | signOutResponse401 | signOutResponse403 | signOutResponse429 | signOutResponse503 | signOutResponseDefault) & {
+  headers: Headers;
+};
+
+export type signOutResponse = (signOutResponseSuccess | signOutResponseError)
+
+export const getSignOutUrl = () => {
+
+
+
+
+  return `/api/v1/auth/sign-out`
+}
+
+/**
+ * @summary Sign out
+ */
+export const signOut = async (signOutBody: SignOutBody, options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<signOutResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await (fetchFn ?? fetch)(getSignOutUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(signOutBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: signOutResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as signOutResponse
+}
+
+
+
+export type getAuthSessionResponse200 = {
+  data: GetAuthSession200
+  status: 200
+}
+
+export type getAuthSessionResponse400 = {
+  data: GetAuthSession400
+  status: 400
+}
+
+export type getAuthSessionResponse403 = {
+  data: GetAuthSession403
+  status: 403
+}
+
+export type getAuthSessionResponse500 = {
+  data: GetAuthSession500
+  status: 500
+}
+
+export type getAuthSessionResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 403 | 500>
+}
+
+export type getAuthSessionResponseSuccess = (getAuthSessionResponse200) & {
+  headers: Headers;
+};
+export type getAuthSessionResponseError = (getAuthSessionResponse400 | getAuthSessionResponse403 | getAuthSessionResponse500 | getAuthSessionResponseDefault) & {
+  headers: Headers;
+};
+
+export type getAuthSessionResponse = (getAuthSessionResponseSuccess | getAuthSessionResponseError)
+
+export const getGetAuthSessionUrl = () => {
+
+
+
+
+  return `/api/v1/auth/get-session`
+}
+
+/**
+ * Returns null without a session; never returns the session token.
+ * @summary Read public session
+ */
+export const getAuthSession = async ( options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<getAuthSessionResponse> => {
+
+  const res = await (fetchFn ?? fetch)(getGetAuthSessionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAuthSessionResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getAuthSessionResponse
+}
+
+
+
+export type changePasswordResponse200 = {
+  data: ChangePassword200
+  status: 200
+}
+
+export type changePasswordResponse400 = {
+  data: ChangePassword400
+  status: 400
+}
+
+export type changePasswordResponse401 = {
+  data: ChangePassword401
+  status: 401
+}
+
+export type changePasswordResponse403 = {
+  data: ChangePassword403
+  status: 403
+}
+
+export type changePasswordResponse429 = {
+  data: ChangePassword429
+  status: 429
+}
+
+export type changePasswordResponse500 = {
+  data: ChangePassword500
+  status: 500
+}
+
+export type changePasswordResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 401 | 403 | 429 | 500>
+}
+
+export type changePasswordResponseSuccess = (changePasswordResponse200) & {
+  headers: Headers;
+};
+export type changePasswordResponseError = (changePasswordResponse400 | changePasswordResponse401 | changePasswordResponse403 | changePasswordResponse429 | changePasswordResponse500 | changePasswordResponseDefault) & {
+  headers: Headers;
+};
+
+export type changePasswordResponse = (changePasswordResponseSuccess | changePasswordResponseError)
+
+export const getChangePasswordUrl = () => {
+
+
+
+
+  return `/api/v1/auth/change-password`
+}
+
+/**
+ * Verified email account required; other sessions are revoked.
+ * @summary Change password
+ */
+export const changePassword = async (changePasswordBody: ChangePasswordBody, options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<changePasswordResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await (fetchFn ?? fetch)(getChangePasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(changePasswordBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: changePasswordResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as changePasswordResponse
+}
+
+
+
+export type requestPasswordResetResponse200 = {
+  data: RequestPasswordReset200
+  status: 200
+}
+
+export type requestPasswordResetResponse400 = {
+  data: RequestPasswordReset400
+  status: 400
+}
+
+export type requestPasswordResetResponse403 = {
+  data: RequestPasswordReset403
+  status: 403
+}
+
+export type requestPasswordResetResponse429 = {
+  data: RequestPasswordReset429
+  status: 429
+}
+
+export type requestPasswordResetResponse500 = {
+  data: RequestPasswordReset500
+  status: 500
+}
+
+export type requestPasswordResetResponse503 = {
+  data: RequestPasswordReset503
+  status: 503
+}
+
+export type requestPasswordResetResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 403 | 429 | 500 | 503>
+}
+
+export type requestPasswordResetResponseSuccess = (requestPasswordResetResponse200) & {
+  headers: Headers;
+};
+export type requestPasswordResetResponseError = (requestPasswordResetResponse400 | requestPasswordResetResponse403 | requestPasswordResetResponse429 | requestPasswordResetResponse500 | requestPasswordResetResponse503 | requestPasswordResetResponseDefault) & {
+  headers: Headers;
+};
+
+export type requestPasswordResetResponse = (requestPasswordResetResponseSuccess | requestPasswordResetResponseError)
+
+export const getRequestPasswordResetUrl = () => {
+
+
+
+
+  return `/api/v1/auth/request-password-reset`
+}
+
+/**
+ * @summary Send password reset link
+ */
+export const requestPasswordReset = async (requestPasswordResetBody: RequestPasswordResetBody, options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<requestPasswordResetResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await (fetchFn ?? fetch)(getRequestPasswordResetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(requestPasswordResetBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: requestPasswordResetResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as requestPasswordResetResponse
+}
+
+
+
+export type resetPasswordResponse200 = {
+  data: ResetPassword200
+  status: 200
+}
+
+export type resetPasswordResponse400 = {
+  data: ResetPassword400
+  status: 400
+}
+
+export type resetPasswordResponse403 = {
+  data: ResetPassword403
+  status: 403
+}
+
+export type resetPasswordResponse429 = {
+  data: ResetPassword429
+  status: 429
+}
+
+export type resetPasswordResponse500 = {
+  data: ResetPassword500
+  status: 500
+}
+
+export type resetPasswordResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 403 | 429 | 500>
+}
+
+export type resetPasswordResponseSuccess = (resetPasswordResponse200) & {
+  headers: Headers;
+};
+export type resetPasswordResponseError = (resetPasswordResponse400 | resetPasswordResponse403 | resetPasswordResponse429 | resetPasswordResponse500 | resetPasswordResponseDefault) & {
+  headers: Headers;
+};
+
+export type resetPasswordResponse = (resetPasswordResponseSuccess | resetPasswordResponseError)
+
+export const getResetPasswordUrl = () => {
+
+
+
+
+  return `/api/v1/auth/reset-password`
+}
+
+/**
+ * @summary Reset password
+ */
+export const resetPassword = async (resetPasswordBody: ResetPasswordBody, options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<resetPasswordResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await (fetchFn ?? fetch)(getResetPasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(resetPasswordBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: resetPasswordResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as resetPasswordResponse
+}
+
+
+
+export type startEmailRegistrationResponse200 = {
+  data: StartEmailRegistration200
+  status: 200
+}
+
+export type startEmailRegistrationResponse400 = {
+  data: StartEmailRegistration400
+  status: 400
+}
+
+export type startEmailRegistrationResponse403 = {
+  data: StartEmailRegistration403
+  status: 403
+}
+
+export type startEmailRegistrationResponse429 = {
+  data: StartEmailRegistration429
+  status: 429
+}
+
+export type startEmailRegistrationResponse503 = {
+  data: StartEmailRegistration503
+  status: 503
+}
+
+export type startEmailRegistrationResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 403 | 429 | 503>
+}
+
+export type startEmailRegistrationResponseSuccess = (startEmailRegistrationResponse200) & {
+  headers: Headers;
+};
+export type startEmailRegistrationResponseError = (startEmailRegistrationResponse400 | startEmailRegistrationResponse403 | startEmailRegistrationResponse429 | startEmailRegistrationResponse503 | startEmailRegistrationResponseDefault) & {
+  headers: Headers;
+};
+
+export type startEmailRegistrationResponse = (startEmailRegistrationResponseSuccess | startEmailRegistrationResponseError)
+
+export const getStartEmailRegistrationUrl = () => {
+
+
+
+
+  return `/api/v1/auth/registration/email/start`
+}
+
+/**
+ * No account is created until mailbox ownership and registration are complete.
+ * @summary Send registration link
+ */
+export const startEmailRegistration = async (startEmailRegistrationBody: StartEmailRegistrationBody, options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<startEmailRegistrationResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await (fetchFn ?? fetch)(getStartEmailRegistrationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(startEmailRegistrationBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: startEmailRegistrationResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as startEmailRegistrationResponse
+}
+
+
+
+export type readEmailRegistrationResponse200 = {
+  data: ReadEmailRegistration200
+  status: 200
+}
+
+export type readEmailRegistrationResponse400 = {
+  data: ReadEmailRegistration400
+  status: 400
+}
+
+export type readEmailRegistrationResponse403 = {
+  data: ReadEmailRegistration403
+  status: 403
+}
+
+export type readEmailRegistrationResponse409 = {
+  data: ReadEmailRegistration409
+  status: 409
+}
+
+export type readEmailRegistrationResponse429 = {
+  data: ReadEmailRegistration429
+  status: 429
+}
+
+export type readEmailRegistrationResponse503 = {
+  data: ReadEmailRegistration503
+  status: 503
+}
+
+export type readEmailRegistrationResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 403 | 409 | 429 | 503>
+}
+
+export type readEmailRegistrationResponseSuccess = (readEmailRegistrationResponse200) & {
+  headers: Headers;
+};
+export type readEmailRegistrationResponseError = (readEmailRegistrationResponse400 | readEmailRegistrationResponse403 | readEmailRegistrationResponse409 | readEmailRegistrationResponse429 | readEmailRegistrationResponse503 | readEmailRegistrationResponseDefault) & {
+  headers: Headers;
+};
+
+export type readEmailRegistrationResponse = (readEmailRegistrationResponseSuccess | readEmailRegistrationResponseError)
+
+export const getReadEmailRegistrationUrl = () => {
+
+
+
+
+  return `/api/v1/auth/registration/email/read`
+}
+
+/**
+ * @summary Read verified registration email
+ */
+export const readEmailRegistration = async (readEmailRegistrationBody: ReadEmailRegistrationBody, options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<readEmailRegistrationResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await (fetchFn ?? fetch)(getReadEmailRegistrationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(readEmailRegistrationBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: readEmailRegistrationResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as readEmailRegistrationResponse
+}
+
+
+
+export type completeEmailRegistrationResponse200 = {
+  data: CompleteEmailRegistration200
+  status: 200
+}
+
+export type completeEmailRegistrationResponse400 = {
+  data: CompleteEmailRegistration400
+  status: 400
+}
+
+export type completeEmailRegistrationResponse403 = {
+  data: CompleteEmailRegistration403
+  status: 403
+}
+
+export type completeEmailRegistrationResponse409 = {
+  data: CompleteEmailRegistration409
+  status: 409
+}
+
+export type completeEmailRegistrationResponse429 = {
+  data: CompleteEmailRegistration429
+  status: 429
+}
+
+export type completeEmailRegistrationResponse503 = {
+  data: CompleteEmailRegistration503
+  status: 503
+}
+
+export type completeEmailRegistrationResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 403 | 409 | 429 | 503>
+}
+
+export type completeEmailRegistrationResponseSuccess = (completeEmailRegistrationResponse200) & {
+  headers: Headers;
+};
+export type completeEmailRegistrationResponseError = (completeEmailRegistrationResponse400 | completeEmailRegistrationResponse403 | completeEmailRegistrationResponse409 | completeEmailRegistrationResponse429 | completeEmailRegistrationResponse503 | completeEmailRegistrationResponseDefault) & {
+  headers: Headers;
+};
+
+export type completeEmailRegistrationResponse = (completeEmailRegistrationResponseSuccess | completeEmailRegistrationResponseError)
+
+export const getCompleteEmailRegistrationUrl = () => {
+
+
+
+
+  return `/api/v1/auth/registration/email/complete`
+}
+
+/**
+ * Consumes proof atomically. No automatic sign-in; companyName required only for COMPANY_OWNER; birthDate cannot be in the future UTC.
+ * @summary Complete email registration
+ */
+export const completeEmailRegistration = async (completeEmailRegistrationBody: CompleteEmailRegistrationBody, options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<completeEmailRegistrationResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await (fetchFn ?? fetch)(getCompleteEmailRegistrationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(completeEmailRegistrationBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: completeEmailRegistrationResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as completeEmailRegistrationResponse
+}
+
+
+
+export type getAuthProfileResponse200 = {
+  data: GetAuthProfile200
+  status: 200
+}
+
+export type getAuthProfileResponse400 = {
+  data: GetAuthProfile400
+  status: 400
+}
+
+export type getAuthProfileResponse401 = {
+  data: GetAuthProfile401
+  status: 401
+}
+
+export type getAuthProfileResponse403 = {
+  data: GetAuthProfile403
+  status: 403
+}
+
+export type getAuthProfileResponse500 = {
+  data: GetAuthProfile500
+  status: 500
+}
+
+export type getAuthProfileResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 401 | 403 | 500>
+}
+
+export type getAuthProfileResponseSuccess = (getAuthProfileResponse200) & {
+  headers: Headers;
+};
+export type getAuthProfileResponseError = (getAuthProfileResponse400 | getAuthProfileResponse401 | getAuthProfileResponse403 | getAuthProfileResponse500 | getAuthProfileResponseDefault) & {
+  headers: Headers;
+};
+
+export type getAuthProfileResponse = (getAuthProfileResponseSuccess | getAuthProfileResponseError)
+
+export const getGetAuthProfileUrl = () => {
+
+
+
+
+  return `/api/v1/auth/profile`
+}
+
+/**
+ * Complete active public profile required.
+ * @summary Read public profile
+ */
+export const getAuthProfile = async ( options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<getAuthProfileResponse> => {
+
+  const res = await (fetchFn ?? fetch)(getGetAuthProfileUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAuthProfileResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getAuthProfileResponse
+}
+
+
+
+export type updateAuthProfileResponse200 = {
+  data: UpdateAuthProfile200
+  status: 200
+}
+
+export type updateAuthProfileResponse400 = {
+  data: UpdateAuthProfile400
+  status: 400
+}
+
+export type updateAuthProfileResponse401 = {
+  data: UpdateAuthProfile401
+  status: 401
+}
+
+export type updateAuthProfileResponse403 = {
+  data: UpdateAuthProfile403
+  status: 403
+}
+
+export type updateAuthProfileResponse500 = {
+  data: UpdateAuthProfile500
+  status: 500
+}
+
+export type updateAuthProfileResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 401 | 403 | 500>
+}
+
+export type updateAuthProfileResponseSuccess = (updateAuthProfileResponse200) & {
+  headers: Headers;
+};
+export type updateAuthProfileResponseError = (updateAuthProfileResponse400 | updateAuthProfileResponse401 | updateAuthProfileResponse403 | updateAuthProfileResponse500 | updateAuthProfileResponseDefault) & {
+  headers: Headers;
+};
+
+export type updateAuthProfileResponse = (updateAuthProfileResponseSuccess | updateAuthProfileResponseError)
+
+export const getUpdateAuthProfileUrl = () => {
+
+
+
+
+  return `/api/v1/auth/profile/settings`
+}
+
+/**
+ * @summary Update personal details
+ */
+export const updateAuthProfile = async (updateAuthProfileBody: UpdateAuthProfileBody, options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<updateAuthProfileResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await (fetchFn ?? fetch)(getUpdateAuthProfileUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateAuthProfileBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateAuthProfileResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as updateAuthProfileResponse
+}
+
+
+
+export type checkOrSuggestUsernameResponse200 = {
+  data: CheckOrSuggestUsername200
+  status: 200
+}
+
+export type checkOrSuggestUsernameResponse400 = {
+  data: CheckOrSuggestUsername400
+  status: 400
+}
+
+export type checkOrSuggestUsernameResponse403 = {
+  data: CheckOrSuggestUsername403
+  status: 403
+}
+
+export type checkOrSuggestUsernameResponse429 = {
+  data: CheckOrSuggestUsername429
+  status: 429
+}
+
+export type checkOrSuggestUsernameResponse503 = {
+  data: CheckOrSuggestUsername503
+  status: 503
+}
+
+export type checkOrSuggestUsernameResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 403 | 429 | 503>
+}
+
+export type checkOrSuggestUsernameResponseSuccess = (checkOrSuggestUsernameResponse200) & {
+  headers: Headers;
+};
+export type checkOrSuggestUsernameResponseError = (checkOrSuggestUsernameResponse400 | checkOrSuggestUsernameResponse403 | checkOrSuggestUsernameResponse429 | checkOrSuggestUsernameResponse503 | checkOrSuggestUsernameResponseDefault) & {
+  headers: Headers;
+};
+
+export type checkOrSuggestUsernameResponse = (checkOrSuggestUsernameResponseSuccess | checkOrSuggestUsernameResponseError)
+
+export const getCheckOrSuggestUsernameUrl = () => {
+
+
+
+
+  return `/api/v1/auth/username`
+}
+
+/**
+ * @summary Check or suggest username
+ */
+export const checkOrSuggestUsername = async (checkOrSuggestUsernameBody: CheckOrSuggestUsernameBody, options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<checkOrSuggestUsernameResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await (fetchFn ?? fetch)(getCheckOrSuggestUsernameUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(checkOrSuggestUsernameBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: checkOrSuggestUsernameResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as checkOrSuggestUsernameResponse
+}
+
+
+
+export type getUsernameSettingsResponse200 = {
+  data: GetUsernameSettings200
+  status: 200
+}
+
+export type getUsernameSettingsResponse400 = {
+  data: GetUsernameSettings400
+  status: 400
+}
+
+export type getUsernameSettingsResponse401 = {
+  data: GetUsernameSettings401
+  status: 401
+}
+
+export type getUsernameSettingsResponse403 = {
+  data: GetUsernameSettings403
+  status: 403
+}
+
+export type getUsernameSettingsResponse500 = {
+  data: GetUsernameSettings500
+  status: 500
+}
+
+export type getUsernameSettingsResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 401 | 403 | 500>
+}
+
+export type getUsernameSettingsResponseSuccess = (getUsernameSettingsResponse200) & {
+  headers: Headers;
+};
+export type getUsernameSettingsResponseError = (getUsernameSettingsResponse400 | getUsernameSettingsResponse401 | getUsernameSettingsResponse403 | getUsernameSettingsResponse500 | getUsernameSettingsResponseDefault) & {
+  headers: Headers;
+};
+
+export type getUsernameSettingsResponse = (getUsernameSettingsResponseSuccess | getUsernameSettingsResponseError)
+
+export const getGetUsernameSettingsUrl = () => {
+
+
+
+
+  return `/api/v1/auth/username/settings`
+}
+
+/**
+ * @summary Read username settings
+ */
+export const getUsernameSettings = async ( options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<getUsernameSettingsResponse> => {
+
+  const res = await (fetchFn ?? fetch)(getGetUsernameSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getUsernameSettingsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getUsernameSettingsResponse
+}
+
+
+
+export type changeUsernameResponse200 = {
+  data: ChangeUsername200
+  status: 200
+}
+
+export type changeUsernameResponse400 = {
+  data: ChangeUsername400
+  status: 400
+}
+
+export type changeUsernameResponse401 = {
+  data: ChangeUsername401
+  status: 401
+}
+
+export type changeUsernameResponse403 = {
+  data: ChangeUsername403
+  status: 403
+}
+
+export type changeUsernameResponse409 = {
+  data: ChangeUsername409
+  status: 409
+}
+
+export type changeUsernameResponse500 = {
+  data: ChangeUsername500
+  status: 500
+}
+
+export type changeUsernameResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 401 | 403 | 409 | 500>
+}
+
+export type changeUsernameResponseSuccess = (changeUsernameResponse200) & {
+  headers: Headers;
+};
+export type changeUsernameResponseError = (changeUsernameResponse400 | changeUsernameResponse401 | changeUsernameResponse403 | changeUsernameResponse409 | changeUsernameResponse500 | changeUsernameResponseDefault) & {
+  headers: Headers;
+};
+
+export type changeUsernameResponse = (changeUsernameResponseSuccess | changeUsernameResponseError)
+
+export const getChangeUsernameUrl = () => {
+
+
+
+
+  return `/api/v1/auth/username/settings`
+}
+
+/**
+ * A changed username has a seven-day cooldown.
+ * @summary Change username
+ */
+export const changeUsername = async (changeUsernameBody: ChangeUsernameBody, options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<changeUsernameResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await (fetchFn ?? fetch)(getChangeUsernameUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(changeUsernameBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: changeUsernameResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as changeUsernameResponse
+}
+
+
+
+export type getActiveSessionsResponse200 = {
+  data: GetActiveSessions200
+  status: 200
+}
+
+export type getActiveSessionsResponse400 = {
+  data: GetActiveSessions400
+  status: 400
+}
+
+export type getActiveSessionsResponse401 = {
+  data: GetActiveSessions401
+  status: 401
+}
+
+export type getActiveSessionsResponse403 = {
+  data: GetActiveSessions403
+  status: 403
+}
+
+export type getActiveSessionsResponse429 = {
+  data: GetActiveSessions429
+  status: 429
+}
+
+export type getActiveSessionsResponse503 = {
+  data: GetActiveSessions503
+  status: 503
+}
+
+export type getActiveSessionsResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 401 | 403 | 429 | 503>
+}
+
+export type getActiveSessionsResponseSuccess = (getActiveSessionsResponse200) & {
+  headers: Headers;
+};
+export type getActiveSessionsResponseError = (getActiveSessionsResponse400 | getActiveSessionsResponse401 | getActiveSessionsResponse403 | getActiveSessionsResponse429 | getActiveSessionsResponse503 | getActiveSessionsResponseDefault) & {
+  headers: Headers;
+};
+
+export type getActiveSessionsResponse = (getActiveSessionsResponseSuccess | getActiveSessionsResponseError)
+
+export const getGetActiveSessionsUrl = () => {
+
+
+
+
+  return `/api/v1/auth/sessions`
+}
+
+/**
+ * @summary List active sessions
+ */
+export const getActiveSessions = async ( options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<getActiveSessionsResponse> => {
+
+  const res = await (fetchFn ?? fetch)(getGetActiveSessionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getActiveSessionsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getActiveSessionsResponse
+}
+
+
+
+export type revokeActiveSessionsResponse200 = {
+  data: RevokeActiveSessions200
+  status: 200
+}
+
+export type revokeActiveSessionsResponse400 = {
+  data: RevokeActiveSessions400
+  status: 400
+}
+
+export type revokeActiveSessionsResponse401 = {
+  data: RevokeActiveSessions401
+  status: 401
+}
+
+export type revokeActiveSessionsResponse403 = {
+  data: RevokeActiveSessions403
+  status: 403
+}
+
+export type revokeActiveSessionsResponse404 = {
+  data: RevokeActiveSessions404
+  status: 404
+}
+
+export type revokeActiveSessionsResponse409 = {
+  data: RevokeActiveSessions409
+  status: 409
+}
+
+export type revokeActiveSessionsResponse500 = {
+  data: RevokeActiveSessions500
+  status: 500
+}
+
+export type revokeActiveSessionsResponse503 = {
+  data: RevokeActiveSessions503
+  status: 503
+}
+
+export type revokeActiveSessionsResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 401 | 403 | 404 | 409 | 500 | 503>
+}
+
+export type revokeActiveSessionsResponseSuccess = (revokeActiveSessionsResponse200) & {
+  headers: Headers;
+};
+export type revokeActiveSessionsResponseError = (revokeActiveSessionsResponse400 | revokeActiveSessionsResponse401 | revokeActiveSessionsResponse403 | revokeActiveSessionsResponse404 | revokeActiveSessionsResponse409 | revokeActiveSessionsResponse500 | revokeActiveSessionsResponse503 | revokeActiveSessionsResponseDefault) & {
+  headers: Headers;
+};
+
+export type revokeActiveSessionsResponse = (revokeActiveSessionsResponseSuccess | revokeActiveSessionsResponseError)
+
+export const getRevokeActiveSessionsUrl = () => {
+
+
+
+
+  return `/api/v1/auth/sessions`
+}
+
+/**
+ * @summary Revoke session or other sessions
+ */
+export const revokeActiveSessions = async (revokeActiveSessionsBody: RevokeActiveSessionsBody, options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<revokeActiveSessionsResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await (fetchFn ?? fetch)(getRevokeActiveSessionsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(revokeActiveSessionsBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: revokeActiveSessionsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as revokeActiveSessionsResponse
+}
+
+
+
+export type startEmailChangeResponse200 = {
+  data: StartEmailChange200
+  status: 200
+}
+
+export type startEmailChangeResponse400 = {
+  data: StartEmailChange400
+  status: 400
+}
+
+export type startEmailChangeResponse401 = {
+  data: StartEmailChange401
+  status: 401
+}
+
+export type startEmailChangeResponse403 = {
+  data: StartEmailChange403
+  status: 403
+}
+
+export type startEmailChangeResponse429 = {
+  data: StartEmailChange429
+  status: 429
+}
+
+export type startEmailChangeResponse503 = {
+  data: StartEmailChange503
+  status: 503
+}
+
+export type startEmailChangeResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 401 | 403 | 429 | 503>
+}
+
+export type startEmailChangeResponseSuccess = (startEmailChangeResponse200) & {
+  headers: Headers;
+};
+export type startEmailChangeResponseError = (startEmailChangeResponse400 | startEmailChangeResponse401 | startEmailChangeResponse403 | startEmailChangeResponse429 | startEmailChangeResponse503 | startEmailChangeResponseDefault) & {
+  headers: Headers;
+};
+
+export type startEmailChangeResponse = (startEmailChangeResponseSuccess | startEmailChangeResponseError)
+
+export const getStartEmailChangeUrl = () => {
+
+
+
+
+  return `/api/v1/auth/email/change`
+}
+
+/**
+ * Verified email and fresh session required.
+ * @summary Start email change
+ */
+export const startEmailChange = async (startEmailChangeBody: StartEmailChangeBody, options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<startEmailChangeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await (fetchFn ?? fetch)(getStartEmailChangeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(startEmailChangeBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: startEmailChangeResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as startEmailChangeResponse
+}
+
+
+
+export type confirmEmailChangeResponse200 = {
+  data: ConfirmEmailChange200
+  status: 200
+}
+
+export type confirmEmailChangeResponse400 = {
+  data: ConfirmEmailChange400
+  status: 400
+}
+
+export type confirmEmailChangeResponse403 = {
+  data: ConfirmEmailChange403
+  status: 403
+}
+
+export type confirmEmailChangeResponse429 = {
+  data: ConfirmEmailChange429
+  status: 429
+}
+
+export type confirmEmailChangeResponse503 = {
+  data: ConfirmEmailChange503
+  status: 503
+}
+
+export type confirmEmailChangeResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 403 | 429 | 503>
+}
+
+export type confirmEmailChangeResponseSuccess = (confirmEmailChangeResponse200) & {
+  headers: Headers;
+};
+export type confirmEmailChangeResponseError = (confirmEmailChangeResponse400 | confirmEmailChangeResponse403 | confirmEmailChangeResponse429 | confirmEmailChangeResponse503 | confirmEmailChangeResponseDefault) & {
+  headers: Headers;
+};
+
+export type confirmEmailChangeResponse = (confirmEmailChangeResponseSuccess | confirmEmailChangeResponseError)
+
+export const getConfirmEmailChangeUrl = () => {
+
+
+
+
+  return `/api/v1/auth/email/change/confirm`
+}
+
+/**
+ * @summary Confirm email change stage
+ */
+export const confirmEmailChange = async (confirmEmailChangeBody: ConfirmEmailChangeBody, options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<confirmEmailChangeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await (fetchFn ?? fetch)(getConfirmEmailChangeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(confirmEmailChangeBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: confirmEmailChangeResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as confirmEmailChangeResponse
+}
+
+
+
+export type deactivateAccountResponse200 = {
+  data: DeactivateAccount200
+  status: 200
+}
+
+export type deactivateAccountResponse400 = {
+  data: DeactivateAccount400
+  status: 400
+}
+
+export type deactivateAccountResponse401 = {
+  data: DeactivateAccount401
+  status: 401
+}
+
+export type deactivateAccountResponse403 = {
+  data: DeactivateAccount403
+  status: 403
+}
+
+export type deactivateAccountResponse503 = {
+  data: DeactivateAccount503
+  status: 503
+}
+
+export type deactivateAccountResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 401 | 403 | 503>
+}
+
+export type deactivateAccountResponseSuccess = (deactivateAccountResponse200) & {
+  headers: Headers;
+};
+export type deactivateAccountResponseError = (deactivateAccountResponse400 | deactivateAccountResponse401 | deactivateAccountResponse403 | deactivateAccountResponse503 | deactivateAccountResponseDefault) & {
+  headers: Headers;
+};
+
+export type deactivateAccountResponse = (deactivateAccountResponseSuccess | deactivateAccountResponseError)
+
+export const getDeactivateAccountUrl = () => {
+
+
+
+
+  return `/api/v1/auth/account/deactivate`
+}
+
+/**
+ * @summary Deactivate account
+ */
+export const deactivateAccount = async (deactivateAccountBody: DeactivateAccountBody, options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<deactivateAccountResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await (fetchFn ?? fetch)(getDeactivateAccountUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(deactivateAccountBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deactivateAccountResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as deactivateAccountResponse
+}
+
+
+
+export type getTelegramStatusResponse200 = {
+  data: GetTelegramStatus200
+  status: 200
+}
+
+export type getTelegramStatusResponse400 = {
+  data: GetTelegramStatus400
+  status: 400
+}
+
+export type getTelegramStatusResponse403 = {
+  data: GetTelegramStatus403
+  status: 403
+}
+
+export type getTelegramStatusResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 403>
+}
+
+export type getTelegramStatusResponseSuccess = (getTelegramStatusResponse200) & {
+  headers: Headers;
+};
+export type getTelegramStatusResponseError = (getTelegramStatusResponse400 | getTelegramStatusResponse403 | getTelegramStatusResponseDefault) & {
+  headers: Headers;
+};
+
+export type getTelegramStatusResponse = (getTelegramStatusResponseSuccess | getTelegramStatusResponseError)
+
+export const getGetTelegramStatusUrl = () => {
+
+
+
+
+  return `/api/v1/auth/telegram/status`
+}
+
+/**
+ * @summary Read Telegram availability
+ */
+export const getTelegramStatus = async ( options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<getTelegramStatusResponse> => {
+
+  const res = await (fetchFn ?? fetch)(getGetTelegramStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getTelegramStatusResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getTelegramStatusResponse
+}
+
+
+
+export type getTelegramSettingsResponse200 = {
+  data: GetTelegramSettings200
+  status: 200
+}
+
+export type getTelegramSettingsResponse400 = {
+  data: GetTelegramSettings400
+  status: 400
+}
+
+export type getTelegramSettingsResponse401 = {
+  data: GetTelegramSettings401
+  status: 401
+}
+
+export type getTelegramSettingsResponse403 = {
+  data: GetTelegramSettings403
+  status: 403
+}
+
+export type getTelegramSettingsResponse503 = {
+  data: GetTelegramSettings503
+  status: 503
+}
+
+export type getTelegramSettingsResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 401 | 403 | 503>
+}
+
+export type getTelegramSettingsResponseSuccess = (getTelegramSettingsResponse200) & {
+  headers: Headers;
+};
+export type getTelegramSettingsResponseError = (getTelegramSettingsResponse400 | getTelegramSettingsResponse401 | getTelegramSettingsResponse403 | getTelegramSettingsResponse503 | getTelegramSettingsResponseDefault) & {
+  headers: Headers;
+};
+
+export type getTelegramSettingsResponse = (getTelegramSettingsResponseSuccess | getTelegramSettingsResponseError)
+
+export const getGetTelegramSettingsUrl = () => {
+
+
+
+
+  return `/api/v1/auth/telegram/settings`
+}
+
+/**
+ * @summary Read Telegram binding settings
+ */
+export const getTelegramSettings = async ( options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<getTelegramSettingsResponse> => {
+
+  const res = await (fetchFn ?? fetch)(getGetTelegramSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getTelegramSettingsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getTelegramSettingsResponse
+}
+
+
+
+export type getCompanyOwnerCabinetResponse200 = {
+  data: GetCompanyOwnerCabinet200
+  status: 200
+}
+
+export type getCompanyOwnerCabinetResponse400 = {
+  data: GetCompanyOwnerCabinet400
+  status: 400
+}
+
+export type getCompanyOwnerCabinetResponse401 = {
+  data: GetCompanyOwnerCabinet401
+  status: 401
+}
+
+export type getCompanyOwnerCabinetResponse403 = {
+  data: GetCompanyOwnerCabinet403
+  status: 403
+}
+
+export type getCompanyOwnerCabinetResponse503 = {
+  data: GetCompanyOwnerCabinet503
+  status: 503
+}
+
+export type getCompanyOwnerCabinetResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 401 | 403 | 503>
+}
+
+export type getCompanyOwnerCabinetResponseSuccess = (getCompanyOwnerCabinetResponse200) & {
+  headers: Headers;
+};
+export type getCompanyOwnerCabinetResponseError = (getCompanyOwnerCabinetResponse400 | getCompanyOwnerCabinetResponse401 | getCompanyOwnerCabinetResponse403 | getCompanyOwnerCabinetResponse503 | getCompanyOwnerCabinetResponseDefault) & {
+  headers: Headers;
+};
+
+export type getCompanyOwnerCabinetResponse = (getCompanyOwnerCabinetResponseSuccess | getCompanyOwnerCabinetResponseError)
+
+export const getGetCompanyOwnerCabinetUrl = () => {
+
+
+
+
+  return `/api/v1/auth/cabinet/company-owner`
+}
+
+/**
+ * @summary Read company-owner cabinet access
+ */
+export const getCompanyOwnerCabinet = async ( options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<getCompanyOwnerCabinetResponse> => {
+
+  const res = await (fetchFn ?? fetch)(getGetCompanyOwnerCabinetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCompanyOwnerCabinetResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getCompanyOwnerCabinetResponse
+}
+
+
+
+export type getDispatcherCabinetResponse200 = {
+  data: GetDispatcherCabinet200
+  status: 200
+}
+
+export type getDispatcherCabinetResponse400 = {
+  data: GetDispatcherCabinet400
+  status: 400
+}
+
+export type getDispatcherCabinetResponse401 = {
+  data: GetDispatcherCabinet401
+  status: 401
+}
+
+export type getDispatcherCabinetResponse403 = {
+  data: GetDispatcherCabinet403
+  status: 403
+}
+
+export type getDispatcherCabinetResponse503 = {
+  data: GetDispatcherCabinet503
+  status: 503
+}
+
+export type getDispatcherCabinetResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 401 | 403 | 503>
+}
+
+export type getDispatcherCabinetResponseSuccess = (getDispatcherCabinetResponse200) & {
+  headers: Headers;
+};
+export type getDispatcherCabinetResponseError = (getDispatcherCabinetResponse400 | getDispatcherCabinetResponse401 | getDispatcherCabinetResponse403 | getDispatcherCabinetResponse503 | getDispatcherCabinetResponseDefault) & {
+  headers: Headers;
+};
+
+export type getDispatcherCabinetResponse = (getDispatcherCabinetResponseSuccess | getDispatcherCabinetResponseError)
+
+export const getGetDispatcherCabinetUrl = () => {
+
+
+
+
+  return `/api/v1/auth/cabinet/dispatcher`
+}
+
+/**
+ * @summary Read dispatcher cabinet access
+ */
+export const getDispatcherCabinet = async ( options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<getDispatcherCabinetResponse> => {
+
+  const res = await (fetchFn ?? fetch)(getGetDispatcherCabinetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getDispatcherCabinetResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getDispatcherCabinetResponse
+}
+
+
+
+export type getDriverCabinetResponse200 = {
+  data: GetDriverCabinet200
+  status: 200
+}
+
+export type getDriverCabinetResponse400 = {
+  data: GetDriverCabinet400
+  status: 400
+}
+
+export type getDriverCabinetResponse401 = {
+  data: GetDriverCabinet401
+  status: 401
+}
+
+export type getDriverCabinetResponse403 = {
+  data: GetDriverCabinet403
+  status: 403
+}
+
+export type getDriverCabinetResponse503 = {
+  data: GetDriverCabinet503
+  status: 503
+}
+
+export type getDriverCabinetResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 401 | 403 | 503>
+}
+
+export type getDriverCabinetResponseSuccess = (getDriverCabinetResponse200) & {
+  headers: Headers;
+};
+export type getDriverCabinetResponseError = (getDriverCabinetResponse400 | getDriverCabinetResponse401 | getDriverCabinetResponse403 | getDriverCabinetResponse503 | getDriverCabinetResponseDefault) & {
+  headers: Headers;
+};
+
+export type getDriverCabinetResponse = (getDriverCabinetResponseSuccess | getDriverCabinetResponseError)
+
+export const getGetDriverCabinetUrl = () => {
+
+
+
+
+  return `/api/v1/auth/cabinet/driver`
+}
+
+/**
+ * @summary Read driver cabinet access
+ */
+export const getDriverCabinet = async ( options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<getDriverCabinetResponse> => {
+
+  const res = await (fetchFn ?? fetch)(getGetDriverCabinetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getDriverCabinetResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getDriverCabinetResponse
+}
+
+
+
+export type signInAdminResponse200 = {
+  data: SignInAdmin200
+  status: 200
+}
+
+export type signInAdminResponse400 = {
+  data: SignInAdmin400
+  status: 400
+}
+
+export type signInAdminResponse401 = {
+  data: SignInAdmin401
+  status: 401
+}
+
+export type signInAdminResponse403 = {
+  data: SignInAdmin403
+  status: 403
+}
+
+export type signInAdminResponse404 = {
+  data: SignInAdmin404
+  status: 404
+}
+
+export type signInAdminResponse429 = {
+  data: SignInAdmin429
+  status: 429
+}
+
+export type signInAdminResponse503 = {
+  data: SignInAdmin503
+  status: 503
+}
+
+export type signInAdminResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 401 | 403 | 404 | 429 | 503>
+}
+
+export type signInAdminResponseSuccess = (signInAdminResponse200) & {
+  headers: Headers;
+};
+export type signInAdminResponseError = (signInAdminResponse400 | signInAdminResponse401 | signInAdminResponse403 | signInAdminResponse404 | signInAdminResponse429 | signInAdminResponse503 | signInAdminResponseDefault) & {
+  headers: Headers;
+};
+
+export type signInAdminResponse = (signInAdminResponseSuccess | signInAdminResponseError)
+
+export const getSignInAdminUrl = () => {
+
+
+
+
+  return `/api/v1/auth/admin/sign-in/email`
+}
+
+/**
+ * @summary Sign in as platform administrator
+ */
+export const signInAdmin = async (signInAdminBody: SignInAdminBody, options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<signInAdminResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await (fetchFn ?? fetch)(getSignInAdminUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(signInAdminBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: signInAdminResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as signInAdminResponse
+}
+
+
+
+export type signOutAdminResponse200 = {
+  data: SignOutAdmin200
+  status: 200
+}
+
+export type signOutAdminResponse400 = {
+  data: SignOutAdmin400
+  status: 400
+}
+
+export type signOutAdminResponse401 = {
+  data: SignOutAdmin401
+  status: 401
+}
+
+export type signOutAdminResponse403 = {
+  data: SignOutAdmin403
+  status: 403
+}
+
+export type signOutAdminResponse404 = {
+  data: SignOutAdmin404
+  status: 404
+}
+
+export type signOutAdminResponse429 = {
+  data: SignOutAdmin429
+  status: 429
+}
+
+export type signOutAdminResponse503 = {
+  data: SignOutAdmin503
+  status: 503
+}
+
+export type signOutAdminResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 401 | 403 | 404 | 429 | 503>
+}
+
+export type signOutAdminResponseSuccess = (signOutAdminResponse200) & {
+  headers: Headers;
+};
+export type signOutAdminResponseError = (signOutAdminResponse400 | signOutAdminResponse401 | signOutAdminResponse403 | signOutAdminResponse404 | signOutAdminResponse429 | signOutAdminResponse503 | signOutAdminResponseDefault) & {
+  headers: Headers;
+};
+
+export type signOutAdminResponse = (signOutAdminResponseSuccess | signOutAdminResponseError)
+
+export const getSignOutAdminUrl = () => {
+
+
+
+
+  return `/api/v1/auth/admin/sign-out`
+}
+
+/**
+ * @summary Sign out administrator
+ */
+export const signOutAdmin = async (signOutAdminBody: SignOutAdminBody, options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<signOutAdminResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await (fetchFn ?? fetch)(getSignOutAdminUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(signOutAdminBody)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: signOutAdminResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as signOutAdminResponse
+}
+
+
+
+export type getAdminSessionResponse200 = {
+  data: GetAdminSession200
+  status: 200
+}
+
+export type getAdminSessionResponse400 = {
+  data: GetAdminSession400
+  status: 400
+}
+
+export type getAdminSessionResponse401 = {
+  data: GetAdminSession401
+  status: 401
+}
+
+export type getAdminSessionResponse403 = {
+  data: GetAdminSession403
+  status: 403
+}
+
+export type getAdminSessionResponse404 = {
+  data: GetAdminSession404
+  status: 404
+}
+
+export type getAdminSessionResponse503 = {
+  data: GetAdminSession503
+  status: 503
+}
+
+export type getAdminSessionResponseDefault = {
+  data: void
+  status: Exclude<HTTPStatusCodes, 200 | 400 | 401 | 403 | 404 | 503>
+}
+
+export type getAdminSessionResponseSuccess = (getAdminSessionResponse200) & {
+  headers: Headers;
+};
+export type getAdminSessionResponseError = (getAdminSessionResponse400 | getAdminSessionResponse401 | getAdminSessionResponse403 | getAdminSessionResponse404 | getAdminSessionResponse503 | getAdminSessionResponseDefault) & {
+  headers: Headers;
+};
+
+export type getAdminSessionResponse = (getAdminSessionResponseSuccess | getAdminSessionResponseError)
+
+export const getGetAdminSessionUrl = () => {
+
+
+
+
+  return `/api/v1/auth/admin/get-session`
+}
+
+/**
+ * @summary Read administrator session
+ */
+export const getAdminSession = async ( options?: RequestInit, fetchFn?: typeof globalThis.fetch): Promise<getAdminSessionResponse> => {
+
+  const res = await (fetchFn ?? fetch)(getGetAdminSessionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAdminSessionResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getAdminSessionResponse
 }
