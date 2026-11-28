@@ -17,8 +17,9 @@ describe("Telegram abort signal bridge", () => {
   it("removes the bridge after successful and failed calls", async () => {
     const native = new AbortController();
     const remove = vi.spyOn(native.signal, "removeEventListener");
-    const completed = await withTelegramSignal(native.signal, async (signal) =>
-      signal,
+    const completed = await withTelegramSignal(
+      native.signal,
+      async (signal) => signal,
     );
     await expect(
       withTelegramSignal(native.signal, async () => {
