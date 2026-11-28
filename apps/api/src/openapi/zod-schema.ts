@@ -2,6 +2,13 @@ import type { SchemaObject } from "@nestjs/swagger";
 import { z } from "zod";
 import type { JSONSchema } from "zod/v4/core";
 
+function hasOpenApiType(schema: { type?: unknown }): schema is { type?: string } {
+  return (
+    schema.type === undefined ||
+    (typeof schema.type === "string" && schema.type !== "null")
+  );
+}
+
 // Zod's OpenAPI 3.0 target uses the wider JSON Schema TypeScript model.
 // Convert its nested schemas explicitly and fail on unsupported constructs.
 function convert(raw: JSONSchema._JSONSchema): SchemaObject {
@@ -23,7 +30,7 @@ function convert(raw: JSONSchema._JSONSchema): SchemaObject {
     raw.$ref ||
     raw.$defs ||
     raw.definitions ||
-    raw.type === "null" ||
+    !hasOpenApiType(scalar) ||
     Array.isArray(items) ||
     typeof exclusiveMinimum === "number" ||
     typeof exclusiveMaximum === "number"

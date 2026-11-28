@@ -30,6 +30,7 @@ jobs:
       - name: Install pinned pnpm
         run: npm install --global pnpm@10.34.8
       - name: Install dependencies
+        id: install
         run: pnpm install --frozen-lockfile
       - name: Verify OpenAPI and generated client
         run: pnpm api:check
@@ -39,6 +40,7 @@ jobs:
         run: pnpm typecheck
       # Temporary review checkpoint; remove after collecting the audit results.
       - name: Dependency audit review checkpoint
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: |
           status=0
           echo "::group::Workspace vulnerability audit"
