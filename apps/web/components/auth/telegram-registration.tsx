@@ -510,7 +510,11 @@ function TelegramDraftForm({
         <Button variant="ghost" disabled={busy} onClick={onRefresh}>
           {t.telegramRefresh}
         </Button>
-        <Button variant="ghost" disabled={busy} onClick={() => void act(cancel)}>
+        <Button
+          variant="ghost"
+          disabled={busy}
+          onClick={() => void act(cancel)}
+        >
           {t.telegramBotCancel}
         </Button>
       </div>
