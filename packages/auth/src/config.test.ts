@@ -37,6 +37,15 @@ describe("auth config", () => {
     assert.equal(parsed.AUTH_TELEGRAM_CLIENT_ID, "123456");
   });
 
+  it("accepts exclusive Telegram bot mode on an HTTPS Web origin", () => {
+    const config = parseAuthConfig({
+      ...env,
+      AUTH_WEB_ORIGIN: "https://movaro.test",
+      AUTH_TELEGRAM_BOT_USERNAME: "synthetic_movaro_bot",
+    });
+    assert.equal(config.AUTH_TELEGRAM_BOT_USERNAME, "synthetic_movaro_bot");
+  });
+
   it("requires secure production origins and SMTP", () => {
     assert.throws(
       () => parseAuthConfig({ ...env, NODE_ENV: "production" }),
@@ -65,6 +74,14 @@ describe("auth config", () => {
     {
       AUTH_ADMIN_ORIGIN: env.AUTH_WEB_ORIGIN,
       AUTH_ADMIN_SECRET: "distinct-admin-secret-0123456789-abcdefgh",
+    },
+    { AUTH_TELEGRAM_BOT_USERNAME: "synthetic_movaro_bot" },
+    { AUTH_TELEGRAM_BOT_USERNAME: "@synthetic_movaro_bot" },
+    {
+      AUTH_WEB_ORIGIN: "https://movaro.test",
+      AUTH_TELEGRAM_BOT_USERNAME: "synthetic_movaro_bot",
+      AUTH_TELEGRAM_CLIENT_ID: "123456",
+      AUTH_TELEGRAM_CLIENT_SECRET: "secret",
     },
     { AUTH_TELEGRAM_CLIENT_ID: "123456" },
     { AUTH_TELEGRAM_CLIENT_SECRET: "secret" },
