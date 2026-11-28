@@ -55,7 +55,7 @@ export async function startTelegramBotRequest(
        $7, $8, $9 FROM (SELECT clock_timestamp() AS issued_at) AS issued
      ON CONFLICT (browser_hash) DO UPDATE SET
        id = EXCLUDED.id, deep_link_hash = EXCLUDED.deep_link_hash,
-       return_hash = NULL,
+       return_hash = NULL, registration_draft_id = NULL,
        intent = EXCLUDED.intent, locale = EXCLUDED.locale,
        display_code = EXCLUDED.display_code, status = 'pending',
        created_at = EXCLUDED.created_at, expires_at = EXCLUDED.expires_at,

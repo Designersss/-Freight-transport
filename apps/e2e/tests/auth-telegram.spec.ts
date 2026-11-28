@@ -268,3 +268,54 @@ test("Telegram registration reports completion only after a verified receipt", a
     page.getByText("Account created. Sign in with Telegram."),
   ).toBeVisible();
 });
+
+test("Telegram return recovers a consumed request for an existing draft", async ({
+  page,
+}) => {
+  const requestId = "1b7a89d1-1b4a-4a76-8a5a-548744bcac44";
+  const draftId = "0e8a79b2-0f4e-4e8e-9f7b-456c4b8c2ee3";
+  const proof = "b".repeat(43);
+  const draft = {
+    id: draftId,
+    channel: "web",
+    locale: "en",
+    revision: 3,
+    expiresAt: new Date(Date.now() + 1800000).toISOString(),
+    firstName: "Synthetic",
+    lastName: "Driver",
+    role: null,
+    birthDate: null,
+    companyName: null,
+    username: null,
+  };
+  await page.route("**/api/auth/telegram-bot/browser", (route) => {
+    const command = route.request().postDataJSON();
+    if (command.action === "confirm") {
+      expect(command.requestId).toBe(requestId);
+      return route.fulfill({
+        status: 403,
+        json: { code: "AUTH_REQUEST_FAILED" },
+      });
+    }
+    if (command.action === "status") {
+      expect(command.requestId).toBe(requestId);
+      return route.fulfill({ json: { status: "consumed" } });
+    }
+    if (command.action === "finish") {
+      expect(command.requestId).toBe(requestId);
+      return route.fulfill({
+        json: { outcome: "registration", draftId },
+      });
+    }
+    if (command.action === "draft-state") {
+      expect(command.draftId).toBe(draftId);
+      return route.fulfill({ json: { draft, completed: false } });
+    }
+    return route.fulfill({ status: 400, json: { code: "INVALID_REQUEST" } });
+  });
+  await page.goto(`/en/telegram/return#requestId=${requestId}&proof=${proof}`);
+  await expect(page).toHaveURL(/\/en\/telegram\/registration$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Choose your role",
+  );
+});

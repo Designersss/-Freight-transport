@@ -175,6 +175,13 @@ test("Telegram Web runtime requires both proofs and completes registration befor
         ),
     );
     const draftId = register.requestId;
+    assert.deepEqual(await (await expectWeb(finish)).json(), {
+      outcome: "registration",
+      draftId,
+    });
+    await expectWeb(finish, 403, {
+      cookie: `${TELEGRAM_BOT_BROWSER_COOKIE}=${register.deepLink}`,
+    });
     const updated = await (
       await expectWeb({
         action: "draft-update",
@@ -209,18 +216,69 @@ test("Telegram Web runtime requires both proofs and completes registration befor
       mutation: { action: "switch", revision: 1, channel: "bot" },
     });
     assert.equal(switched.revision, 2);
+    const resume = await start("register");
+    assert.notEqual(resume.requestId, draftId);
+    await claim(resume);
+    assert.equal(
+      await bot({
+        action: "contact",
+        requestId: resume.requestId,
+        contact: { userId, phoneNumber: "+12025550123", forwarded: false },
+      }),
+      true,
+    );
+    const resumeProof = await bot({
+      action: "approve",
+      requestId: resume.requestId,
+    });
+    await expectWeb({
+      action: "confirm",
+      requestId: resume.requestId,
+      proof: resumeProof,
+    });
+    const resumeFinish = { action: "finish", requestId: resume.requestId };
+    const repeated = await Promise.all([
+      expectWeb(resumeFinish),
+      expectWeb(resumeFinish),
+    ]);
+    for (const response of repeated) {
+      assert.deepEqual(await response.json(), {
+        outcome: "registration",
+        draftId,
+      });
+      assert.ok(
+        !response.headers
+          .getSetCookie()
+          .some(
+            (value) =>
+              value.includes("session_token=") && !value.includes("Max-Age=0"),
+          ),
+      );
+    }
+    await expectWeb(finish, 403);
+    await expectWeb(resumeFinish, 403, {
+      cookie: `${TELEGRAM_BOT_BROWSER_COOKIE}=${resume.deepLink}`,
+    });
+    const resumed = await bot({ action: "draft-read", draftId });
+    assert.equal(resumed.revision, 3);
+    const backInBot = await bot({
+      action: "draft-update",
+      draftId,
+      mutation: { action: "switch", revision: 3, channel: "bot" },
+    });
+    assert.equal(backInBot.revision, 4);
     const state = { action: "draft-state", draftId };
     const waiting = await (await expectWeb(state)).json();
     assert.equal(waiting.draft.channel, "bot");
     assert.equal(waiting.completed, false);
     assert.deepEqual(
       await (
-        await expectWeb({ action: "draft-complete", draftId, revision: 2 })
+        await expectWeb({ action: "draft-complete", draftId, revision: 4 })
       ).json(),
       { outcome: "denied" },
     );
     assert.equal(
-      await bot({ action: "draft-complete", draftId, revision: 2 }),
+      await bot({ action: "draft-complete", draftId, revision: 4 }),
       "created",
     );
     assert.deepEqual(await (await expectWeb(state)).json(), {
@@ -235,6 +293,11 @@ test("Telegram Web runtime requires both proofs and completes registration befor
       ).json(),
       { draft: null, completed: false },
     );
+
+    assert.deepEqual(await (await expectWeb(resumeFinish)).json(), {
+      outcome: "registration",
+      draftId,
+    });
 
     const login = await start("register");
     const existing = await claim(login);

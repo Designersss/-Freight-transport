@@ -114,6 +114,7 @@ export async function beginTelegramRegistrationDraft(
        FROM approved_grant ON CONFLICT DO NOTHING RETURNING id
      )
      UPDATE telegram_bot_requests r SET status = 'consumed',
+       registration_draft_id = i.id,
        telegram_user_id = NULL, first_name = NULL, last_name = NULL,
        phone_number = NULL
      FROM inserted i WHERE r.id = i.id RETURNING r.id`,
@@ -261,6 +262,7 @@ export async function resumeTelegramRegistrationInBrowser(
          RETURNING d.id
        )
        UPDATE telegram_bot_requests r SET status = 'consumed',
+         registration_draft_id = resumed.id,
          telegram_user_id = NULL, first_name = NULL, last_name = NULL,
          phone_number = NULL
        FROM resumed WHERE r.id::text = $1 RETURNING resumed.id`,
@@ -278,6 +280,37 @@ export async function resumeTelegramRegistrationInBrowser(
       return null;
     throw error;
   }
+}
+
+// A consumed, browser-confirmed registration request may return only the
+// original draft locator while that browser still owns the draft or receipt.
+// This is a read, not a new grant; chat-only requests never set the locator.
+export async function readFinishedTelegramRegistration(
+  pool: Pool,
+  browserCapability: unknown,
+  requestId: string,
+): Promise<string | null> {
+  const hash = telegramBotCapabilityHash(browserCapability);
+  if (!hash) return null;
+  const result = await pool.query<{ id: string }>(
+    `SELECT r.registration_draft_id AS id FROM telegram_bot_requests r
+     WHERE r.id::text = $1 AND r.browser_hash = $2
+       AND r.intent = 'register' AND r.status = 'consumed'
+       AND r.expires_at > clock_timestamp()
+       AND (
+         EXISTS (
+           SELECT 1 FROM telegram_registration_drafts d
+           WHERE d.id = r.registration_draft_id AND d.browser_hash = $2
+             AND d.expires_at > clock_timestamp()
+         ) OR EXISTS (
+           SELECT 1 FROM telegram_registration_completions c
+           WHERE c.id = r.registration_draft_id AND c.browser_hash = $2
+             AND c.expires_at > clock_timestamp()
+         )
+       )`,
+    [requestId, hash],
+  );
+  return result.rows[0]?.id ?? null;
 }
 
 // Used on bot restart or return to an already attached browser. Neither

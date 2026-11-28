@@ -21,6 +21,7 @@ import {
   cancelTelegramRegistrationDraft,
   completeTelegramRegistrationDraft,
   findTelegramRegistrationDraft,
+  readFinishedTelegramRegistration,
   readTelegramRegistrationCompletion,
   readTelegramRegistrationDraft,
   resumeTelegramRegistrationInBrowser,
@@ -193,7 +194,18 @@ export async function handleTelegramBrowser(
           browser,
           command.requestId,
         );
-        if (!grant) return fail(403);
+        if (!grant) {
+          const id = await readFinishedTelegramRegistration(
+            pool,
+            browser,
+            command.requestId,
+          );
+          if (!id) return fail(403);
+          const current = await readAuthSession(request, config, auth, headers);
+          if (!(current instanceof Response)) return fail(409);
+          if (current.status !== 401) return current;
+          return json({ outcome: "registration", draftId: id });
+        }
         if (grant.intent === "login") {
           const forwarded = new Headers(request.headers);
           forwarded.delete("content-length");
@@ -257,7 +269,16 @@ export async function handleTelegramBrowser(
               actor,
               "web",
             );
-        return id ? json({ outcome: "registration", draftId: id }) : fail(409);
+        const resolved =
+          id ??
+          (await readFinishedTelegramRegistration(
+            pool,
+            browser,
+            command.requestId,
+          ));
+        return resolved
+          ? json({ outcome: "registration", draftId: resolved })
+          : fail(409);
       }
       case "draft-find":
         return json({

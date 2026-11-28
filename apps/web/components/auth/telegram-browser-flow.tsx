@@ -12,7 +12,6 @@ import {
   rememberTelegramDraftId,
   type TelegramWait,
   telegramBrowserRequest,
-  telegramDraftResponse,
   telegramFinishResponse,
   telegramStatusResponse,
 } from "../../lib/telegram-browser";
@@ -41,14 +40,10 @@ async function recover(requestId: string): Promise<Destination | null> {
     telegramStatusResponse,
   ).catch(() => null);
   if (state?.status !== "consumed") return null;
-  const draft = await telegramBrowserRequest(
-    { action: "draft-find" },
-    telegramDraftResponse,
-  ).catch(() => null);
-  if (draft?.draft?.id === requestId) {
-    rememberTelegramDraftId(draft.draft.id);
-    return "/telegram/registration";
-  }
+  // Only consumed registration requests have an idempotent finish result.
+  // Login and link cannot issue a second session or binding through this call.
+  const destination = await finish(requestId).catch(() => null);
+  if (destination) return destination;
   const session = await fetch("/api/auth/get-session", {
     cache: "no-store",
     credentials: "same-origin",
@@ -78,7 +73,15 @@ export function TelegramReturn({ locale }: { locale: Locale }) {
       );
       work.current = (async () => {
         if (!proof) return null;
-        await telegramBrowserRequest({ action: "confirm", ...proof }, success);
+        try {
+          await telegramBrowserRequest({ action: "confirm", ...proof }, success);
+        } catch (error) {
+          const { status } = await telegramBrowserRequest(
+            { action: "status", requestId: proof.requestId },
+            telegramStatusResponse,
+          );
+          if (status !== "approved" && status !== "consumed") throw error;
+        }
         try {
           return await finish(proof.requestId);
         } catch {

@@ -265,6 +265,7 @@ model TelegramBotRequest {
   linkUserId     String?  @map("link_user_id")
   linkSessionId  String?  @map("link_session_id")
   linkRevision   Int?     @map("link_revision")
+  registrationDraftId String? @map("registration_draft_id") @db.Uuid
 
   @@index([expiresAt], map: "telegram_bot_requests_expiry_idx")
   @@map("telegram_bot_requests")
