@@ -16,6 +16,7 @@ import { handleEmailRegistration } from "./registration-email-http.js";
 import { checkAuthSchema } from "./schema-readiness.js";
 import { handleSessionSettings } from "./session-settings.js";
 import { createSmtpMailer } from "./smtp-mailer.js";
+import { handleTelegramBotCommand } from "./telegram-bot-internal.js";
 import { handleTelegramOAuth } from "./telegram-oauth-http.js";
 import { handleTelegramRegistration } from "./telegram-registration-http.js";
 import { handleTelegramSettings } from "./telegram-settings-http.js";
@@ -37,6 +38,7 @@ export { type AuthConfig, parseAuthConfig } from "./config.js";
 
 export interface AuthHttpRuntime {
   handle(request: Request): Promise<Response>;
+  handleTelegramBotCommand(payload: unknown): Promise<Response>;
   checkReadiness(): Promise<void>;
   close(): Promise<void>;
 }
@@ -68,6 +70,7 @@ export function createAuthHttpRuntime(
     ["ru", "en"].map((language) => destination(language, page));
 
   return {
+    handleTelegramBotCommand: (payload) => handleTelegramBotCommand(pool, payload),
     async handle(request) {
       const url = new URL(request.url);
       if (
