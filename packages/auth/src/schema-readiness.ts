@@ -32,6 +32,7 @@ export const authMigrations = [
   "20261128110000_telegram_registration_contact",
   "20261128120000_telegram_bot_first_registration",
   "20261128130000_telegram_registration_completion",
+  "20261128140000_telegram_browser_return_proof",
 ] as const;
 
 const columns = {
@@ -126,6 +127,7 @@ const columns = {
     "id",
     "browser_hash",
     "deep_link_hash",
+    "return_hash",
     "intent",
     "locale",
     "status",
@@ -231,6 +233,7 @@ const constraints = [
   ["user_profiles", "user_profiles_company_name_check"],
   ["user_profiles", "user_profiles_telegram_phone_check"],
   ["telegram_bot_requests", "telegram_bot_requests_hash_check"],
+  ["telegram_bot_requests", "telegram_bot_requests_return_hash_check"],
   ["telegram_bot_requests", "telegram_bot_requests_intent_check"],
   ["telegram_bot_requests", "telegram_bot_requests_expiry_check"],
   ["telegram_bot_requests", "telegram_bot_requests_display_check"],
