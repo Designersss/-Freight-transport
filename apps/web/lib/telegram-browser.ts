@@ -29,6 +29,7 @@ export const telegramWaitSchema = z.strictObject({
 
 export type TelegramWait = z.infer<typeof telegramWaitSchema>;
 export const waitStorageKey = "movaro.telegram.wait";
+const draftStorageKey = "movaro.telegram.draft";
 
 export const telegramStatusResponse = z.object({
   status: z
@@ -111,6 +112,25 @@ export function forgetTelegramWait(): void {
     sessionStorage.removeItem(waitStorageKey);
   } catch {
     // No browser capability is stored here.
+  }
+}
+
+// The draft ID is a locator only, never a browser capability or proof.
+export function readTelegramDraftId(): string | null {
+  try {
+    const parsed = z.uuid().safeParse(sessionStorage.getItem(draftStorageKey));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export function rememberTelegramDraftId(id: string | null): void {
+  try {
+    if (id === null) sessionStorage.removeItem(draftStorageKey);
+    else sessionStorage.setItem(draftStorageKey, id);
+  } catch {
+    // Registration still works without browser storage.
   }
 }
 

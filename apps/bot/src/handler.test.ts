@@ -175,7 +175,9 @@ describe("Telegram private chat handler", () => {
       handle({ update_id: 2, callback_query: click }),
     ).rejects.toThrow("Synthetic internal failure");
     await handle({ update_id: 3, callback_query: click });
-    const approvals = commands.filter((command) => command.action === "approve");
+    const approvals = commands.filter(
+      (command) => command.action === "approve",
+    );
     expect(approvals).toHaveLength(1);
     expect(telegram.sendMessage).toHaveBeenLastCalledWith(
       actor.chatId,

@@ -647,11 +647,13 @@ export function createBotHandler(
       // A mutation may already have committed. Discard its prompt and let
       // /start recover authoritative state rather than retrying the command.
       const incoming =
-        privateMessage(update.message) ?? privateCallback(update.callback_query);
+        privateMessage(update.message) ??
+        privateCallback(update.callback_query);
       if (incoming) {
         const { actor } = incoming;
         prompts.delete(actor.userId);
-        const user = "user" in incoming ? incoming.user : incoming.callback.from;
+        const user =
+          "user" in incoming ? incoming.user : incoming.callback.from;
         const locale = user.language_code?.startsWith("ru") ? "ru" : "en";
         await say(actor, messages[locale].error).catch(() => undefined);
       }

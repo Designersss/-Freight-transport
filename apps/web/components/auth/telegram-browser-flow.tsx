@@ -9,6 +9,7 @@ import {
   forgetTelegramWait,
   parseTelegramReturn,
   readTelegramWait,
+  rememberTelegramDraftId,
   type TelegramWait,
   telegramBrowserRequest,
   telegramDraftResponse,
@@ -25,11 +26,11 @@ async function finish(requestId: string): Promise<Destination> {
     { action: "finish", requestId },
     telegramFinishResponse,
   );
-  return result.outcome === "registration"
-    ? "/telegram/registration"
-    : result.outcome === "linked"
-      ? "/account"
-      : "/cabinet";
+  if (result.outcome === "registration") {
+    rememberTelegramDraftId(result.draftId);
+    return "/telegram/registration";
+  }
+  return result.outcome === "linked" ? "/account" : "/cabinet";
 }
 
 // Another tab may already have consumed the same approval. Only actual
@@ -44,7 +45,10 @@ async function recover(requestId: string): Promise<Destination | null> {
     { action: "draft-find" },
     telegramDraftResponse,
   ).catch(() => null);
-  if (draft?.draft?.id === requestId) return "/telegram/registration";
+  if (draft?.draft?.id === requestId) {
+    rememberTelegramDraftId(draft.draft.id);
+    return "/telegram/registration";
+  }
   const session = await fetch("/api/auth/get-session", {
     cache: "no-store",
     credentials: "same-origin",

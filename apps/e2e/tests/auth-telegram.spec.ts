@@ -186,6 +186,10 @@ test("Telegram bot signup waits, returns with a fragment and resumes the shared 
     }
     if (command.action === "draft-find")
       return route.fulfill({ json: { draft } });
+    if (command.action === "draft-state") {
+      expect(command.draftId).toBe(draft.id);
+      return route.fulfill({ json: { draft, completed: false } });
+    }
     return route.fulfill({ status: 400, json: { code: "INVALID_REQUEST" } });
   });
   await page.goto("/en/signup");
@@ -234,7 +238,7 @@ test("Telegram registration reports completion only after a verified receipt", a
   await page.route("**/api/auth/telegram-bot/browser", (route) => {
     const command = route.request().postDataJSON();
     if (command.action === "draft-find")
-      return route.fulfill({ json: { draft } });
+      return route.fulfill({ json: { draft: completed ? null : draft } });
     if (command.action === "draft-state") {
       expect(command.draftId).toBe(draftId);
       return route.fulfill({
@@ -258,5 +262,9 @@ test("Telegram registration reports completion only after a verified receipt", a
   });
   await expect(
     page.getByRole("link", { name: "Sign in with Telegram" }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByText("Account created. Sign in with Telegram."),
   ).toBeVisible();
 });

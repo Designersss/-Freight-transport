@@ -18,6 +18,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import {
+  readTelegramDraftId,
+  rememberTelegramDraftId,
   telegramBrowserRequest,
   telegramDraftResponse,
   type telegramDraftSchema,
@@ -71,21 +73,25 @@ export function TelegramRegistration({ locale }: { locale: Locale }) {
   const load = useCallback(async (signal?: AbortSignal) => {
     try {
       if (mutating.current) return;
-      const id = knownDraftId.current;
-      const result = id
+      const id = knownDraftId.current ?? readTelegramDraftId();
+      const previous = id
         ? await telegramBrowserRequest(
             { action: "draft-state", draftId: id },
             telegramDraftStateResponse,
             signal,
           )
-        : {
-            ...(await telegramBrowserRequest(
-              { action: "draft-find" },
-              telegramDraftResponse,
-              signal,
-            )),
-            completed: false,
-          };
+        : null;
+      const result =
+        previous?.draft || previous?.completed
+          ? previous
+          : {
+              ...(await telegramBrowserRequest(
+                { action: "draft-find" },
+                telegramDraftResponse,
+                signal,
+              )),
+              completed: false,
+            };
       if (signal?.aborted || mutating.current) return;
       if (result.completed) {
         setDraft(null);
@@ -95,12 +101,15 @@ export function TelegramRegistration({ locale }: { locale: Locale }) {
       const next = result.draft;
       if (next) {
         knownDraftId.current = next.id;
+        rememberTelegramDraftId(next.id);
         setDraft((current) =>
           current?.id === next.id && current.revision === next.revision
             ? current
             : next,
         );
       } else {
+        knownDraftId.current = null;
+        rememberTelegramDraftId(null);
         setDraft(null);
       }
       setState("ready");
@@ -147,7 +156,8 @@ export function TelegramRegistration({ locale }: { locale: Locale }) {
         onChanged={(next, failure = "") => {
           setDraft(next);
           setDraftFailure(failure);
-          if (next) knownDraftId.current = next.id;
+          knownDraftId.current = next?.id ?? null;
+          rememberTelegramDraftId(knownDraftId.current);
         }}
         onRefresh={() => void load()}
         onCreated={() => {
