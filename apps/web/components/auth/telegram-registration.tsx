@@ -52,6 +52,7 @@ function initialStep(draft: Draft): Step {
 export function TelegramRegistration({ locale }: { locale: Locale }) {
   const t = messages[locale].auth;
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [draftFailure, setDraftFailure] = useState("");
   const [state, setState] = useState<"loading" | "ready" | "error" | "created">("loading");
 
   const load = useCallback(async (signal?: AbortSignal) => {
@@ -63,6 +64,7 @@ export function TelegramRegistration({ locale }: { locale: Locale }) {
       );
       if (!signal?.aborted) {
         setDraft(result.draft);
+        setDraftFailure("");
         setState("ready");
       }
     } catch {
@@ -82,7 +84,11 @@ export function TelegramRegistration({ locale }: { locale: Locale }) {
         key={`${draft.id}:${draft.revision}`}
         locale={locale}
         draft={draft}
-        onChanged={setDraft}
+        initialFailure={draftFailure}
+        onChanged={(next, failure = "") => {
+          setDraft(next);
+          setDraftFailure(failure);
+        }}
         onRefresh={() => void load()}
         onCreated={() => {
           setDraft(null);
@@ -121,20 +127,22 @@ export function TelegramRegistration({ locale }: { locale: Locale }) {
 function TelegramDraftForm({
   locale,
   draft,
+  initialFailure,
   onChanged,
   onRefresh,
   onCreated,
 }: {
   locale: Locale;
   draft: Draft;
-  onChanged: (draft: Draft | null) => void;
+  initialFailure: string;
+  onChanged: (draft: Draft | null, failure?: string) => void;
   onRefresh: () => void;
   onCreated: () => void;
 }) {
   const t = messages[locale].auth;
   const [step, setStep] = useState<Step>(() => initialStep(draft));
   const [busy, setBusy] = useState(false);
-  const [failure, setFailure] = useState("");
+  const [failure, setFailure] = useState(initialFailure);
   const heading = useRef<HTMLHeadingElement>(null);
   const inFlight = useRef(false);
   const profile = useForm<ProfileValues>({
@@ -256,7 +264,14 @@ function TelegramDraftForm({
     if (result.outcome === "created") {
       onCreated();
     } else {
-      onChanged(next);
+      onChanged(
+        next,
+        result.outcome === "username-taken"
+          ? t.usernameTaken
+          : result.outcome === "identity-taken"
+            ? t.telegramError
+            : t.error,
+      );
     }
   }
 
@@ -371,7 +386,7 @@ function TelegramDraftForm({
           </Button>
         )}
         <Button variant="outline" disabled={busy} onClick={() => void act(() => switchChannel("bot"))}>
-          {t.telegramBotOpen}
+          {t.telegramBotSwitchChat}
         </Button>
         <Button variant="ghost" disabled={busy} onClick={onRefresh}>{t.telegramRefresh}</Button>
         <Button variant="ghost" disabled={busy} onClick={() => void act(cancel)}>{t.telegramBotCancel}</Button>
