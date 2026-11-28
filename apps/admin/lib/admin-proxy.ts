@@ -1,6 +1,9 @@
 import "server-only";
 
-import { forwardTrustedProxyIp } from "@freight/auth/proxy-ip";
+import {
+  adminPreviewAllowed,
+  forwardTrustedProxyIp,
+} from "@freight/auth/proxy-ip";
 
 function origin(value: string | undefined): string {
   if (!value) throw new Error("Missing admin configuration");
@@ -61,7 +64,7 @@ export async function forwardAdmin(
     request.method !== (read ? "GET" : "POST")
   )
     return failure(404);
-  if (process.env.NODE_ENV === "production") return failure(404);
+  if (!adminPreviewAllowed(request.headers, process.env)) return failure(404);
   if (new URL(request.url).search) return failure(400);
   try {
     const admin = origin(process.env.AUTH_ADMIN_ORIGIN);

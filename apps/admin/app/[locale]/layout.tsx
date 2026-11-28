@@ -1,9 +1,10 @@
 import "../globals.css";
 
+import { adminPreviewAllowed } from "@freight/auth/proxy-ip";
 import { isLocale, messages } from "@freight/i18n";
 import { parseTheme, SkipLink, themeCookie, UiProvider } from "@freight/ui";
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -19,7 +20,7 @@ interface LayoutProps {
 }
 
 export default async function RootLayout({ children, params }: LayoutProps) {
-  if (process.env.NODE_ENV === "production") notFound();
+  if (!adminPreviewAllowed(await headers(), process.env)) notFound();
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const theme = parseTheme((await cookies()).get(themeCookie)?.value);

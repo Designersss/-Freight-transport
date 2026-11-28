@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  adminPreviewAllowed,
   forwardTrustedProxyIp,
+  protectedStagingConfigured,
   PROXY_IP_HEADER,
   PROXY_SECRET_HEADER,
   rateLimitClient,
@@ -81,4 +83,50 @@ describe("trusted auth proxy address", () => {
     ])
       assert.equal(trustedProxyIp(assertion(ip), secret), null);
   });
+});
+
+describe("protected staging", () => {
+  const env = {
+    NODE_ENV: "production",
+    MOVARO_AUTH_STAGING: "true",
+    AUTH_BASE_URL: "http://127.0.0.1:4000",
+    AUTH_WEB_ORIGIN: "https://web.example.test",
+    AUTH_ADMIN_ORIGIN: "https://admin.example.test",
+    AUTH_PROXY_SECRET: secret,
+  };
+
+  it("allows only configured staging with an authenticated ingress", () => {
+    assert.equal(protectedStagingConfigured(env), true);
+    assert.equal(adminPreviewAllowed(assertion("192.0.2.1"), env), true);
+    assert.equal(adminPreviewAllowed(new Headers(), env), false);
+    assert.equal(
+      adminPreviewAllowed(assertion("192.0.2.1", "b".repeat(64)), env),
+      false,
+    );
+    assert.equal(
+      adminPreviewAllowed(new Headers(), { NODE_ENV: "production" }),
+      false,
+    );
+    assert.equal(
+      adminPreviewAllowed(new Headers(), { NODE_ENV: "development" }),
+      true,
+    );
+  });
+
+  for (const override of [
+    { MOVARO_AUTH_STAGING: undefined },
+    { MOVARO_AUTH_STAGING: "false" },
+    { AUTH_BASE_URL: "https://api.example.test" },
+    { AUTH_WEB_ORIGIN: "http://web.example.test" },
+    { AUTH_ADMIN_ORIGIN: "https://web.example.test:444" },
+    { AUTH_ADMIN_ORIGIN: "https://admin.example.test/path" },
+    { AUTH_PROXY_SECRET: undefined },
+    { AUTH_PROXY_SECRET: "short" },
+  ]) {
+    it(`rejects invalid staging configuration ${JSON.stringify(override)}`, () => {
+      const invalid = { ...env, ...override };
+      assert.equal(protectedStagingConfigured(invalid), false);
+      assert.equal(adminPreviewAllowed(assertion("192.0.2.1"), invalid), false);
+    });
+  }
 });

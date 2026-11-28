@@ -1,6 +1,9 @@
 import "server-only";
 
-import { forwardTrustedProxyIp } from "@freight/auth/proxy-ip";
+import {
+  forwardTrustedProxyIp,
+  protectedStagingConfigured,
+} from "@freight/auth/proxy-ip";
 
 const paths = new Set([
   "registration/email/start",
@@ -99,8 +102,14 @@ export async function forwardAuth(
       process.env.AUTH_BASE_URL,
       "http://127.0.0.1:4000",
     );
-    // RD-04 development bridge only; production auth remains explicitly disabled.
-    if (process.env.MOVARO_AUTH_PREVIEW !== "true") return authFailure(503);
+    // The closed staging bridge requires an authenticated ingress.
+    // Production API auth remains explicitly disabled.
+    if (
+      process.env.MOVARO_AUTH_PREVIEW !== "true" ||
+      (process.env.MOVARO_AUTH_STAGING !== undefined &&
+        !protectedStagingConfigured(process.env))
+    )
+      return authFailure(503);
     if (method !== "GET" && request.headers.get("origin") !== web)
       return authFailure(403);
     const encoding = request.headers.get("content-encoding");

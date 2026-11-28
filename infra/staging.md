@@ -1,0 +1,21 @@
+# Защищённый staging RD-04
+
+Статус: подготовка к проверке. Не production. Синтетические данные, один выделенный Linux VPS, отдельные HTTPS origins Web и Admin, приватный API и Mailpit. Production API auth gate остаётся закрытым. API работает в development runtime с явным staging-флагом, только loopback и обязательным proxy secret. Web/Admin запускаются через next start. Admin production build доступен исключительно при валидном staging-конфиге и доверенном ingress assertion; обычный production без флага возвращает 404.
+
+## Запуск
+
+В .env добавить STAGING_WEB_ORIGIN, STAGING_ADMIN_ORIGIN (разные HTTPS origins без path), AUTH_PROXY_SECRET (отдельный случайный 64-символьный hex). Не передавать AUTH_SECRET/ADMIN_SECRET в UI. Не выводить секреты в терминал, CI, Git и access logs.
+
+```bash
+docker compose -f docker-compose.yml -f compose.preview.yml -f compose.staging.yml --profile local-mail config --quiet
+docker compose -f docker-compose.yml -f compose.preview.yml -f compose.staging.yml --profile local-mail build api
+docker compose -f docker-compose.yml -f compose.preview.yml -f compose.staging.yml --profile local-mail up -d --no-build --wait --wait-timeout 240
+```
+
+Staging image отдельно от preview image. Тот же project name, неизменные volumes и миграции. Перед переключением проверить backup/restore и миграции; Nginx до успешного smoke отдаёт только защищённую проверочную страницу. При rollback закрыть ingress и запустить предыдущий preview image через прежние два compose files, без удаления volumes.
+
+## Ingress
+
+Nginx с TLS и Basic Auth на всех application locations. Не проксировать API, S3, DB, SMTP и Mailpit напрямую. Перезаписывать Host, X-Forwarded-Host, X-Forwarded-Proto, X-Forwarded-For, x-movaro-proxy-ip и x-movaro-proxy-secret; последний из отдельного root-only snippet. Authorization, Forwarded и x-movaro-client-ip не передавать upstream. Не писать query strings, OAuth codes, cookies и secrets в логи. Проверить неизвестные Host, обход basic auth, прямые loopback запросы без assertion (auth endpoints 403/404), запросы через ingress с поддельными заголовками, Web/Admin sessions, Secure cookies, redirects, реальные OAuth и SMTP flows. Healthchecks внутри UI используют собственный доверенный loopback assertion, не раскрывают секрет в команде. Наличие staging flag не доказывает правильность Nginx — обязательна проверка реального ingress.
+
+Telegram credentials пока не включены. Внешний доступ, полный quality, browser smoke и реальные интеграции остаются открытыми. Host networking и dev dependencies сохраняются как ограничения временного staging, не production deployment.

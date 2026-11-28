@@ -69,3 +69,44 @@ export function forwardTrustedProxyIp(
   outgoing.set(PROXY_SECRET_HEADER, secret);
   return true;
 }
+
+function httpsOrigin(value: unknown): URL | null {
+  if (typeof value !== "string") return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && value === url.origin ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+// Explicit, closed HTTPS staging only. This does not enable production API auth.
+export function protectedStagingConfigured(
+  env: Record<string, unknown>,
+): boolean {
+  const web = httpsOrigin(env.AUTH_WEB_ORIGIN);
+  const admin = httpsOrigin(env.AUTH_ADMIN_ORIGIN);
+  return (
+    env.MOVARO_AUTH_STAGING === "true" &&
+    env.AUTH_BASE_URL === "http://127.0.0.1:4000" &&
+    typeof env.AUTH_PROXY_SECRET === "string" &&
+    /^[0-9a-f]{64}$/.test(env.AUTH_PROXY_SECRET) &&
+    web !== null &&
+    admin !== null &&
+    web.hostname !== admin.hostname
+  );
+}
+
+export function adminPreviewAllowed(
+  incoming: IncomingHeaders,
+  env: Record<string, unknown>,
+): boolean {
+  if (env.MOVARO_AUTH_STAGING !== undefined) {
+    return (
+      protectedStagingConfigured(env) &&
+      typeof env.AUTH_PROXY_SECRET === "string" &&
+      trustedProxyIp(incoming, env.AUTH_PROXY_SECRET) !== null
+    );
+  }
+  return env.NODE_ENV === "development" || env.NODE_ENV === "test";
+}

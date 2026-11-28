@@ -11,6 +11,7 @@ import { handleEmailChange } from "./email-change-http.js";
 import { reserveMailRequest } from "./mail-rate-limit.js";
 import { handleProfile, handleProfileSettings } from "./profile.js";
 import { handleProfilePhoto } from "./profile-photo.js";
+import { protectedStagingConfigured } from "./proxy-ip.js";
 import { handleEmailRegistration } from "./registration-email-http.js";
 import { checkAuthSchema } from "./schema-readiness.js";
 import { handleSessionSettings } from "./session-settings.js";
@@ -325,5 +326,13 @@ export function parseRuntimeAuthConfig(
     throw new Error(
       "Auth production activation requires RD-04 security acceptance",
     );
+  if (
+    env.MOVARO_AUTH_STAGING !== undefined &&
+    (!protectedStagingConfigured(env) ||
+      config.NODE_ENV !== "development" ||
+      env.API_HOST !== "127.0.0.1" ||
+      env.API_PORT !== "4000")
+  )
+    throw new Error("Invalid protected staging configuration");
   return config;
 }

@@ -1,6 +1,7 @@
+import { adminPreviewAllowed } from "@freight/auth/proxy-ip";
 import { isLocale, messages } from "@freight/i18n";
 import { Header, parseTheme, themeCookie } from "@freight/ui";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { AdminLogin } from "../../../components/admin-login";
 import { readAdminSession } from "../../../lib/admin-session";
@@ -10,7 +11,7 @@ export default async function Page({
 }: {
   params: Promise<{ locale: string }>;
 }) {
-  if (process.env.NODE_ENV === "production") notFound();
+  if (!adminPreviewAllowed(await headers(), process.env)) notFound();
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const session = await readAdminSession();

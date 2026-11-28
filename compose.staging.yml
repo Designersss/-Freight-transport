@@ -1,0 +1,62 @@
+# Layer over docker-compose.yml and compose.preview.yml on the staging VPS.
+# Do not route public traffic until ingress protection and smoke checks pass.
+x-staging-env: &staging-env
+  MOVARO_AUTH_STAGING: "true"
+  AUTH_WEB_ORIGIN: ${STAGING_WEB_ORIGIN:?Set STAGING_WEB_ORIGIN}
+  AUTH_ADMIN_ORIGIN: ${STAGING_ADMIN_ORIGIN:?Set STAGING_ADMIN_ORIGIN}
+  AUTH_PROXY_SECRET: ${AUTH_PROXY_SECRET:?Set AUTH_PROXY_SECRET}
+
+services:
+  api:
+    image: movaro-staging:local
+    environment:
+      <<: *staging-env
+      NODE_ENV: development
+  worker:
+    image: movaro-staging:local
+  web:
+    image: movaro-staging:local
+    command:
+      [
+        "node",
+        "node_modules/next/dist/bin/next",
+        "start",
+        "--hostname",
+        "127.0.0.1",
+        "--port",
+        "3000",
+      ]
+    environment:
+      <<: *staging-env
+      NODE_ENV: production
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/auth/get-session',{headers:{'x-movaro-proxy-ip':'127.0.0.1','x-movaro-proxy-secret':process.env.AUTH_PROXY_SECRET}}).then(async r=>{if(!r.ok||await r.json()!==null)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+  admin:
+    image: movaro-staging:local
+    command:
+      [
+        "node",
+        "node_modules/next/dist/bin/next",
+        "start",
+        "--hostname",
+        "127.0.0.1",
+        "--port",
+        "3001",
+      ]
+    environment:
+      <<: *staging-env
+      NODE_ENV: production
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/api/auth/get-session',{headers:{'x-movaro-proxy-ip':'127.0.0.1','x-movaro-proxy-secret':process.env.AUTH_PROXY_SECRET}}).then(async r=>{if(!r.ok||await r.json()!==null)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
