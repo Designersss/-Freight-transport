@@ -304,9 +304,24 @@ test("Only the claiming private Telegram user can submit contact and decide", as
     const rejected = await start();
     await claimTelegramBotRequest(pool, rejected.deepLink, actor, names);
     await saveTelegramBotContact(pool, rejected.id, actor, contact);
+    const rejectedProof = await prepareTelegramBotApproval(
+      pool,
+      rejected.id,
+      actor,
+    );
+    assert.ok(rejectedProof);
     assert.equal(
       await rejectTelegramBotRequest(pool, rejected.id, actor),
       true,
+    );
+    assert.equal(
+      await confirmTelegramBotApproval(
+        pool,
+        browser,
+        rejected.id,
+        rejectedProof,
+      ),
+      false,
     );
     assert.equal(
       await readTelegramBotRequest(pool, browser, rejected.id),
@@ -340,11 +355,37 @@ test("Only the claiming private Telegram user can submit contact and decide", as
       await saveTelegramBotContact(pool, login.id, actor, contact),
       false,
     );
-    const loginProof = await prepareTelegramBotApproval(pool, login.id, actor);
+    const loginProof = await prepareTelegramBotApproval(
+      pool,
+      login.id,
+      actor,
+    );
     assert.ok(loginProof);
     assert.equal(
       await confirmTelegramBotApproval(pool, browser, login.id, loginProof),
       true,
+    );
+    const cancelled = await start();
+    await claimTelegramBotRequest(pool, cancelled.deepLink, actor, names);
+    await saveTelegramBotContact(pool, cancelled.id, actor, contact);
+    const cancelledProof = await prepareTelegramBotApproval(
+      pool,
+      cancelled.id,
+      actor,
+    );
+    assert.ok(cancelledProof);
+    assert.equal(
+      await cancelTelegramBotRequest(pool, browser, cancelled.id),
+      true,
+    );
+    assert.equal(
+      await confirmTelegramBotApproval(
+        pool,
+        browser,
+        cancelled.id,
+        cancelledProof,
+      ),
+      false,
     );
     const expired = await start();
     await claimTelegramBotRequest(pool, expired.deepLink, actor, names);
