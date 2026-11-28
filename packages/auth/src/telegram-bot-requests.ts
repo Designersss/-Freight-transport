@@ -132,7 +132,7 @@ export function privateTelegramActor(actor: TelegramBotActor): boolean {
   );
 }
 
-function telegramName(value: unknown): string | null {
+export function telegramName(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const name = value.trim();
   return name.length > 0 && name.length <= 128 ? name : null;
@@ -201,6 +201,19 @@ export interface TelegramBotContact {
   forwarded: boolean;
 }
 
+export function verifiedTelegramContact(
+  actor: TelegramBotActor,
+  contact: TelegramBotContact,
+): string | null {
+  if (
+    !privateTelegramActor(actor) ||
+    contact.forwarded !== false ||
+    contact.userId !== actor.userId
+  )
+    return null;
+  return telegramPhone(contact.phoneNumber);
+}
+
 // Only the bot adapter can associate a contact with a live registration
 // prompt. Reject forwarded, foreign, missing or malformed contacts here too.
 export async function saveTelegramBotContact(
@@ -209,14 +222,8 @@ export async function saveTelegramBotContact(
   actor: TelegramBotActor,
   contact: TelegramBotContact,
 ): Promise<boolean> {
-  const phone = telegramPhone(contact.phoneNumber);
-  if (
-    !privateTelegramActor(actor) ||
-    contact.forwarded !== false ||
-    contact.userId !== actor.userId ||
-    !phone
-  )
-    return false;
+  const phone = verifiedTelegramContact(actor, contact);
+  if (!phone) return false;
   const result = await pool.query(
     `UPDATE telegram_bot_requests SET phone_number = $3
      WHERE id::text = $1 AND telegram_user_id = $2

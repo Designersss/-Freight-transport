@@ -12,7 +12,10 @@ import { telegramBotAccountId } from "./telegram-bot-link.js";
 import {
   privateTelegramActor,
   type TelegramBotActor,
+  type TelegramBotContact,
   telegramBotCapabilityHash,
+  telegramName,
+  verifiedTelegramContact,
 } from "./telegram-bot-requests.js";
 
 const channelInput = z.enum(["web", "bot"]);
@@ -112,6 +115,123 @@ export async function beginTelegramRegistrationDraft(
   return result.rows[0]?.id ?? null;
 }
 
+// Bot-first start requires an explicit registration choice and the contact
+// from that live prompt. No browser credential is generated for a chat.
+export async function beginBotOnlyRegistrationDraft(
+  pool: Pool,
+  actor: TelegramBotActor,
+  contact: TelegramBotContact,
+  names: { firstName?: unknown; lastName?: unknown },
+  locale: unknown,
+): Promise<string | null> {
+  const language = z.enum(["ru", "en"]).safeParse(locale);
+  const phone = verifiedTelegramContact(actor, contact);
+  if (!language.success || !phone) return null;
+  const result = await pool.query<{ id: string }>(
+    `INSERT INTO telegram_registration_drafts (
+       id, telegram_user_id, locale, channel, phone_number, first_name,
+       last_name, created_at, expires_at
+     )
+     SELECT $1, $2, $3, 'bot', $4, $5, $6, issued_at,
+       issued_at + interval '30 minutes'
+     FROM (SELECT clock_timestamp() AS issued_at) AS issued
+     WHERE NOT EXISTS (
+       SELECT 1 FROM "account" WHERE "providerId" = 'telegram'
+         AND "accountId" = $7
+     )
+     ON CONFLICT (telegram_user_id) DO NOTHING RETURNING id`,
+    [
+      randomUUID(),
+      actor.userId,
+      language.data,
+      phone,
+      telegramName(names.firstName),
+      telegramName(names.lastName),
+      telegramBotAccountId(actor.userId),
+    ],
+  );
+  return result.rows[0]?.id ?? null;
+}
+
+// A fresh approved registration request plus an explicit resume action in
+// the same private chat is required to attach a different browser. A draft
+// ID or an old browser cookie alone never permits this operation.
+export async function resumeTelegramRegistrationInBrowser(
+  pool: Pool,
+  draftId: string,
+  requestId: string,
+  actor: TelegramBotActor,
+  revision: number,
+): Promise<string | null> {
+  if (
+    !privateTelegramActor(actor) ||
+    !Number.isInteger(revision) ||
+    revision < 0 ||
+    revision >= 2_147_483_647
+  )
+    return null;
+  try {
+    const result = await pool.query<{ id: string }>(
+      `WITH grant AS (
+         SELECT r.id, r.browser_hash, r.telegram_user_id, r.phone_number
+         FROM telegram_bot_requests r
+         WHERE r.id::text = $1 AND r.telegram_user_id = $2
+           AND r.intent = 'register' AND r.status = 'approved'
+           AND r.expires_at > clock_timestamp()
+         FOR UPDATE OF r
+       ), resumed AS (
+         UPDATE telegram_registration_drafts d SET
+           browser_hash = g.browser_hash, channel = 'web',
+           revision = d.revision + 1,
+           expires_at = LEAST(d.created_at + interval '2 hours',
+             clock_timestamp() + interval '30 minutes')
+         FROM grant g
+         WHERE d.id::text = $3 AND d.telegram_user_id = g.telegram_user_id
+           AND d.revision = $4 AND d.expires_at > clock_timestamp()
+           AND d.phone_number = g.phone_number
+           AND NOT EXISTS (
+             SELECT 1 FROM "account" a WHERE a."providerId" = 'telegram'
+               AND a."accountId" = 'bot:' || d.telegram_user_id
+           )
+         RETURNING d.id
+       )
+       UPDATE telegram_bot_requests r SET status = 'consumed',
+         telegram_user_id = NULL, first_name = NULL, last_name = NULL,
+         phone_number = NULL
+       FROM resumed WHERE r.id::text = $1 RETURNING resumed.id`,
+      [requestId, actor.userId, draftId, revision],
+    );
+    return result.rows[0]?.id ?? null;
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "23505" &&
+      "constraint" in error &&
+      error.constraint === "telegram_registration_drafts_browser_uidx"
+    )
+      return null;
+    throw error;
+  }
+}
+
+// Used on bot restart or return to an already attached browser. Neither
+// lookup creates a draft or extends its expiry.
+export async function findTelegramRegistrationDraft(
+  pool: Pool,
+  access: DraftAccess,
+): Promise<DraftView | null> {
+  const owner = ownership(access);
+  if (!owner) return null;
+  const result = await pool.query<DraftView>(
+    `SELECT ${fields} FROM telegram_registration_drafts
+     WHERE (browser_hash = $1 OR telegram_user_id = $2)
+       AND expires_at > clock_timestamp()`,
+    [owner.hash, owner.actorId],
+  );
+  return result.rows[0] ?? null;
+}
+
 const owned = `id::text = $1 AND (browser_hash = $2 OR telegram_user_id = $3)
   AND expires_at > clock_timestamp()`;
 
@@ -149,6 +269,7 @@ export async function updateTelegramRegistrationDraft(
          expires_at = LEAST(created_at + interval '2 hours',
            clock_timestamp() + interval '30 minutes')
        WHERE ${owned} AND revision = $4 AND channel <> $5
+         AND ($5 <> 'web' OR browser_hash IS NOT NULL)
        RETURNING ${fields}`,
       [id, owner.hash, owner.actorId, change.revision, change.channel],
     );
@@ -253,7 +374,12 @@ export async function completeTelegramRegistrationDraft(
   revision: unknown,
 ): Promise<TelegramDraftCompletion> {
   const owner = ownership(access);
-  const version = z.number().int().min(0).max(2_147_483_646).safeParse(revision);
+  const version = z
+    .number()
+    .int()
+    .min(0)
+    .max(2_147_483_646)
+    .safeParse(revision);
   if (!owner || !version.success) return "denied";
   const client = await pool.connect();
   let failed = true;

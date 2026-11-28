@@ -30,6 +30,7 @@ export const authMigrations = [
   "20261128090000_telegram_bot_session_fence",
   "20261128100000_telegram_registration_drafts",
   "20261128110000_telegram_registration_contact",
+  "20261128120000_telegram_bot_first_registration",
 ] as const;
 
 const columns = {

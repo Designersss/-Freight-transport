@@ -11,10 +11,13 @@ import {
   startTelegramBotRequest,
 } from "../../packages/auth/dist/telegram-bot-requests.js";
 import {
+  beginBotOnlyRegistrationDraft,
   beginTelegramRegistrationDraft,
   completeTelegramRegistrationDraft,
   deleteExpiredTelegramRegistrationDrafts,
+  findTelegramRegistrationDraft,
   readTelegramRegistrationDraft,
+  resumeTelegramRegistrationInBrowser,
   updateTelegramRegistrationDraft,
 } from "../../packages/auth/dist/telegram-registration-draft.js";
 
@@ -239,6 +242,126 @@ test("Both registration channels finalize one account or roll back the draft", a
       ]);
       assert.equal(await finish(access, 2), "denied");
     }
+  } finally {
+    await pool.end();
+  }
+});
+
+test("Bot-first draft can attach a freshly approved browser and revoke the old one", async () => {
+  const databaseUrl = process.env.AUTH_COMPAT_DATABASE_URL;
+  assert.ok(databaseUrl);
+  const target = new URL(databaseUrl);
+  assert.equal(target.hostname, "127.0.0.1");
+  assert.equal(target.pathname, "/freight_auth_compat");
+  const pool = new pg.Pool({ connectionString: databaseUrl });
+  const userId = String(randomBytes(6).readUIntBE(0, 6) + 1);
+  const actor = { chatType: "private", chatId: userId, userId };
+  const bot = { channel: "bot", actor };
+  const contact = {
+    userId,
+    phoneNumber: "+12025550123",
+    forwarded: false,
+  };
+  const names = { firstName: "Synthetic", lastName: "Driver" };
+  try {
+    const begin = (value) =>
+      beginBotOnlyRegistrationDraft(pool, actor, value, names, "ru");
+    assert.equal(await begin({ ...contact, forwarded: true }), null);
+    assert.equal(await begin({ ...contact, userId: "999" }), null);
+    const starts = await Promise.all([begin(contact), begin(contact)]);
+    const id = starts.find(Boolean);
+    assert.ok(id);
+    assert.equal(starts.filter(Boolean).length, 1);
+    const initial = await findTelegramRegistrationDraft(pool, bot);
+    assert.equal(initial?.id, id);
+    assert.equal(initial?.channel, "bot");
+    assert.equal(
+      await updateTelegramRegistrationDraft(pool, id, bot, {
+        action: "switch",
+        channel: "web",
+        revision: 0,
+      }),
+      null,
+    );
+    const edited = await updateTelegramRegistrationDraft(pool, id, bot, {
+      action: "edit",
+      revision: 0,
+      role: "DRIVER",
+      firstName: "Edited",
+    });
+    assert.equal(edited?.revision, 1);
+    async function approve(browser) {
+      const request = await startTelegramBotRequest(pool, browser, {
+        intent: "register",
+        locale: "ru",
+      });
+      assert.equal(
+        await resumeTelegramRegistrationInBrowser(
+          pool,
+          id,
+          request.id,
+          actor,
+          1,
+        ),
+        null,
+      );
+      await claimTelegramBotRequest(pool, request.deepLink, actor, names);
+      assert.equal(
+        await saveTelegramBotContact(pool, request.id, actor, contact),
+        true,
+      );
+      assert.equal(
+        await decideTelegramBotRequest(pool, request.id, actor, "approve"),
+        true,
+      );
+      return request;
+    }
+    const browser = createTelegramBrowserCapability();
+    const web = { channel: "web", browserCapability: browser };
+    const request = await approve(browser);
+    assert.equal(await findTelegramRegistrationDraft(pool, web), null);
+    assert.equal(
+      await resumeTelegramRegistrationInBrowser(pool, id, request.id, actor, 0),
+      null,
+    );
+    const resumed = await Promise.all([
+      resumeTelegramRegistrationInBrowser(pool, id, request.id, actor, 1),
+      resumeTelegramRegistrationInBrowser(pool, id, request.id, actor, 1),
+    ]);
+    assert.equal(resumed.filter((value) => value === id).length, 1);
+    const attached = await findTelegramRegistrationDraft(pool, web);
+    assert.equal(attached?.firstName, "Edited");
+    assert.equal(attached?.revision, 2);
+    assert.equal(attached?.channel, "web");
+    assert.equal(
+      await readTelegramBotRequest(pool, browser, request.id),
+      "consumed",
+    );
+
+    const next = createTelegramBrowserCapability();
+    const nextRequest = await approve(next);
+    assert.equal(
+      await resumeTelegramRegistrationInBrowser(
+        pool,
+        id,
+        nextRequest.id,
+        actor,
+        2,
+      ),
+      id,
+    );
+    assert.equal(await findTelegramRegistrationDraft(pool, web), null);
+    const replacement = await findTelegramRegistrationDraft(pool, {
+      channel: "web",
+      browserCapability: next,
+    });
+    assert.equal(replacement?.firstName, "Edited");
+    assert.equal(replacement?.revision, 3);
+    const account = await pool.query(
+      'SELECT id FROM "account" WHERE "providerId" = $1 AND "accountId" = $2',
+      ["telegram", `bot:${userId}`],
+    );
+    assert.equal(account.rowCount, 0);
   } finally {
     await pool.end();
   }
