@@ -60,7 +60,13 @@ services:
       mailpit:
         condition: service_started
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/api/v1/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/api/v1/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
       interval: 10s
       timeout: 5s
       start_period: 30s
@@ -83,7 +89,16 @@ services:
   web:
     <<: *runtime
     working_dir: /app/apps/web
-    command: ["node", "node_modules/next/dist/bin/next", "dev", "--hostname", "127.0.0.1", "--port", "3000"]
+    command:
+      [
+        "node",
+        "node_modules/next/dist/bin/next",
+        "dev",
+        "--hostname",
+        "127.0.0.1",
+        "--port",
+        "3000",
+      ]
     environment:
       <<: *web-env
       AUTH_WEB_ORIGIN: http://127.0.0.1:3000
@@ -91,7 +106,13 @@ services:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/auth/get-session').then(async r=>{if(!r.ok||await r.json()!==null)process.exit(1)}).catch(()=>process.exit(1))"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/auth/get-session').then(async r=>{if(!r.ok||await r.json()!==null)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
       interval: 15s
       timeout: 10s
       start_period: 90s
@@ -100,7 +121,16 @@ services:
   admin:
     <<: *runtime
     working_dir: /app/apps/admin
-    command: ["node", "node_modules/next/dist/bin/next", "dev", "--hostname", "127.0.0.1", "--port", "3001"]
+    command:
+      [
+        "node",
+        "node_modules/next/dist/bin/next",
+        "dev",
+        "--hostname",
+        "127.0.0.1",
+        "--port",
+        "3001",
+      ]
     environment:
       <<: *web-env
       AUTH_ADMIN_ORIGIN: http://127.0.0.1:3001
@@ -108,7 +138,13 @@ services:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/auth/get-session').then(async r=>{if(!r.ok||await r.json()!==null)process.exit(1)}).catch(()=>process.exit(1))"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/api/auth/get-session').then(async r=>{if(!r.ok||await r.json()!==null)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
       interval: 15s
       timeout: 10s
       start_period: 90s
