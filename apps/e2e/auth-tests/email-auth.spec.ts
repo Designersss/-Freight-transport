@@ -163,7 +163,7 @@ test("real signup, email ownership, login and session revocation", async ({
   );
   for (const other of ["company-owner", "dispatcher"]) {
     await page.goto(`/ru/cabinet/${other}`);
-    await expect(page.getByRole("alert")).toContainText(
+    await expect(page.getByRole("main").getByRole("alert")).toContainText(
       "У вас нет доступа к этому кабинету.",
     );
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(

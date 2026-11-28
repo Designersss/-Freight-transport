@@ -44,7 +44,9 @@ test("email change requires an explicit confirmation for each link", async ({
   await page.getByRole("link", { name: "Back to sign in" }).click();
   await expect(page).toHaveURL(/\/en\/login$/);
   await page.goto("/en/email-change-confirmation");
-  await expect(page.getByRole("alert")).toContainText("invalid or expired");
+  await expect(page.getByRole("main").getByRole("alert")).toContainText(
+    "invalid or expired",
+  );
   expect(confirmations).toBe(2);
 });
 

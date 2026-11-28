@@ -25,7 +25,7 @@ test("Telegram controls use server capability and reject untrusted redirects", a
   });
   await page.reload();
   await page.getByRole("button", { name: "Sign in with Telegram" }).click();
-  await expect(page.getByRole("alert")).toHaveText(
+  await expect(page.getByRole("main").getByRole("alert")).toHaveText(
     "Unable to sign in with Telegram. Try again.",
   );
   await expect(page).toHaveURL(/\/en\/login$/);

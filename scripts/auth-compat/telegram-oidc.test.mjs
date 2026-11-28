@@ -148,13 +148,17 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
       .getSetCookie()
       .map((value) => value.split(";")[0])
       .join("; ");
-  async function begin(requestSignUp = false, sessionCookie = "") {
-    const response = await handleTelegramOAuth(
+  // Each independent OAuth flow has its own synthetic server-side client IP.
+  // Replays retain the IP of the original flow; production limits stay enabled.
+  let nextClient = 100;
+  function start(ip, requestSignUp = false, sessionCookie = "") {
+    return handleTelegramOAuth(
       new Request(`${origin}${base}/telegram/start`, {
         method: "POST",
         headers: {
           origin,
           "content-type": "application/json",
+          "x-movaro-client-ip": ip,
           ...(sessionCookie ? { cookie: sessionCookie } : {}),
         },
         body: JSON.stringify({
@@ -166,6 +170,10 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
       auth,
       pool,
     );
+  }
+  async function begin(requestSignUp = false, sessionCookie = "") {
+    const ip = `198.51.100.${nextClient++}`;
+    const response = await start(ip, requestSignUp, sessionCookie);
     assert.equal(response.status, 200);
     const url = new URL((await response.json()).url);
     nonce = url.searchParams.get("nonce");
@@ -176,6 +184,7 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
     assert.equal(url.searchParams.get("code_challenge_method"), "S256");
     return {
       url,
+      ip,
       cookies: [sessionCookie, cookie(response)].filter(Boolean).join("; "),
     };
   }
@@ -187,7 +196,12 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
     url.searchParams.set("code", "synthetic-code");
     url.searchParams.set("state", state);
     const result = await handleTelegramOAuth(
-      new Request(url, { headers: { cookie: flow.cookies } }),
+      new Request(url, {
+        headers: {
+          cookie: flow.cookies,
+          "x-movaro-client-ip": flow.ip,
+        },
+      }),
       authConfig,
       auth,
       pool,
@@ -195,10 +209,10 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
     assert.equal(result.status, 303);
     return result;
   }
-  async function session(response) {
+  async function session(response, ip) {
     const result = await auth.handler(
       new Request(`${origin}${base}/get-session`, {
-        headers: { cookie: cookie(response) },
+        headers: { cookie: cookie(response), "x-movaro-client-ip": ip },
       }),
     );
     assert.equal(result.status, 200);
@@ -210,7 +224,7 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
       result.headers.get("location") ?? "",
       /\/login\?telegram=error$/,
     );
-    assert.equal(await session(result), null);
+    assert.equal(await session(result, flow.ip), null);
   }
 
   try {
@@ -244,7 +258,7 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
     token = mint();
     const first = await callback(flow);
     assert.equal(first.headers.get("location"), `${origin}/en/cabinet`);
-    const created = await session(first);
+    const created = await session(first, flow.ip);
     assert.ok(created?.user.id);
     assert.equal(created.user.emailVerified, false);
     assert.equal(
@@ -351,7 +365,7 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
     flow = await begin();
     token = mint();
     const again = await callback(flow);
-    assert.equal((await session(again)).user.id, created.user.id);
+    assert.equal((await session(again, flow.ip)).user.id, created.user.id);
     const accounts = await pool.query(
       'SELECT "accountId", "userId", "accessToken", "refreshToken", "idToken" FROM "account" WHERE "providerId" = $1 AND "accountId" = $2',
       ["telegram", subject],
@@ -390,7 +404,11 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
     const emailLogin = await auth.handler(
       new Request(`${origin}${base}/sign-in/email`, {
         method: "POST",
-        headers: { origin, "content-type": "application/json" },
+        headers: {
+          origin,
+          "content-type": "application/json",
+          "x-movaro-client-ip": "198.51.100.200",
+        },
         body: JSON.stringify({ email, password }),
       }),
     );
@@ -416,7 +434,7 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
     flow = await begin();
     token = mint({ sub: newSubject });
     const viaTelegram = await callback(flow);
-    const linkedSession = await session(viaTelegram);
+    const linkedSession = await session(viaTelegram, flow.ip);
     assert.equal(linkedSession.user.id, emailUser);
     assert.equal(linkedSession.user.email, email);
     assert.equal(linkedSession.user.emailVerified, true);
@@ -460,7 +478,16 @@ test("Telegram OIDC adapter verifies signed identity, nonce and account ownershi
       }),
     );
     assert.equal(raw.status, 403);
-    assert.equal((await session(viaTelegram)).user.id, emailUser);
+    assert.equal((await session(viaTelegram, flow.ip)).user.id, emailUser);
+
+    // Independent clients do not consume each other's sign-in quota, but
+    // repeated starts from one client must still hit Better Auth's limit.
+    const limitedIp = "198.51.100.240";
+    for (let i = 0; i < 3; i++)
+      assert.equal((await start(limitedIp)).status, 200);
+    const limited = await start(limitedIp);
+    assert.equal(limited.status, 429);
+    assert.deepEqual(await limited.json(), { code: "RATE_LIMITED" });
 
     await assert.rejects(
       pool.query(

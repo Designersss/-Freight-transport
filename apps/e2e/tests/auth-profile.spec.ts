@@ -533,6 +533,9 @@ for (const variant of [
     expect(writes).toBe(2);
     await remove.click();
     await settings.getByRole("button", { name: variant.confirm }).click();
+    await expect(
+      settings.getByRole("button", { name: variant.cancel }),
+    ).toHaveCount(0);
     await expect(settings.getByRole("status")).toHaveText(variant.removed);
     await expect(
       settings.getByRole("img", { name: variant.empty }),
