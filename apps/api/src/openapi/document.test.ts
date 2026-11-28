@@ -29,10 +29,62 @@ describe("OpenAPI contract", () => {
   it("documents real versioned endpoints and the readiness error", async () => {
     const { app } = await start("production");
     const spec = createOpenApiDocument(app);
-    expect(Object.keys(spec.paths).sort()).toEqual([
-      "/api/v1/health",
-      "/api/v1/health/ready",
-    ]);
+    const operations = Object.entries(spec.paths).flatMap(([path, item]) =>
+      Object.keys(item).map((method) => `${method.toUpperCase()} ${path}`),
+    );
+    expect(operations.sort()).toEqual(
+      [
+        "GET /api/v1/health",
+        "GET /api/v1/health/ready",
+        "POST /sign-in/email",
+        "POST /sign-out",
+        "GET /get-session",
+        "POST /change-password",
+        "POST /request-password-reset",
+        "POST /reset-password",
+        "GET /reset-password/{token}",
+        "POST /registration/email/start",
+        "POST /registration/email/read",
+        "POST /registration/email/complete",
+        "GET /profile",
+        "POST /profile/settings",
+        "GET /profile/photo",
+        "POST /profile/photo",
+        "DELETE /profile/photo",
+        "POST /username",
+        "GET /username/settings",
+        "POST /username/settings",
+        "GET /sessions",
+        "POST /sessions",
+        "POST /email/change",
+        "POST /email/change/confirm",
+        "POST /account/deactivate",
+        "GET /telegram/status",
+        "POST /telegram/start",
+        "GET /telegram/callback",
+        "POST /telegram/registration",
+        "GET /telegram/settings",
+        "GET /cabinet/company-owner",
+        "GET /cabinet/dispatcher",
+        "GET /cabinet/driver",
+        "POST /admin/sign-in/email",
+        "POST /admin/sign-out",
+        "GET /admin/get-session",
+      ]
+        .map((entry) =>
+          entry.includes(" /api/v1/")
+            ? entry
+            : entry.replace(" /", " /api/v1/auth/"),
+        )
+        .sort(),
+    );
+    const ids = Object.values(spec.paths).flatMap((item) =>
+      [item.get, item.post, item.delete]
+        .filter((entry) => entry !== undefined)
+        .map((entry) => entry.operationId),
+    );
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).not.toContain(undefined);
     expect(spec.paths["/api/v1/health"]?.get?.operationId).toBe("getLiveness");
     const ready = spec.paths["/api/v1/health/ready"]?.get;
     expect(ready?.operationId).toBe("getReadiness");
