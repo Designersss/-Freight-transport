@@ -25,6 +25,7 @@ export const authMigrations = [
   "20261128040000_registration_finalize",
   "20261128050000_remove_registration_draft",
   "20261128060000_birth_date_validation",
+  "20261128070000_admin_rate_limits",
 ] as const;
 
 const columns = {
@@ -88,6 +89,7 @@ const columns = {
     "updatedAt",
   ],
   rateLimit: ["id", "key", "count", "lastRequest"],
+  admin_rate_limits: ["id", "key", "count", "lastRequest"],
   user_profiles: [
     "user_id",
     "first_name",
@@ -157,6 +159,7 @@ const uniqueIndexes = [
   ["account", "account_telegram_user_uidx"],
   ["session", "session_token_uidx"],
   ["rateLimit", "rateLimit_key_uidx"],
+  ["admin_rate_limits", "admin_rate_limits_key_uidx"],
   ["user_profiles", "user_profiles_photo_key_uidx"],
   ["pending_email_change", "pending_email_change_token_hash_uidx"],
 ];

@@ -86,6 +86,14 @@ test("readiness rejects partial auth schema without changing liveness", async ()
     // Restore each mutation before the next scenario, including on failure.
     for (const [remove, restore] of [
       [
+        "ALTER TABLE admin_rate_limits RENAME TO readiness_missing_admin_limits",
+        "ALTER TABLE readiness_missing_admin_limits RENAME TO admin_rate_limits",
+      ],
+      [
+        "ALTER INDEX admin_rate_limits_key_uidx RENAME TO readiness_missing_admin_limit_index",
+        "ALTER INDEX readiness_missing_admin_limit_index RENAME TO admin_rate_limits_key_uidx",
+      ],
+      [
         "ALTER TABLE registration_email_proofs RENAME TO readiness_missing_proofs",
         "ALTER TABLE readiness_missing_proofs RENAME TO registration_email_proofs",
       ],

@@ -37,6 +37,8 @@ export function createAdminAuth(
     rateLimit: {
       enabled: true,
       storage: "database",
+      // Public and Admin have different policies on the same relative paths.
+      modelName: "admin_rate_limits",
       customRules: { "/sign-in/email": { window: 60, max: 5 } },
     },
     session: {
@@ -141,7 +143,9 @@ export async function handleAdminAuth(
       }),
     );
     if (!upstream.ok) {
-      const retry = upstream.headers.get("retry-after");
+      const retry =
+        upstream.headers.get("retry-after") ??
+        upstream.headers.get("x-retry-after");
       if (retry) headers.set("retry-after", retry);
       if (upstream.status === 429) return fail(429, "RATE_LIMITED");
       return fail(upstream.status >= 500 ? 503 : 401, "AUTH_REQUEST_FAILED");

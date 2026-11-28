@@ -171,6 +171,15 @@ model RateLimit {
   @@map("rateLimit")
 }
 
+model AdminRateLimit {
+  id          String @id
+  key         String @unique(map: "admin_rate_limits_key_uidx")
+  count       Int
+  lastRequest BigInt
+
+  @@map("admin_rate_limits")
+}
+
 enum UserRole {
   PLATFORM_ADMIN
   COMPANY_OWNER
