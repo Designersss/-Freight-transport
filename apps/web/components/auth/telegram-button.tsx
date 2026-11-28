@@ -8,9 +8,11 @@ import {
   ChoiceOption,
   FieldSeparator,
 } from "@freight/ui";
+import { useRouter } from "@freight/ui/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { z } from "zod";
-import { startTelegramOAuth } from "../../lib/telegram-oauth";
+import { waitStorageKey } from "../../lib/telegram-browser";
+import { startTelegramAuth } from "../../lib/telegram-oauth";
 
 const statusResponse = z.object({ enabled: z.boolean() });
 
@@ -26,6 +28,7 @@ export function TelegramButton({
   onPendingChange: (pending: boolean) => void;
 }) {
   const t = messages[locale].auth;
+  const router = useRouter();
   const [capability, setCapability] = useState<
     "loading" | "enabled" | "unavailable"
   >("loading");
@@ -67,7 +70,7 @@ export function TelegramButton({
     onPendingChange(true);
     let redirecting = false;
     try {
-      const result = await startTelegramOAuth(
+      const result = await startTelegramAuth(
         intent,
         locale,
         controller.signal,
@@ -77,7 +80,10 @@ export function TelegramButton({
         setFailure(result.status === 429 ? t.limited : t.telegramError);
         return;
       }
-      window.location.assign(result.url);
+      if (result.kind === "bot") {
+        sessionStorage.setItem(waitStorageKey, JSON.stringify(result.wait));
+        router.push("/telegram/wait", { locale });
+      } else window.location.assign(result.url);
       redirecting = true;
     } catch {
       if (!controller.signal.aborted) setFailure(t.telegramError);
