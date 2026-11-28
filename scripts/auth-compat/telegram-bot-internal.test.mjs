@@ -123,3 +123,73 @@ test("Internal bot commands validate ownership and require browser confirmation"
     await pool.end();
   }
 });
+
+test("Chat-only continuation never attaches the unconfirmed browser", async () => {
+  const databaseUrl = process.env.AUTH_COMPAT_DATABASE_URL;
+  assert.ok(databaseUrl);
+  const target = new URL(databaseUrl);
+  assert.equal(target.hostname, "127.0.0.1");
+  assert.equal(target.pathname, "/freight_auth_compat");
+  const pool = new pg.Pool({ connectionString: databaseUrl });
+  const userId = String(randomBytes(6).readUIntBE(0, 6) + 1);
+  const actor = { chatType: "private", chatId: userId, userId };
+  const browser = createTelegramBrowserCapability();
+
+  async function send(command) {
+    const response = await handleTelegramBotCommand(pool, command);
+    assert.equal(response.status, 200);
+    return (await response.json()).result;
+  }
+
+  try {
+    const request = await startTelegramBotRequest(pool, browser, {
+      intent: "register",
+      locale: "en",
+    });
+    const requestId = request.id;
+    assert.ok(
+      await send({
+        action: "claim",
+        actor,
+        deepLink: request.deepLink,
+        names: { firstName: "Synthetic", lastName: "Driver" },
+      }),
+    );
+    const begin = { action: "draft-begin-chat", actor, requestId };
+    assert.equal(await send(begin), null);
+    assert.equal(
+      await send({
+        action: "contact",
+        actor,
+        requestId,
+        contact: {
+          userId,
+          phoneNumber: "+12025550123",
+          forwarded: false,
+        },
+      }),
+      true,
+    );
+    const proof = await send({ action: "approve", actor, requestId });
+    assert.ok(proof);
+    const competing = await Promise.all([send(begin), send(begin)]);
+    assert.equal(competing.filter((value) => value === requestId).length, 1);
+    assert.equal(
+      await confirmTelegramBotApproval(pool, browser, requestId, proof),
+      false,
+    );
+    const result = await pool.query(
+      "SELECT browser_hash, channel FROM telegram_registration_drafts WHERE id = $1",
+      [requestId],
+    );
+    assert.deepEqual(result.rows, [{ browser_hash: null, channel: "bot" }]);
+    const username = await send({
+      action: "draft-suggest-username",
+      actor,
+      draftId: requestId,
+    });
+    assert.match(username, /^[a-z][a-z0-9_]{2,31}$/);
+  } finally {
+    await pool.end();
+  }
+});
