@@ -41,7 +41,7 @@ export {
   PopoverContent,
   PopoverTrigger,
 } from "./components/popover";
-export { RoleOption } from "./components/role-option";
+export { ChoiceOption, RoleOption } from "./components/role-option";
 export { Separator } from "./components/separator";
 export { Skeleton } from "./components/skeleton";
 export {

@@ -26,6 +26,12 @@ const ru = {
     signup: "Регистрация",
     signupTitle: "Создайте аккаунт",
     signupDescription: "Укажите электронную почту для регистрации.",
+    registrationMethodDescription: "Выберите удобный способ регистрации.",
+    registrationEmailTitle: "Регистрация по почте",
+    registrationEmailMethod: "Регистрация с подтверждением email",
+    registrationTelegramMethod: "Регистрация через аккаунт Telegram",
+    telegramChecking: "Проверяем доступность Telegram…",
+    telegramUnavailable: "Вход через Telegram сейчас недоступен.",
     registrationEmailSent:
       "Откройте ссылку из письма, чтобы продолжить регистрацию. Проверьте входящие и спам.",
     registrationLinkDescription:
@@ -264,6 +270,12 @@ const en: typeof ru = {
     signup: "Sign up",
     signupTitle: "Create an account",
     signupDescription: "Enter your email address to sign up.",
+    registrationMethodDescription: "Choose how you want to register.",
+    registrationEmailTitle: "Register with email",
+    registrationEmailMethod: "Register by verifying your email",
+    registrationTelegramMethod: "Register using your Telegram account",
+    telegramChecking: "Checking Telegram availability…",
+    telegramUnavailable: "Telegram sign-in is currently unavailable.",
     registrationEmailSent:
       "Open the link in your email to continue registration. Check your inbox and spam folder.",
     registrationLinkDescription:

@@ -14,7 +14,10 @@ test("Telegram controls use server capability and reject untrusted redirects", a
   await page.goto("/en/login");
   await expect(
     page.getByRole("button", { name: "Sign in with Telegram" }),
-  ).toHaveCount(0);
+  ).toBeDisabled();
+  await expect(
+    page.getByText("Telegram sign-in is currently unavailable."),
+  ).toBeVisible();
   enabled = true;
   await page.route("**/api/auth/telegram/start", (route) => {
     expect(route.request().postDataJSON()).toEqual({
@@ -32,7 +35,11 @@ test("Telegram controls use server capability and reject untrusted redirects", a
   await page.goto("/ru/signup");
   await expect(
     page.getByRole("button", { name: "Регистрация через Telegram" }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "Электронная почта" }),
   ).toBeVisible();
+  await expect(page.getByText(/^Шаг \d+ из \d+$/)).toHaveCount(0);
   await expectAccessible(page);
 });
 
@@ -102,6 +109,7 @@ test("Telegram onboarding reuses role, profile and username steps without creden
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Choose your role",
   );
+  await expect(page.getByText("Step 1 of 3", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Email address")).toHaveCount(0);
   await expect(page.getByLabel("Password", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Driver", exact: true }).click();

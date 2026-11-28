@@ -59,6 +59,8 @@ test("registration wizard preserves profile after conflict and network failure",
     }
   });
   await page.goto("/en/signup");
+  await expect(page.getByText(/^Step \d+ of \d+$/)).toHaveCount(0);
+  await page.getByRole("button", { name: "Email address", exact: true }).click();
   await page.getByRole("button", { name: "Light theme" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   const email = page.getByLabel("Email address");
@@ -68,17 +70,21 @@ test("registration wizard preserves profile after conflict and network failure",
   const heading = page.getByRole("heading", { level: 1 });
   await email.fill("user@example.test");
   await expect(password).toHaveCount(0);
+  await expect(page.getByText(/^Step \d+ of \d+$/)).toHaveCount(0);
   await next.click();
   await expect(heading).toHaveText("Confirm your email");
+  await expect(page.getByText(/^Step \d+ of \d+$/)).toHaveCount(0);
   await page.goto("/en/login");
   await page.goto(`/en/signup#token=${token}`);
   await page.getByRole("button", { name: "Confirm email" }).click();
   await expect(heading).toHaveText("Choose a password");
+  await expect(page.getByText("Step 1 of 4", { exact: true })).toBeVisible();
   await expect(email).toHaveValue("user@example.test");
   await expect(email).not.toBeEditable();
   await password.fill("test-password");
   await next.click();
   await expect(heading).toHaveText("Choose your role");
+  await expect(page.getByText("Step 2 of 4", { exact: true })).toBeVisible();
   await expect(heading).toBeFocused();
   await page.getByRole("button", { name: "Driver", exact: true }).click();
   await expect(heading).toHaveText("Complete your profile");
@@ -104,6 +110,7 @@ test("registration wizard preserves profile after conflict and network failure",
   await page.getByLabel("Company name").fill("Test Company");
   await next.click();
   await expect(heading).toHaveText("Choose a username");
+  await expect(page.getByText("Step 4 of 4", { exact: true })).toBeVisible();
   const username = page.getByLabel("Username", { exact: true });
   await expect(username).toHaveValue("test_user");
   await expectAccessible(page);
@@ -130,4 +137,28 @@ test("registration wizard preserves profile after conflict and network failure",
   expect(attempts).toBe(2);
   await expect(page).toHaveURL(/\/en\/signup$/);
   await expect(page).toHaveTitle("MOVARO");
+});
+
+test("registration method navigation respects reduced motion and keyboard", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/en/signup");
+  const step = page.locator(".movaro-signup-step");
+  const email = page.getByRole("button", { name: "Email address", exact: true });
+  await expect(step).toHaveCSS("animation-name", "movaro-signup-step-in");
+  await email.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Register with email",
+  );
+  await expect(step).toHaveAttribute("data-direction", "forward");
+  await expect(step).toHaveCSS("animation-duration", "0.22s");
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(step).toHaveAttribute("data-direction", "backward");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(step).toHaveCSS("animation-name", "none");
+  await expect(email).toHaveCSS("transition-duration", "0s");
+  await expectNoHorizontalOverflow(page);
+  await expectAccessible(page);
 });

@@ -93,6 +93,9 @@ test("real signup, email ownership, login and session revocation", async ({
   try {
     const other = await requester.newPage();
     await other.goto("http://127.0.0.1:3110/ru/signup");
+    await other
+      .getByRole("button", { name: "Электронная почта", exact: true })
+      .click();
     await expect(other.getByLabel("Пароль", { exact: true })).toHaveCount(0);
     await other.getByLabel("Электронная почта").fill(email);
     await other

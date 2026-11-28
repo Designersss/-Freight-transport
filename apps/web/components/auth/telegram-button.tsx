@@ -1,8 +1,14 @@
 "use client";
 
 import { type Locale, messages } from "@freight/i18n";
-import { Alert, AlertDescription, Button, FieldSeparator } from "@freight/ui";
-import { useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  AlertDescription,
+  Button,
+  ChoiceOption,
+  FieldSeparator,
+} from "@freight/ui";
+import { useEffect, useId, useRef, useState } from "react";
 import { z } from "zod";
 import { startTelegramOAuth } from "../../lib/telegram-oauth";
 
@@ -20,7 +26,10 @@ export function TelegramButton({
   onPendingChange: (pending: boolean) => void;
 }) {
   const t = messages[locale].auth;
-  const [enabled, setEnabled] = useState(false);
+  const [capability, setCapability] = useState<
+    "loading" | "enabled" | "unavailable"
+  >("loading");
+  const statusId = useId();
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState("");
   const request = useRef<AbortController | null>(null);
@@ -33,11 +42,12 @@ export function TelegramButton({
           cache: "no-store",
           signal: controller.signal,
         });
-        if (!response.ok) return;
-        const status = statusResponse.parse(await response.json());
-        if (!controller.signal.aborted) setEnabled(status.enabled);
+        const enabled =
+          response.ok && statusResponse.parse(await response.json()).enabled;
+        if (!controller.signal.aborted)
+          setCapability(enabled ? "enabled" : "unavailable");
       } catch {
-        // Email authentication remains available if capability lookup fails.
+        if (!controller.signal.aborted) setCapability("unavailable");
       }
     }
     void load();
@@ -49,7 +59,7 @@ export function TelegramButton({
   }, []);
 
   async function start() {
-    if (request.current || disabled) return;
+    if (request.current || disabled || capability !== "enabled") return;
     const controller = new AbortController();
     request.current = controller;
     setFailure("");
@@ -80,29 +90,56 @@ export function TelegramButton({
     }
   }
 
-  if (!enabled) return null;
+  const unavailable = capability !== "enabled";
+  const status =
+    capability === "loading" ? t.telegramChecking : t.telegramUnavailable;
+  const error = failure && (
+    <Alert variant="destructive">
+      <AlertDescription>{failure}</AlertDescription>
+    </Alert>
+  );
+
+  if (intent === "register") {
+    return (
+      <>
+        <ChoiceOption
+          choice="telegram"
+          title={t.telegramRegister}
+          description={
+            unavailable
+              ? status
+              : pending
+                ? t.submitting
+                : t.registrationTelegramMethod
+          }
+          disabled={disabled || pending || unavailable}
+          onSelect={() => void start()}
+        />
+        {error}
+      </>
+    );
+  }
+
   return (
     <div className="mt-4 flex flex-col gap-3">
       <FieldSeparator>{t.telegramOr}</FieldSeparator>
-      {failure && (
-        <Alert variant="destructive">
-          <AlertDescription>{failure}</AlertDescription>
-        </Alert>
-      )}
+      {error}
       <Button
         type="button"
         variant="outline"
         size="lg"
         className="w-full"
-        disabled={disabled || pending}
+        disabled={disabled || pending || unavailable}
+        aria-describedby={unavailable ? statusId : undefined}
         onClick={() => void start()}
       >
-        {pending
-          ? t.submitting
-          : intent === "login"
-            ? t.telegramLogin
-            : t.telegramRegister}
+        {pending ? t.submitting : t.telegramLogin}
       </Button>
+      {unavailable && (
+        <p id={statusId} className="text-xs text-muted-foreground">
+          {status}
+        </p>
+      )}
     </div>
   );
 }

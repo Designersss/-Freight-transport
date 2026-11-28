@@ -1,6 +1,13 @@
 "use client";
 
-import { Building2, ChevronRight, Headset, Truck } from "lucide-react";
+import {
+  Building2,
+  ChevronRight,
+  Headset,
+  Mail,
+  Send,
+  Truck,
+} from "lucide-react";
 import { useId } from "react";
 import { Button } from "./button";
 
@@ -8,27 +15,31 @@ const icons = {
   COMPANY_OWNER: Building2,
   DISPATCHER: Headset,
   DRIVER: Truck,
+  email: Mail,
+  telegram: Send,
 };
 
-export function RoleOption({
-  role,
-  title,
-  description,
-  disabled,
-  onSelect,
-}: {
-  role: keyof typeof icons;
+type ChoiceOptionProps = {
+  choice: keyof typeof icons;
   title: string;
   description: string;
   disabled: boolean;
   onSelect: () => void;
-}) {
+};
+
+export function ChoiceOption({
+  choice,
+  title,
+  description,
+  disabled,
+  onSelect,
+}: ChoiceOptionProps) {
   const descriptionId = useId();
-  const Icon = icons[role];
+  const Icon = icons[choice];
   return (
     <Button
       variant="outline"
-      className="h-auto min-h-16 w-full justify-start gap-3 whitespace-normal p-3 text-left"
+      className="movaro-choice-option h-auto min-h-16 w-full justify-start gap-3 whitespace-normal p-3 text-left"
       aria-label={title}
       aria-describedby={descriptionId}
       disabled={disabled}
@@ -46,7 +57,19 @@ export function RoleOption({
           {description}
         </span>
       </span>
-      <ChevronRight className="text-muted-foreground" aria-hidden="true" />
+      <ChevronRight
+        className="movaro-choice-chevron text-muted-foreground"
+        aria-hidden="true"
+      />
     </Button>
   );
+}
+
+export function RoleOption({
+  role,
+  ...props
+}: Omit<ChoiceOptionProps, "choice"> & {
+  role: "COMPANY_OWNER" | "DISPATCHER" | "DRIVER";
+}) {
+  return <ChoiceOption choice={role} {...props} />;
 }

@@ -16,6 +16,7 @@ import {
   Alert,
   AlertDescription,
   Button,
+  ChoiceOption,
   Field,
   FieldError,
   FieldGroup,
@@ -41,6 +42,7 @@ import { TelegramButton } from "./telegram-button";
 type Credentials = { email: string; password: string };
 type UsernameValues = { username: string };
 type Step =
+  | "method"
   | "email"
   | "confirmation"
   | "credentials"
@@ -52,13 +54,12 @@ type Availability = {
   status: "available" | "taken" | "error";
 };
 
-const emailSteps: Step[] = [
+const emailSteps: Step[] = ["credentials", "role", "profile", "username"];
+const registrationOrder: Step[] = [
+  "method",
   "email",
   "confirmation",
-  "credentials",
-  "role",
-  "profile",
-  "username",
+  ...emailSteps,
 ];
 const telegramSteps: Step[] = ["role", "profile", "username"];
 const suggestionResponse = z.object({ username: usernameInput });
@@ -95,7 +96,8 @@ export function SignupWizard({
 }) {
   const t = messages[locale].auth;
   const router = useRouter();
-  const [step, setStep] = useState<Step>(telegram ? "role" : "email");
+  const [step, setStep] = useState<Step>(telegram ? "role" : "method");
+  const [direction, setDirection] = useState<"forward" | "backward">("forward");
   const [telegramPending, setTelegramPending] = useState(false);
   const [confirmationBusy, setConfirmationBusy] = useState(false);
   const [linkReady, setLinkReady] = useState(false);
@@ -139,7 +141,8 @@ export function SignupWizard({
         : "invalid";
   const stepIndex = steps.indexOf(step) + 1;
   const title = {
-    email: t.signupTitle,
+    method: t.signupTitle,
+    email: t.registrationEmailTitle,
     confirmation: t.verificationTitle,
     credentials: t.registrationPasswordTitle,
     role: t.roleTitle,
@@ -147,6 +150,7 @@ export function SignupWizard({
     username: t.usernameTitle,
   }[step];
   const description = {
+    method: t.registrationMethodDescription,
     email: t.signupDescription,
     confirmation: linkReady
       ? t.registrationLinkDescription
@@ -225,6 +229,11 @@ export function SignupWizard({
 
   function go(next: Step) {
     setFailure("");
+    setDirection(
+      registrationOrder.indexOf(next) < registrationOrder.indexOf(step)
+        ? "backward"
+        : "forward",
+    );
     setStep(next);
   }
 
@@ -292,7 +301,7 @@ export function SignupWizard({
       if (response.status === 400 || response.status === 409) {
         proof.current = "";
         setLinkReady(false);
-        setStep("email");
+        go("email");
         setFailure(
           response.status === 409 ? t.registrationExisting : t.invalidLink,
         );
@@ -465,33 +474,45 @@ export function SignupWizard({
     else if (step === "profile") go("role");
     else if (step === "role" && !telegram) go("credentials");
     else if (step === "confirmation" || step === "credentials") restartEmail();
+    else if (step === "email") go("method");
   }
 
   return (
     <AuthPanel title={title} description={description} headingRef={heading}>
-      <div className="mb-5 flex flex-col gap-2">
-        <p className="text-xs text-muted-foreground" role="status">
-          {t.signupStep} {stepIndex} {t.signupOf} {steps.length}
-        </p>
-        <div
-          className={
-            telegram ? "grid grid-cols-3 gap-1" : "grid grid-cols-6 gap-1"
-          }
-          aria-hidden="true"
-        >
-          {steps.map((value, index) => (
-            <span
-              key={value}
-              className={
-                index < stepIndex
-                  ? "h-1 rounded-full bg-primary"
-                  : "h-1 rounded-full bg-muted"
-              }
+      {stepIndex > 0 && (
+        <div className="mb-5 flex flex-col gap-2">
+          <p className="text-xs text-muted-foreground" role="status">
+            {t.signupStep} {stepIndex} {t.signupOf} {steps.length}
+          </p>
+          <div
+            className="h-1 overflow-hidden rounded-full bg-muted"
+            aria-hidden="true"
+          >
+            <div
+              className="movaro-signup-progress h-full rounded-full bg-primary"
+              style={{ width: `${(stepIndex / steps.length) * 100}%` }}
             />
-          ))}
+          </div>
         </div>
-      </div>
-      <div key={step} className="movaro-signup-step">
+      )}
+      <div key={step} className="movaro-signup-step" data-direction={direction}>
+        {step === "method" && (
+          <div className="flex flex-col gap-3">
+            <ChoiceOption
+              choice="email"
+              title={t.email}
+              description={t.registrationEmailMethod}
+              disabled={busy}
+              onSelect={() => go("email")}
+            />
+            <TelegramButton
+              locale={locale}
+              intent="register"
+              disabled={credentials.formState.isSubmitting}
+              onPendingChange={setTelegramPending}
+            />
+          </div>
+        )}
         {step === "email" && (
           <form
             noValidate
@@ -698,15 +719,7 @@ export function SignupWizard({
           <AlertDescription>{failure}</AlertDescription>
         </Alert>
       )}
-      {!telegram && step === "email" && (
-        <TelegramButton
-          locale={locale}
-          intent="register"
-          disabled={credentials.formState.isSubmitting}
-          onPendingChange={setTelegramPending}
-        />
-      )}
-      {stepIndex > 1 && (
+      {(telegram ? stepIndex > 1 : step !== "method") && (
         <Button
           className="mt-3 w-full"
           variant="ghost"
