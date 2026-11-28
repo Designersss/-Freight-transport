@@ -64,8 +64,8 @@ function isRejectedProof(error: unknown): boolean {
   );
 }
 
-// Not mounted by createEmailAuth yet. The future HTTP adapter must allow
-// only this explicit path, enforce limits and issue the host-only cookie.
+// Mounted only in exclusive bot mode. The public runtime delegates to this
+// endpoint after checking the browser command and never exposes it directly.
 export function createTelegramBotLoginPlugin(
   pool: Pool,
   webOrigin: string,
