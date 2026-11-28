@@ -9,10 +9,10 @@ import {
   forgetTelegramWait,
   parseTelegramReturn,
   readTelegramWait,
+  type TelegramWait,
   telegramBrowserRequest,
   telegramDraftResponse,
   telegramFinishResponse,
-  type TelegramWait,
   telegramStatusResponse,
 } from "../../lib/telegram-browser";
 import { AuthPanel } from "./auth-panel";
@@ -51,9 +51,9 @@ async function recover(requestId: string): Promise<Destination | null> {
     signal: AbortSignal.timeout(10000),
   });
   if (!session.ok) return null;
-  const parsed = z.object({ user: z.object({ id: z.string() }) }).safeParse(
-    await session.json(),
-  );
+  const parsed = z
+    .object({ user: z.object({ id: z.string() }) })
+    .safeParse(await session.json());
   return parsed.success ? "/cabinet" : null;
 }
 
@@ -152,7 +152,9 @@ export function TelegramWaitScreen({ locale }: { locale: Locale }) {
         if (status === "approved" || status === "consumed") {
           const destination =
             status === "approved"
-              ? await finish(wait.requestId).catch(() => recover(wait.requestId))
+              ? await finish(wait.requestId).catch(() =>
+                  recover(wait.requestId),
+                )
               : await recover(wait.requestId);
           if (controller.signal.aborted) return;
           if (destination) {
@@ -220,7 +222,11 @@ export function TelegramWaitScreen({ locale }: { locale: Locale }) {
                 {t.telegramBotOpen}
               </a>
             </Button>
-            <Button variant="outline" disabled={cancelling} onClick={() => void cancel()}>
+            <Button
+              variant="outline"
+              disabled={cancelling}
+              onClick={() => void cancel()}
+            >
               {cancelling ? t.submitting : t.telegramBotCancel}
             </Button>
           </>

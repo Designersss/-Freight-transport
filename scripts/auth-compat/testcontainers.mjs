@@ -83,8 +83,12 @@ try {
       ),
       fileURLToPath(new URL("./telegram-bot-link.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./telegram-bot-login.test.mjs", import.meta.url)),
-      fileURLToPath(new URL("./telegram-bot-internal.test.mjs", import.meta.url)),
-      fileURLToPath(new URL("./telegram-browser-http.test.mjs", import.meta.url)),
+      fileURLToPath(
+        new URL("./telegram-bot-internal.test.mjs", import.meta.url),
+      ),
+      fileURLToPath(
+        new URL("./telegram-browser-http.test.mjs", import.meta.url),
+      ),
       fileURLToPath(
         new URL("./telegram-registration-draft.test.mjs", import.meta.url),
       ),

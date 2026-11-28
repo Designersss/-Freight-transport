@@ -358,7 +358,12 @@ test("Bot-first draft can attach a freshly approved browser and revoke the old o
       );
       assert.ok(returnProof);
       assert.equal(
-        await confirmTelegramBotApproval(pool, browser, request.id, returnProof),
+        await confirmTelegramBotApproval(
+          pool,
+          browser,
+          request.id,
+          returnProof,
+        ),
         true,
       );
       return request;

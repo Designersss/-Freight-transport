@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { test } from "node:test";
-import { createAuthHttpRuntime, parseAuthConfig } from "../../packages/auth/dist/runtime.js";
+import {
+  createAuthHttpRuntime,
+  parseAuthConfig,
+} from "../../packages/auth/dist/runtime.js";
 import { TELEGRAM_BOT_BROWSER_COOKIE } from "../../packages/auth/dist/telegram-bot-login.js";
 
 const origin = "https://web.example.test";
@@ -34,16 +37,19 @@ test("Telegram Web runtime requires both proofs and completes registration befor
 
   async function web(command, options = {}) {
     return runtime.handle(
-      new Request(`${origin}${base}/telegram-bot/browser${options.query ?? ""}`, {
-        method: "POST",
-        headers: {
-          origin: options.origin ?? origin,
-          "content-type": "application/json",
-          "x-movaro-client-ip": `198.51.100.${++sequence}`,
-          cookie: options.cookie ?? cookie,
+      new Request(
+        `${origin}${base}/telegram-bot/browser${options.query ?? ""}`,
+        {
+          method: "POST",
+          headers: {
+            origin: options.origin ?? origin,
+            "content-type": "application/json",
+            "x-movaro-client-ip": `198.51.100.${++sequence}`,
+            cookie: options.cookie ?? cookie,
+          },
+          body: JSON.stringify(command),
         },
-        body: JSON.stringify(command),
-      }),
+      ),
     );
   }
   async function expectWeb(command, status = 200, options = {}) {
@@ -53,15 +59,18 @@ test("Telegram Web runtime requires both proofs and completes registration befor
     return response;
   }
   async function bot(command) {
-    const response = await runtime.handleTelegramBotCommand({ ...command, actor });
+    const response = await runtime.handleTelegramBotCommand({
+      ...command,
+      actor,
+    });
     assert.equal(response.status, 200);
     return (await response.json()).result;
   }
   async function start(intent) {
     const response = await expectWeb({ action: "start", intent, locale: "en" });
-    const issued = response.headers.getSetCookie().find(
-      (value) => value.startsWith(`${TELEGRAM_BOT_BROWSER_COOKIE}=`),
-    );
+    const issued = response.headers
+      .getSetCookie()
+      .find((value) => value.startsWith(`${TELEGRAM_BOT_BROWSER_COOKIE}=`));
     assert.ok(issued);
     assert.match(issued, /; Path=\//);
     assert.match(issued, /; Secure/);
@@ -106,48 +115,76 @@ test("Telegram Web runtime requires both proofs and completes registration befor
       }),
       true,
     );
-    const proof = await bot({ action: "approve", requestId: register.requestId });
+    const proof = await bot({
+      action: "approve",
+      requestId: register.requestId,
+    });
     assert.match(proof, /^[A-Za-z0-9_-]{43}$/);
     const finish = { action: "finish", requestId: register.requestId };
     const confirm = { action: "confirm", requestId: register.requestId, proof };
     await expectWeb(finish, 403);
     await expectWeb(confirm, 403, { cookie: "" });
     await expectWeb(confirm, 403, { cookie: `${cookie}; ${cookie}` });
-    await expectWeb(confirm, 403, { cookie: `${TELEGRAM_BOT_BROWSER_COOKIE}=${register.deepLink}` });
+    await expectWeb(confirm, 403, {
+      cookie: `${TELEGRAM_BOT_BROWSER_COOKIE}=${register.deepLink}`,
+    });
     await expectWeb(confirm, 400, { query: "?unexpected=1" });
-    assert.deepEqual(await (await expectWeb(confirm)).json(), { success: true });
+    assert.deepEqual(await (await expectWeb(confirm)).json(), {
+      success: true,
+    });
     await expectWeb(confirm, 403);
     const opened = await expectWeb(finish);
     assert.deepEqual(await opened.json(), {
       outcome: "registration",
       draftId: register.requestId,
     });
-    assert.ok(!opened.headers.getSetCookie().some((value) => value.includes("session_token=") && !value.includes("Max-Age=0")));
+    assert.ok(
+      !opened.headers
+        .getSetCookie()
+        .some(
+          (value) =>
+            value.includes("session_token=") && !value.includes("Max-Age=0"),
+        ),
+    );
     const draftId = register.requestId;
-    const updated = await (await expectWeb({
-      action: "draft-update",
-      draftId,
-      mutation: {
-        action: "edit",
-        revision: 0,
-        role: "DRIVER",
-        birthDate: "1990-01-01",
-        username: `tg_${randomBytes(8).toString("hex")}`,
-      },
-    })).json();
+    const updated = await (
+      await expectWeb({
+        action: "draft-update",
+        draftId,
+        mutation: {
+          action: "edit",
+          revision: 0,
+          role: "DRIVER",
+          birthDate: "1990-01-01",
+          username: `tg_${randomBytes(8).toString("hex")}`,
+        },
+      })
+    ).json();
     assert.equal(updated.draft.revision, 1);
     assert.equal(updated.draft.telegramUserId, undefined);
     assert.equal(updated.draft.phoneNumber, undefined);
-    assert.equal((await (await expectWeb({
-      action: "draft-update",
-      draftId,
-      mutation: { action: "edit", revision: 0, firstName: "Stale" },
-    })).json()).draft, null);
-    assert.deepEqual(await (await expectWeb({
-      action: "draft-complete",
-      draftId,
-      revision: 1,
-    })).json(), { outcome: "created" });
+    assert.equal(
+      (
+        await (
+          await expectWeb({
+            action: "draft-update",
+            draftId,
+            mutation: { action: "edit", revision: 0, firstName: "Stale" },
+          })
+        ).json()
+      ).draft,
+      null,
+    );
+    assert.deepEqual(
+      await (
+        await expectWeb({
+          action: "draft-complete",
+          draftId,
+          revision: 1,
+        })
+      ).json(),
+      { outcome: "created" },
+    );
 
     const login = await start("login");
     assert.equal((await claim(login)).needsContact, false);

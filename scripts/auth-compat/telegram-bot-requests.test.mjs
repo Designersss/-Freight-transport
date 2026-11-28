@@ -355,11 +355,7 @@ test("Only the claiming private Telegram user can submit contact and decide", as
       await saveTelegramBotContact(pool, login.id, actor, contact),
       false,
     );
-    const loginProof = await prepareTelegramBotApproval(
-      pool,
-      login.id,
-      actor,
-    );
+    const loginProof = await prepareTelegramBotApproval(pool, login.id, actor);
     assert.ok(loginProof);
     assert.equal(
       await confirmTelegramBotApproval(pool, browser, login.id, loginProof),
@@ -404,12 +400,7 @@ test("Only the claiming private Telegram user can submit contact and decide", as
       [expired.id],
     );
     assert.equal(
-      await confirmTelegramBotApproval(
-        pool,
-        browser,
-        expired.id,
-        expiredProof,
-      ),
+      await confirmTelegramBotApproval(pool, browser, expired.id, expiredProof),
       false,
     );
     assert.equal(
