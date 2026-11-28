@@ -43,6 +43,8 @@ export function registerTelegramBotInternalRoute(
         const response = await service.handleTelegramBotCommand(request.body);
         reply.code(response.status);
         reply.type("application/json");
+        const retry = response.headers.get("retry-after");
+        if (retry) reply.header("retry-after", retry);
         return reply.send(Buffer.from(await response.arrayBuffer()));
       } catch {
         return reply.code(503).send({ code: "AUTH_REQUEST_FAILED" });

@@ -12,6 +12,7 @@
     "test:integration": "vitest run src/outbox.integration.test.ts"
   },
   "dependencies": {
+    "@freight/auth": "workspace:*",
     "@freight/database": "workspace:*",
     "@freight/storage": "workspace:*",
     "pg-boss": "12.39.0",

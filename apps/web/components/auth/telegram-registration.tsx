@@ -84,13 +84,13 @@ export function TelegramRegistration({ locale }: { locale: Locale }) {
         setState("created");
         return;
       }
-      if (result.draft) {
-        knownDraftId.current = result.draft.id;
+      const next = result.draft;
+      if (next) {
+        knownDraftId.current = next.id;
         setDraft((current) =>
-          current?.id === result.draft?.id &&
-          current.revision === result.draft.revision
+          current?.id === next.id && current.revision === next.revision
             ? current
-            : result.draft,
+            : next,
         );
       } else {
         setDraft(null);

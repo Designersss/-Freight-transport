@@ -180,6 +180,23 @@ export function reserveTelegramBrowserRequest(
   );
 }
 
+// The authenticated bot supplies the actor from a genuine private update.
+export function reserveTelegramActorRequest(
+  pool: Pool,
+  secret: string,
+  actorId: string,
+): Promise<number | null> {
+  const digest = createHmac("sha256", secret).update(actorId).digest("hex");
+  return reserveBuckets(
+    pool,
+    [
+      { key: "telegram:actor:global", seconds: 60, max: 1200 },
+      { key: `telegram:actor:${digest}`, seconds: 60, max: 60 },
+    ],
+    "telegram",
+  );
+}
+
 export function reserveEmailChangeRequest(
   pool: Pool,
   secret: string,

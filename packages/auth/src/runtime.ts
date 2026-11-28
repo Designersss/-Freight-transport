@@ -71,7 +71,8 @@ export function createAuthHttpRuntime(
     ["ru", "en"].map((language) => destination(language, page));
 
   return {
-    handleTelegramBotCommand: (payload) => handleTelegramBotCommand(pool, payload),
+    handleTelegramBotCommand: (payload) =>
+      handleTelegramBotCommand(pool, payload, config.AUTH_SECRET),
     async handle(request) {
       const url = new URL(request.url);
       if (

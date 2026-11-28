@@ -1,5 +1,6 @@
 import type { Pool } from "pg";
 import { z } from "zod";
+import { reserveTelegramActorRequest } from "./mail-rate-limit.js";
 import {
   changeTelegramBotIntent,
   claimTelegramBotRequest,
@@ -223,10 +224,21 @@ function json(body: unknown, status: number): Response {
 export async function handleTelegramBotCommand(
   pool: Pool,
   payload: unknown,
+  rateLimitSecret: string,
 ): Promise<Response> {
   const parsed = telegramBotCommandInput.safeParse(payload);
   if (!parsed.success) return json({ code: "INVALID_REQUEST" }, 400);
   try {
+    const retry = await reserveTelegramActorRequest(
+      pool,
+      rateLimitSecret,
+      parsed.data.actor.userId,
+    );
+    if (retry !== null) {
+      const response = json({ code: "RATE_LIMITED" }, 429);
+      response.headers.set("retry-after", String(retry));
+      return response;
+    }
     return json({ result: await execute(pool, parsed.data) }, 200);
   } catch {
     // No DB error details, proof values, request bodies or personal data.

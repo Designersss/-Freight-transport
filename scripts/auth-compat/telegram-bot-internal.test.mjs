@@ -21,9 +21,10 @@ test("Internal bot commands validate ownership and require browser confirmation"
   const otherId = String(Number(userId) + 1);
   const other = { chatType: "private", chatId: otherId, userId: otherId };
   const browser = createTelegramBrowserCapability();
+  const rateLimitSecret = randomBytes(32).toString("hex");
 
   async function send(command, status = 200) {
-    const response = await handleTelegramBotCommand(pool, command);
+    const response = await handleTelegramBotCommand(pool, command, rateLimitSecret);
     assert.equal(response.status, status);
     assert.equal(response.headers.get("cache-control"), "no-store");
     assert.equal(response.headers.get("set-cookie"), null);
@@ -134,9 +135,10 @@ test("Chat-only continuation never attaches the unconfirmed browser", async () =
   const userId = String(randomBytes(6).readUIntBE(0, 6) + 1);
   const actor = { chatType: "private", chatId: userId, userId };
   const browser = createTelegramBrowserCapability();
+  const rateLimitSecret = randomBytes(32).toString("hex");
 
   async function send(command) {
-    const response = await handleTelegramBotCommand(pool, command);
+    const response = await handleTelegramBotCommand(pool, command, rateLimitSecret);
     assert.equal(response.status, 200);
     return (await response.json()).result;
   }

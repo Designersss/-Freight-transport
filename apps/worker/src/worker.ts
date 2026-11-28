@@ -1,3 +1,4 @@
+import { createTelegramCleanup } from "@freight/auth/telegram-cleanup";
 import { createDatabaseClient, relayOutboxBatch } from "@freight/database";
 import { PrivateStorage, type StorageConfig } from "@freight/storage";
 import { PgBoss } from "pg-boss";
@@ -6,6 +7,7 @@ import type { WorkerConfig } from "./config.js";
 import { registerProfilePhotoCleanup } from "./profile-photo-cleanup.js";
 import { registerProfilePhotoScan } from "./profile-photo-scan.js";
 import { registerRegistrationProofCleanup } from "./registration-proof-cleanup.js";
+import { registerTelegramCleanup } from "./telegram-cleanup.js";
 
 export const OUTBOX_QUEUE = "outbox-relay";
 const MAX_BATCHES_PER_JOB = 10;
@@ -18,6 +20,7 @@ export async function startWorker(
   const database = createDatabaseClient(config.DATABASE_URL);
   const boss = new PgBoss(config.DATABASE_URL);
   const storage = new PrivateStorage(storageConfig);
+  const telegramCleanup = createTelegramCleanup(config.DATABASE_URL);
 
   boss.on("error", (error: Error) => {
     logger.error({ errorName: error.name }, "Queue runtime error");
@@ -30,9 +33,13 @@ export async function startWorker(
         await boss.stop();
       } finally {
         try {
-          storage.close();
+          await telegramCleanup.close();
         } finally {
-          await database.$disconnect();
+          try {
+            storage.close();
+          } finally {
+            await database.$disconnect();
+          }
         }
       }
     })();
@@ -47,6 +54,9 @@ export async function startWorker(
     await database.registrationEmailProof.findFirst({
       select: { tokenHash: true, expiresAt: true },
     });
+    await database.telegramBotRequest.findFirst({ select: { id: true } });
+    await database.telegramRegistrationDraft.findFirst({ select: { id: true } });
+    await database.telegramRegistrationCompletion.findFirst({ select: { id: true } });
     await storage.checkReadiness();
     await boss.start();
     await boss.createQueue(OUTBOX_QUEUE, {
@@ -71,6 +81,7 @@ export async function startWorker(
     await boss.schedule(OUTBOX_QUEUE, "* * * * *", {});
     await boss.send(OUTBOX_QUEUE, {});
     await registerRegistrationProofCleanup(boss, database, logger);
+    await registerTelegramCleanup(boss, telegramCleanup, logger);
     await registerProfilePhotoCleanup(boss, database, storage, logger);
     if (config.PROFILE_PHOTO_SCAN_ENABLED) {
       await registerProfilePhotoScan(boss, database, storage, logger);
