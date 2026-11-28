@@ -267,3 +267,25 @@ model TelegramBotRequest {
   @@index([expiresAt], map: "telegram_bot_requests_expiry_idx")
   @@map("telegram_bot_requests")
 }
+
+// A shared, short-lived registration form; no account or session exists yet.
+model TelegramRegistrationDraft {
+  id             String   @id @db.Uuid
+  browserHash    String   @unique(map: "telegram_registration_drafts_browser_uidx") @map("browser_hash")
+  telegramUserId String   @unique(map: "telegram_registration_drafts_actor_uidx") @map("telegram_user_id")
+  locale         String
+  channel        String
+  revision       Int      @default(0)
+  createdAt      DateTime @map("created_at") @db.Timestamptz(6)
+  expiresAt      DateTime @map("expires_at") @db.Timestamptz(6)
+  phoneNumber    String   @map("phone_number")
+  firstName      String?  @map("first_name")
+  lastName       String?  @map("last_name")
+  role           String?
+  birthDate      DateTime? @map("birth_date") @db.Date
+  companyName    String?  @map("company_name")
+  username       String?
+
+  @@index([expiresAt], map: "telegram_registration_drafts_expiry_idx")
+  @@map("telegram_registration_drafts")
+}

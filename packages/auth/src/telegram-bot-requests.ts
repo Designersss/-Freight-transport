@@ -124,7 +124,7 @@ export interface TelegramBotActor {
   userId: string;
 }
 
-function privateActor(actor: TelegramBotActor): boolean {
+export function privateTelegramActor(actor: TelegramBotActor): boolean {
   return (
     actor.chatType === "private" &&
     /^[1-9][0-9]{0,15}$/.test(actor.userId) &&
@@ -162,7 +162,7 @@ export async function claimTelegramBotRequest(
   names: { firstName?: unknown; lastName?: unknown },
 ) {
   const hash = telegramBotCapabilityHash(deepLink);
-  if (!hash || !privateActor(actor)) return null;
+  if (!hash || !privateTelegramActor(actor)) return null;
   const result = await pool.query<ClaimedRequest>(
     `UPDATE telegram_bot_requests SET
        first_name = CASE WHEN status = 'pending' AND intent = 'register'
@@ -211,7 +211,7 @@ export async function saveTelegramBotContact(
 ): Promise<boolean> {
   const phone = telegramPhone(contact.phoneNumber);
   if (
-    !privateActor(actor) ||
+    !privateTelegramActor(actor) ||
     contact.forwarded !== false ||
     contact.userId !== actor.userId ||
     !phone
@@ -236,7 +236,7 @@ export async function decideTelegramBotRequest(
   actor: TelegramBotActor,
   decision: "approve" | "reject",
 ): Promise<boolean> {
-  if (!privateActor(actor) || (decision !== "approve" && decision !== "reject"))
+  if (!privateTelegramActor(actor) || (decision !== "approve" && decision !== "reject"))
     return false;
   const result = await pool.query(
     `UPDATE telegram_bot_requests SET
