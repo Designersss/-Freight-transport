@@ -18,6 +18,7 @@ import {
   telegramDraftMutationInput,
   updateTelegramRegistrationDraft,
 } from "./telegram-registration-draft.js";
+import { suggestUsername } from "./username.js";
 
 const telegramId = z.string().regex(/^[1-9][0-9]{0,15}$/);
 const actor = z
@@ -69,6 +70,7 @@ export const telegramBotCommandInput = z.discriminatedUnion("action", [
     revision,
   }),
   z.strictObject({ action: z.literal("draft-find"), actor }),
+  z.strictObject({ action: z.literal("draft-suggest-username"), ...draft }),
   z.strictObject({ action: z.literal("draft-read"), ...draft }),
   z.strictObject({
     action: z.literal("draft-update"),
@@ -130,6 +132,12 @@ async function execute(pool: Pool, command: TelegramBotCommand): Promise<unknown
       );
     case "draft-find":
       return findTelegramRegistrationDraft(pool, access);
+    case "draft-suggest-username": {
+      const current = await readTelegramRegistrationDraft(pool, command.draftId, access);
+      if (!current || current.channel !== "bot" || !current.firstName || !current.lastName)
+        return null;
+      return suggestUsername(pool, current.firstName, current.lastName);
+    }
     case "draft-read":
       return readTelegramRegistrationDraft(pool, command.draftId, access);
     case "draft-update":
