@@ -17,6 +17,7 @@ import { checkAuthSchema } from "./schema-readiness.js";
 import { handleSessionSettings } from "./session-settings.js";
 import { createSmtpMailer } from "./smtp-mailer.js";
 import { handleTelegramBotCommand } from "./telegram-bot-internal.js";
+import { handleTelegramBrowser } from "./telegram-browser-http.js";
 import { handleTelegramOAuth } from "./telegram-oauth-http.js";
 import { handleTelegramRegistration } from "./telegram-registration-http.js";
 import { handleTelegramSettings } from "./telegram-settings-http.js";
@@ -101,12 +102,18 @@ export function createAuthHttpRuntime(
           { headers: { "cache-control": "no-store" } },
         );
       }
+      if (path === "/telegram-bot/browser")
+        return handleTelegramBrowser(request, config, auth, pool);
       if (path === "/telegram/start" || path === "/telegram/callback")
-        return handleTelegramOAuth(request, config, auth, pool);
+        return config.AUTH_TELEGRAM_BOT_USERNAME
+          ? failure(404, "NOT_FOUND")
+          : handleTelegramOAuth(request, config, auth, pool);
       if (path === "/telegram/settings")
         return handleTelegramSettings(request, config, auth, pool);
       if (path === "/telegram/registration")
-        return handleTelegramRegistration(request, config, auth, pool);
+        return config.AUTH_TELEGRAM_BOT_USERNAME
+          ? failure(404, "NOT_FOUND")
+          : handleTelegramRegistration(request, config, auth, pool);
       if (path === "/sessions")
         return handleSessionSettings(request, config, auth, pool);
       if (path === "/profile/photo") {
