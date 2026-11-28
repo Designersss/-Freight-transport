@@ -1,6 +1,5 @@
 import { type BetterAuthOptions, betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
-import { genericOAuth } from "better-auth/plugins";
 import type { Pool } from "pg";
 import {
   canUsePublicSession,
@@ -18,15 +17,7 @@ import {
   createTelegramBotLoginPlugin,
   telegramBotLoginContext,
 } from "./telegram-bot-login.js";
-import {
-  createPublicBeforeHook,
-  findTelegramLoginAccount,
-  telegramLinkContext,
-  telegramLinkProof,
-  telegramLoginContext,
-  validateTelegramLink,
-} from "./telegram-link-context.js";
-import { createTelegramProvider } from "./telegram-provider.js";
+import { createPublicBeforeHook } from "./public-before-hook.js";
 
 export const AUTH_BASE_PATH = "/api/v1/auth";
 export const RESET_PASSWORD_TTL_SECONDS = 15 * 60;
@@ -172,10 +163,7 @@ export function createAuthOptions(
               throw new APIError("BAD_REQUEST", {
                 code: "AUTH_REQUEST_FAILED",
               });
-            if (account.providerId !== "telegram") return;
-            if (!telegramLinkContext.getStore()) return;
-            const proof = await telegramLinkProof(account.userId);
-            return proof ? { data: proof } : false;
+            if (account.providerId !== "credential") return false;
           },
         },
         update: {
@@ -227,22 +215,9 @@ export function createAuthOptions(
               ))
             )
               return false;
-            const login = telegramLoginContext.getStore();
-            if (!login) {
-              if (context?.path !== "/sign-in/email") return true;
-              const proof = credentialLoginProof(
-                context.context,
-                session.userId,
-              );
-              return proof ? { data: proof } : false;
-            }
-            if (!login.providerEmail) return false;
-            const telegramAccountId = await findTelegramLoginAccount(
-              database,
-              session.userId,
-              login.providerEmail,
-            );
-            return telegramAccountId ? { data: { telegramAccountId } } : false;
+            if (context?.path !== "/sign-in/email") return true;
+            const proof = credentialLoginProof(context.context, session.userId);
+            return proof ? { data: proof } : false;
           },
         },
       },
@@ -295,39 +270,18 @@ export function createAuthOptions(
       },
       accountLinking: {
         disableImplicitLinking: true,
-        trustedProviders: telegramEnabled(config) ? ["telegram"] : [],
-        allowDifferentEmails: telegramEnabled(config),
+        enabled: false,
         updateUserInfoOnLink: false,
         allowUnlinkingAll: false,
       },
     },
-    ...(config.AUTH_TELEGRAM_BOT_USERNAME
+    ...(telegramEnabled(config)
       ? {
           plugins: [
             createTelegramBotLoginPlugin(database, config.AUTH_WEB_ORIGIN),
           ],
         }
-      : config.AUTH_TELEGRAM_CLIENT_ID && config.AUTH_TELEGRAM_CLIENT_SECRET
-        ? {
-            plugins: [
-              genericOAuth({
-                config: [
-                  {
-                    ...createTelegramProvider(
-                      config.AUTH_TELEGRAM_CLIENT_ID,
-                      config.AUTH_TELEGRAM_CLIENT_SECRET,
-                    ),
-                    redirectURI: new URL(
-                      "/api/auth/telegram/callback",
-                      config.AUTH_WEB_ORIGIN,
-                    ).href,
-                    responseMode: "query",
-                  },
-                ],
-              }),
-            ],
-          }
-        : {}),
+      : {}),
     emailAndPassword: {
       enabled: true,
       minPasswordLength: PASSWORD_MIN_LENGTH,
@@ -347,30 +301,6 @@ export function createAuthOptions(
       autoSignInAfterVerification: false,
     },
     user: {
-      async validateUserInfo({ user, source }) {
-        if (source.action === "link-account") {
-          if (
-            source.method !== "oauth" ||
-            source.oauth?.providerId !== "telegram" ||
-            !telegramEnabled(config) ||
-            !(await validateTelegramLink(database, user.id))
-          )
-            return { error: "AUTH_REQUEST_FAILED" };
-        } else if (
-          source.method === "oauth" &&
-          source.oauth?.providerId === "telegram"
-        ) {
-          const login = telegramLoginContext.getStore();
-          if (
-            telegramLinkContext.getStore() ||
-            !login ||
-            typeof user.email !== "string" ||
-            !/^[0-9a-f]{64}@telegram\.invalid$/.test(user.email)
-          )
-            return { error: "AUTH_REQUEST_FAILED" };
-          login.providerEmail = user.email;
-        }
-      },
       deleteUser: { enabled: false },
       additionalFields: {
         username: {

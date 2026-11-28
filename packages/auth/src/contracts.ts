@@ -121,8 +121,6 @@ export const telegramStartInput = z.strictObject({
   locale: z.enum(["ru", "en"]),
 });
 
-export const telegramStartResponse = z.object({ url: z.string().max(8192) });
-
 export const publicTelegramSettings = z.object({
   linked: z.boolean(),
   canLink: z.boolean(),

@@ -18,8 +18,6 @@ import { handleSessionSettings } from "./session-settings.js";
 import { createSmtpMailer } from "./smtp-mailer.js";
 import { handleTelegramBotCommand } from "./telegram-bot-internal.js";
 import { handleTelegramBrowser } from "./telegram-browser-http.js";
-import { handleTelegramOAuth } from "./telegram-oauth-http.js";
-import { handleTelegramRegistration } from "./telegram-registration-http.js";
 import { handleTelegramSettings } from "./telegram-settings-http.js";
 import { handleUsername } from "./username.js";
 import { handleUsernameSettings } from "./username-settings.js";
@@ -99,25 +97,14 @@ export function createAuthHttpRuntime(
         if (request.method !== "GET") return failure(405, "METHOD_NOT_ALLOWED");
         if (url.search) return failure(400, "INVALID_REQUEST");
         return Response.json(
-          {
-            enabled: telegramEnabled(config),
-            ...(config.AUTH_TELEGRAM_BOT_USERNAME ? { mode: "bot" } : {}),
-          },
+          { enabled: telegramEnabled(config) },
           { headers: { "cache-control": "no-store" } },
         );
       }
       if (path === "/telegram-bot/browser")
         return handleTelegramBrowser(request, config, auth, pool);
-      if (path === "/telegram/start" || path === "/telegram/callback")
-        return config.AUTH_TELEGRAM_BOT_USERNAME
-          ? failure(404, "NOT_FOUND")
-          : handleTelegramOAuth(request, config, auth, pool);
       if (path === "/telegram/settings")
         return handleTelegramSettings(request, config, auth, pool);
-      if (path === "/telegram/registration")
-        return config.AUTH_TELEGRAM_BOT_USERNAME
-          ? failure(404, "NOT_FOUND")
-          : handleTelegramRegistration(request, config, auth, pool);
       if (path === "/sessions")
         return handleSessionSettings(request, config, auth, pool);
       if (path === "/profile/photo") {

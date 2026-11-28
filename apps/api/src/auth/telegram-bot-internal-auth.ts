@@ -17,7 +17,6 @@ export function parseTelegramBotInternalSecret(
       env.AUTH_SECRET,
       env.AUTH_ADMIN_SECRET,
       env.AUTH_PROXY_SECRET,
-      env.AUTH_TELEGRAM_CLIENT_SECRET,
       env.TELEGRAM_BOT_TOKEN,
     ].includes(secret)
   ) {

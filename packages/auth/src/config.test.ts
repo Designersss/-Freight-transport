@@ -27,17 +27,7 @@ describe("auth config", () => {
     );
   });
 
-  it("accepts paired Telegram credentials with an HTTPS Web origin", () => {
-    const parsed = parseAuthConfig({
-      ...env,
-      AUTH_WEB_ORIGIN: "https://movaro.test",
-      AUTH_TELEGRAM_CLIENT_ID: "123456",
-      AUTH_TELEGRAM_CLIENT_SECRET: "test-secret",
-    });
-    assert.equal(parsed.AUTH_TELEGRAM_CLIENT_ID, "123456");
-  });
-
-  it("accepts exclusive Telegram bot mode on an HTTPS Web origin", () => {
+  it("accepts Telegram bot mode on an HTTPS Web origin", () => {
     const config = parseAuthConfig({
       ...env,
       AUTH_WEB_ORIGIN: "https://movaro.test",
@@ -77,23 +67,6 @@ describe("auth config", () => {
     },
     { AUTH_TELEGRAM_BOT_USERNAME: "synthetic_movaro_bot" },
     { AUTH_TELEGRAM_BOT_USERNAME: "@synthetic_movaro_bot" },
-    {
-      AUTH_WEB_ORIGIN: "https://movaro.test",
-      AUTH_TELEGRAM_BOT_USERNAME: "synthetic_movaro_bot",
-      AUTH_TELEGRAM_CLIENT_ID: "123456",
-      AUTH_TELEGRAM_CLIENT_SECRET: "secret",
-    },
-    { AUTH_TELEGRAM_CLIENT_ID: "123456" },
-    { AUTH_TELEGRAM_CLIENT_SECRET: "secret" },
-    {
-      AUTH_TELEGRAM_CLIENT_ID: "not-numeric",
-      AUTH_TELEGRAM_CLIENT_SECRET: "secret",
-    },
-    {
-      NODE_ENV: "development",
-      AUTH_TELEGRAM_CLIENT_ID: "123456",
-      AUTH_TELEGRAM_CLIENT_SECRET: "secret",
-    },
     { AUTH_BASE_URL: "https://example.test/other" },
     { AUTH_WEB_ORIGIN: "https://user:pass@example.test" },
     { SMTP_HOST: "smtp.example.test" },

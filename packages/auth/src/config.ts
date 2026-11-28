@@ -39,11 +39,6 @@ const schema = z
       .regex(/^[A-Za-z][A-Za-z0-9_]{1,28}[Bb][Oo][Tt]$/)
       .max(32)
       .optional(),
-    AUTH_TELEGRAM_CLIENT_ID: z
-      .string()
-      .regex(/^\d{1,32}$/)
-      .optional(),
-    AUTH_TELEGRAM_CLIENT_SECRET: z.string().min(1).max(512).optional(),
   })
   .superRefine((config, ctx) => {
     if (
@@ -74,36 +69,13 @@ const schema = z
       });
     }
     if (
-      Boolean(config.AUTH_TELEGRAM_CLIENT_ID) !==
-      Boolean(config.AUTH_TELEGRAM_CLIENT_SECRET)
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["AUTH_TELEGRAM_CLIENT_ID"],
-        message: "Telegram OAuth credentials must be paired",
-      });
-    }
-    if (
-      config.AUTH_TELEGRAM_CLIENT_ID &&
-      !config.AUTH_WEB_ORIGIN.startsWith("https://") &&
-      config.NODE_ENV !== "test"
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["AUTH_WEB_ORIGIN"],
-        message: "Telegram OAuth requires an HTTPS Web origin",
-      });
-    }
-    if (
       config.AUTH_TELEGRAM_BOT_USERNAME &&
-      (config.AUTH_TELEGRAM_CLIENT_ID ||
-        config.AUTH_TELEGRAM_CLIENT_SECRET ||
-        !config.AUTH_WEB_ORIGIN.startsWith("https://"))
+      !config.AUTH_WEB_ORIGIN.startsWith("https://")
     ) {
       ctx.addIssue({
         code: "custom",
         path: ["AUTH_TELEGRAM_BOT_USERNAME"],
-        message: "Telegram bot requires HTTPS and exclusive auth mode",
+        message: "Telegram bot requires HTTPS",
       });
     }
     if (config.NODE_ENV === "production") {
@@ -151,8 +123,5 @@ export function parseAuthConfig(env: Record<string, unknown>): AuthConfig {
 }
 
 export function telegramEnabled(config: AuthConfig): boolean {
-  return Boolean(
-    config.AUTH_TELEGRAM_BOT_USERNAME ||
-      (config.AUTH_TELEGRAM_CLIENT_ID && config.AUTH_TELEGRAM_CLIENT_SECRET),
-  );
+  return Boolean(config.AUTH_TELEGRAM_BOT_USERNAME);
 }

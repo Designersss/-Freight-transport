@@ -73,8 +73,6 @@ try {
       fileURLToPath(
         new URL("./username-session-http.test.mjs", import.meta.url),
       ),
-      fileURLToPath(new URL("./email-less-oauth.test.mjs", import.meta.url)),
-      fileURLToPath(new URL("./telegram-oidc.test.mjs", import.meta.url)),
       fileURLToPath(
         new URL("./telegram-bot-session.test.mjs", import.meta.url),
       ),

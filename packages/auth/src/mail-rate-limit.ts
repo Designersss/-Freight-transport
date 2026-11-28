@@ -142,23 +142,6 @@ export function reservePhotoRequest(
   );
 }
 
-export function reserveTelegramRequest(
-  pool: Pool,
-  action: "start" | "callback",
-): Promise<number | null> {
-  return reserveBuckets(
-    pool,
-    [
-      {
-        key: `telegram:${action}:global`,
-        seconds: 60,
-        max: action === "start" ? 120 : 240,
-      },
-    ],
-    "telegram",
-  );
-}
-
 // Separate browser/IP and global admission budgets for the bot Web flow.
 export function reserveTelegramBrowserRequest(
   pool: Pool,
