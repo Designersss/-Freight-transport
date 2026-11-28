@@ -29,15 +29,48 @@ try {
     stdio: "inherit",
     timeout: 120_000,
   });
+  // Clone the freshly migrated DB before any test can mutate it.
+  const readinessDatabase = "freight_auth_readiness";
+  const readinessCreated = await container.exec([
+    "createdb",
+    "-U",
+    "freight",
+    "-T",
+    databaseName,
+    readinessDatabase,
+  ]);
+  if (readinessCreated.exitCode !== 0)
+    throw new Error("Cannot create isolated readiness database");
+  const readinessUrl = new URL(url);
+  readinessUrl.pathname = `/${readinessDatabase}`;
+  const compatEnv = {
+    ...process.env,
+    AUTH_COMPAT_DATABASE_URL: url.href,
+    AUTH_COMPAT_SMTP_PORT: String(mailpit.getMappedPort(1025)),
+    AUTH_COMPAT_MAILPIT_PORT: String(mailpit.getMappedPort(8025)),
+  };
   execFileSync(
     process.execPath,
     [
       "--test",
       "--test-concurrency=1",
       fileURLToPath(new URL("./schema-readiness.test.mjs", import.meta.url)),
+    ],
+    {
+      env: { ...compatEnv, AUTH_READINESS_DATABASE_URL: readinessUrl.href },
+      stdio: "inherit",
+      timeout: 120_000,
+    },
+  );
+  execFileSync(
+    process.execPath,
+    [
+      "--test",
+      "--test-concurrency=1",
       fileURLToPath(new URL("./auth-schema.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./compat.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./email-auth-http.test.mjs", import.meta.url)),
+      fileURLToPath(new URL("./username-session-http.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./email-less-oauth.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./telegram-oidc.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./telegram-settings.test.mjs", import.meta.url)),
@@ -62,12 +95,7 @@ try {
       ),
     ],
     {
-      env: {
-        ...process.env,
-        AUTH_COMPAT_DATABASE_URL: url.href,
-        AUTH_COMPAT_SMTP_PORT: String(mailpit.getMappedPort(1025)),
-        AUTH_COMPAT_MAILPIT_PORT: String(mailpit.getMappedPort(8025)),
-      },
+      env: compatEnv,
       stdio: "inherit",
       timeout: 120_000,
     },

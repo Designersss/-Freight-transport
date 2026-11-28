@@ -24,11 +24,11 @@ test("auth readiness manifest covers the current auth migrations", async () => {
 });
 
 test("readiness rejects partial auth schema without changing liveness", async () => {
-  const databaseUrl = process.env.AUTH_COMPAT_DATABASE_URL;
+  const databaseUrl = process.env.AUTH_READINESS_DATABASE_URL;
   assert.ok(databaseUrl);
   const target = new URL(databaseUrl);
   assert.equal(target.hostname, "127.0.0.1");
-  assert.equal(target.pathname, "/freight_auth_compat");
+  assert.equal(target.pathname, "/freight_auth_readiness");
   const pool = new pg.Pool({ connectionString: databaseUrl });
   let app;
   let foundation;
@@ -82,7 +82,7 @@ test("readiness rejects partial auth schema without changing liveness", async ()
     await ready(app);
     await ready(foundation);
 
-    // All DDL is confined to the sequential, disposable compatibility DB.
+    // All DDL is confined to the separate, disposable readiness DB.
     // Restore each mutation before the next scenario, including on failure.
     for (const [remove, restore] of [
       [
