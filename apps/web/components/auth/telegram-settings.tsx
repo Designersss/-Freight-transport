@@ -12,7 +12,8 @@ import {
 import { useRouter } from "@freight/ui/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { z } from "zod";
-import { startTelegramOAuth } from "../../lib/telegram-oauth";
+import { waitStorageKey } from "../../lib/telegram-browser";
+import { startTelegramAuth } from "../../lib/telegram-oauth";
 
 type Settings = z.infer<typeof publicTelegramSettings>;
 const endpoint = "/api/auth/telegram/settings";
@@ -107,7 +108,7 @@ export function TelegramSettings({
       if (action === "refresh") {
         await load(controller.signal);
       } else {
-        const result = await startTelegramOAuth(
+        const result = await startTelegramAuth(
           "link",
           locale,
           controller.signal,
@@ -117,7 +118,10 @@ export function TelegramSettings({
           handleFailure(result.status, result.code, t.telegramLinkFailed);
           return;
         }
-        window.location.assign(result.url);
+        if (result.kind === "bot") {
+          sessionStorage.setItem(waitStorageKey, JSON.stringify(result.wait));
+          router.push("/telegram/wait", { locale });
+        } else window.location.assign(result.url);
         redirecting = true;
       }
     } catch {
