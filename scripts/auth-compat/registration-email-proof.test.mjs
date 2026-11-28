@@ -73,12 +73,15 @@ test("registration proof expires and can be consumed only once", async () => {
     assert.equal(await readRegistrationEmailProof(pool, second), null);
     const expired = await consume(pool, secondHash);
     assert.equal(expired.rows[0].consumed, false);
-    await issueRegistrationEmailProof(pool, email);
-    const removed = await pool.query(
+    const next = await issueRegistrationEmailProof(pool, email);
+    assert.equal(await readRegistrationEmailProof(pool, next), email);
+    assert.equal(await readRegistrationEmailProof(pool, second), null);
+    // Expiration is enforced independently of the background cleanup job.
+    const retained = await pool.query(
       "SELECT token_hash FROM registration_email_proofs WHERE token_hash = $1",
       [secondHash],
     );
-    assert.equal(removed.rowCount, 0);
+    assert.equal(retained.rowCount, 1);
   } finally {
     try {
       await pool.query(

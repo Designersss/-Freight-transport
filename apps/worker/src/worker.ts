@@ -5,6 +5,7 @@ import { pino } from "pino";
 import type { WorkerConfig } from "./config.js";
 import { registerProfilePhotoCleanup } from "./profile-photo-cleanup.js";
 import { registerProfilePhotoScan } from "./profile-photo-scan.js";
+import { registerRegistrationProofCleanup } from "./registration-proof-cleanup.js";
 
 export const OUTBOX_QUEUE = "outbox-relay";
 const MAX_BATCHES_PER_JOB = 10;
@@ -43,6 +44,9 @@ export async function startWorker(
     await database.eventPublication.findFirst({ select: { eventId: true } });
     await database.profilePhotoCleanup.findFirst({ select: { key: true } });
     await database.profilePhotoScan.findUniqueOrThrow({ where: { id: 1 } });
+    await database.registrationEmailProof.findFirst({
+      select: { tokenHash: true, expiresAt: true },
+    });
     await storage.checkReadiness();
     await boss.start();
     await boss.createQueue(OUTBOX_QUEUE, {
@@ -66,6 +70,7 @@ export async function startWorker(
     // A missed tick cannot lose events: pending rows remain in PostgreSQL.
     await boss.schedule(OUTBOX_QUEUE, "* * * * *", {});
     await boss.send(OUTBOX_QUEUE, {});
+    await registerRegistrationProofCleanup(boss, database, logger);
     await registerProfilePhotoCleanup(boss, database, storage, logger);
     if (config.PROFILE_PHOTO_SCAN_ENABLED) {
       await registerProfilePhotoScan(boss, database, storage, logger);

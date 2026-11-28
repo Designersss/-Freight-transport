@@ -55,10 +55,13 @@ test("readiness rejects partial auth schema without changing liveness", async ()
     await app.init();
     await foundation.init();
     const get = (instance, path) =>
-      instance.getHttpAdapter().getInstance().inject({
-        method: "GET",
-        url: `/api/v1/health${path}`,
-      });
+      instance
+        .getHttpAdapter()
+        .getInstance()
+        .inject({
+          method: "GET",
+          url: `/api/v1/health${path}`,
+        });
     const ready = async (instance) => {
       const response = await get(instance, "/ready");
       assert.equal(response.statusCode, 200);

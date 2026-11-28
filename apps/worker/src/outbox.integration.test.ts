@@ -1,7 +1,8 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import {
   appendOutboxEvent,
   createDatabaseClient,
+  deleteExpiredRegistrationProofs,
   relayOutboxBatch,
 } from "@freight/database";
 import {
@@ -107,6 +108,110 @@ describe("Transactional outbox and pg-boss", () => {
       await worker.stop();
     }
   }, 30000);
+
+  it("cleans expired registration proofs in bounded concurrent batches", async () => {
+    const email = `${randomUUID()}@example.test`;
+    const hashes = Array.from({ length: 5 }, () =>
+      randomBytes(32).toString("hex"),
+    );
+    const locked = randomBytes(32).toString("hex");
+    const valid = randomBytes(32).toString("hex");
+    const where = { email };
+    try {
+      await database.registrationEmailProof.createMany({
+        data: [
+          ...hashes.map((tokenHash) => ({
+            tokenHash,
+            email,
+            expiresAt: new Date(1),
+          })),
+          { tokenHash: locked, email, expiresAt: new Date(0) },
+          {
+            tokenHash: valid,
+            email,
+            expiresAt: new Date("2099-01-01T00:00:00Z"),
+          },
+        ],
+      });
+      for (const limit of [0, -1, 1.5, 1001]) {
+        await expect(
+          deleteExpiredRegistrationProofs(database, limit),
+        ).rejects.toThrow("Invalid registration proof cleanup batch size");
+      }
+
+      // Keep one expired proof locked on an independent connection.
+      await database.$transaction(async (tx) => {
+        await tx.$queryRaw`
+          SELECT token_hash FROM registration_email_proofs
+          WHERE token_hash = ${locked}
+          FOR UPDATE
+        `;
+        const counts = await Promise.all([
+          deleteExpiredRegistrationProofs(database, 2),
+          deleteExpiredRegistrationProofs(database, 2),
+        ]);
+        expect(counts).toEqual([2, 2]);
+        expect(
+          await database.registrationEmailProof.count({ where }),
+        ).toBe(3);
+        expect(
+          await tx.registrationEmailProof.findUnique({
+            where: { tokenHash: locked },
+          }),
+        ).not.toBeNull();
+      });
+
+      expect(await deleteExpiredRegistrationProofs(database, 2)).toBe(2);
+      expect(await deleteExpiredRegistrationProofs(database, 2)).toBe(0);
+      const remaining = await database.registrationEmailProof.findMany({
+        where,
+        select: { tokenHash: true },
+      });
+      expect(remaining).toEqual([{ tokenHash: valid }]);
+    } finally {
+      await database.registrationEmailProof.deleteMany({ where });
+    }
+  });
+
+  it("cleans expired proofs on worker startup and restart without signup", async () => {
+    const email = `${randomUUID()}@example.test`;
+    const valid = randomBytes(32).toString("hex");
+    let worker: Awaited<ReturnType<typeof startWorker>> | undefined;
+    try {
+      await database.registrationEmailProof.create({
+        data: {
+          tokenHash: valid,
+          email,
+          expiresAt: new Date("2099-01-01T00:00:00Z"),
+        },
+      });
+      for (let run = 0; run < 2; run += 1) {
+        const expired = randomBytes(32).toString("hex");
+        await database.registrationEmailProof.create({
+          data: { tokenHash: expired, email, expiresAt: new Date(0) },
+        });
+        worker = await startWorker(config, storageConfig);
+        await vi.waitFor(
+          async () => {
+            const remaining = await database.registrationEmailProof.findMany({
+              where: { email },
+              select: { tokenHash: true },
+            });
+            expect(remaining).toEqual([{ tokenHash: valid }]);
+          },
+          { timeout: 15000, interval: 100 },
+        );
+        await worker.stop();
+        worker = undefined;
+      }
+    } finally {
+      try {
+        await worker?.stop();
+      } finally {
+        await database.registrationEmailProof.deleteMany({ where: { email } });
+      }
+    }
+  }, 40000);
 
   it("deletes retired profile photos through the real scheduled worker", async () => {
     const storage = new PrivateStorage(storageConfig);

@@ -19,6 +19,7 @@ export {
   type ProfilePhotoInventoryEntry,
   recordProfilePhotoInventory,
 } from "./profile-photo-scan.js";
+export { deleteExpiredRegistrationProofs } from "./registration-proof-cleanup.js";
 export {
   appendUserInvalidation,
   getUserEventHead,

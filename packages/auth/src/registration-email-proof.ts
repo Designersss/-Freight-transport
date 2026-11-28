@@ -14,13 +14,6 @@ export async function issueRegistrationEmailProof(pool: Pool, email: string) {
     throw new Error("Invalid registration email");
   const { token, hash } = createRegistrationEmailToken();
   await pool.query(
-    `DELETE FROM registration_email_proofs WHERE token_hash IN (
-       SELECT token_hash FROM registration_email_proofs
-       WHERE expires_at <= clock_timestamp()
-       ORDER BY expires_at LIMIT 100 FOR UPDATE SKIP LOCKED
-     )`,
-  );
-  await pool.query(
     `INSERT INTO registration_email_proofs (token_hash, email, expires_at)
      VALUES ($1, $2, clock_timestamp() + $3 * interval '1 second')`,
     [hash, normalized, REGISTRATION_EMAIL_TTL_SECONDS],
