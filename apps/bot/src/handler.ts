@@ -1,4 +1,9 @@
 import { randomBytes } from "node:crypto";
+import {
+  birthDateInput,
+  profileSettingsInput,
+  usernameInput,
+} from "@freight/auth/contracts";
 import { z } from "zod";
 import type { BotConfig } from "./config.js";
 import type { BotInternalApi } from "./internal-api.js";
@@ -29,7 +34,11 @@ type PrivateMessage = NonNullable<ReturnType<typeof privateMessage>>;
 type Prompt =
   | { kind: "buttons"; messageId: number; choices: Map<string, Choice> }
   | { kind: "text"; messageId: number; run: (text: string) => Promise<void> }
-  | { kind: "contact"; since: number; run: (message: PrivateMessage) => Promise<void> };
+  | {
+      kind: "contact";
+      since: number;
+      run: (message: PrivateMessage) => Promise<void>;
+    };
 type LivePrompt = Prompt & { expiresAt: number };
 
 const roles: Role[] = ["COMPANY_OWNER", "DISPATCHER", "DRIVER"];
@@ -131,7 +140,19 @@ export function createBotHandler(
 
   async function fieldPrompt(actor: Actor, draft: Draft, field: Field) {
     await askText(actor, messages[draft.locale][field], async (value) => {
-      await edit(actor, draft, field, value.trim());
+      const schema =
+        field === "birthDate"
+          ? birthDateInput
+          : field === "username"
+            ? usernameInput
+            : profileSettingsInput.shape.firstName;
+      const parsed = schema.safeParse(value.trim());
+      if (!parsed.success) {
+        await say(actor, messages[draft.locale].invalid);
+        await fieldPrompt(actor, draft, field);
+        return;
+      }
+      await edit(actor, draft, field, parsed.data);
     });
   }
 
@@ -193,7 +214,10 @@ export function createBotHandler(
       },
       z.boolean(),
     );
-    await say(actor, messages[draft.locale][cancelled ? "cancelled" : "unavailable"]);
+    await say(
+      actor,
+      messages[draft.locale][cancelled ? "cancelled" : "unavailable"],
+    );
   }
 
   async function showDraft(actor: Actor, draft: Draft): Promise<void> {
@@ -207,7 +231,11 @@ export function createBotHandler(
               action: "draft-update",
               actor,
               draftId: draft.id,
-              mutation: { action: "switch", revision: draft.revision, channel: "bot" },
+              mutation: {
+                action: "switch",
+                revision: draft.revision,
+                channel: "bot",
+              },
             },
             draftResult,
           );
@@ -234,7 +262,11 @@ export function createBotHandler(
             action: "draft-update",
             actor,
             draftId: draft.id,
-            mutation: { action: "edit", revision: draft.revision, username },
+            mutation: {
+              action: "edit",
+              revision: draft.revision,
+              username,
+            },
           },
           draftResult,
         );
@@ -334,7 +366,10 @@ export function createBotHandler(
     }
     // Fragment keeps the independent return capability out of HTTP requests.
     // The Web return handler must POST it with the original host-only cookie.
-    const url = new URL(`/${claim.locale}/telegram/return`, config.AUTH_WEB_ORIGIN);
+    const url = new URL(
+      `/${claim.locale}/telegram/return`,
+      config.AUTH_WEB_ORIGIN,
+    );
     url.hash = new URLSearchParams({ requestId: claim.id, proof }).toString();
     await telegram.sendMessage(actor.chatId, m.return, {
       inline_keyboard: [[{ text: m.website, url: url.href }]],
@@ -374,7 +409,11 @@ export function createBotHandler(
     await buttons(actor, `${intent}: ${claim.displayCode}\n${m.verify}`, actions);
   }
 
-  async function claimRequest(message: PrivateMessage, deepLink: string, locale: Locale) {
+  async function claimRequest(
+    message: PrivateMessage,
+    deepLink: string,
+    locale: Locale,
+  ) {
     const { actor } = message;
     const claim = await api.send(
       { action: "claim", actor, deepLink, names: namesFrom(message) },
@@ -425,6 +464,7 @@ export function createBotHandler(
     const incoming = privateMessage(update.message);
     if (!incoming) return;
     const { actor, user, message } = incoming;
+    if (message.date * 1000 < Date.now() - ttl) return;
     const locale: Locale = user.language_code?.startsWith("ru") ? "ru" : "en";
     const text = message.text;
     const start = /^\/start(?: ([A-Za-z0-9_-]{43}))?$/.exec(text ?? "");
@@ -441,7 +481,11 @@ export function createBotHandler(
     }
     const prompt = prompts.get(actor.userId);
     if (!prompt || prompt.expiresAt <= Date.now()) return;
-    if (prompt.kind === "contact" && message.contact && message.date >= prompt.since) {
+    if (
+      prompt.kind === "contact" &&
+      message.contact &&
+      message.date >= prompt.since
+    ) {
       prompts.delete(actor.userId);
       await prompt.run(incoming);
     } else if (
