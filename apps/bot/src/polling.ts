@@ -1,5 +1,9 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import type { TelegramTransport, TelegramUpdate } from "./telegram.js";
+import {
+  TelegramPollError,
+  type TelegramTransport,
+  type TelegramUpdate,
+} from "./telegram.js";
 
 export async function pollTelegram(
   telegram: TelegramTransport,
@@ -14,10 +18,17 @@ export async function pollTelegram(
     try {
       updates = await telegram.getUpdates(offset, signal);
       delay = 1000;
-    } catch {
+    } catch (error) {
       if (signal.aborted) break;
       report("poll-failed");
-      await sleep(delay, undefined, { signal }).catch(() => undefined);
+      if (error instanceof TelegramPollError && error.fatal) throw error;
+      const retryAfter =
+        error instanceof TelegramPollError
+          ? (error.retryAfterSeconds ?? 0) * 1000
+          : 0;
+      await sleep(Math.min(2_147_483_647, Math.max(delay, retryAfter)), undefined, {
+        signal,
+      }).catch(() => undefined);
       delay = Math.min(delay * 2, 30000);
       continue;
     }
