@@ -3,9 +3,9 @@ import { describe, it } from "node:test";
 import {
   adminPreviewAllowed,
   forwardTrustedProxyIp,
-  protectedStagingConfigured,
   PROXY_IP_HEADER,
   PROXY_SECRET_HEADER,
+  protectedStagingConfigured,
   rateLimitClient,
   trustedProxyIp,
 } from "./proxy-ip.ts";
