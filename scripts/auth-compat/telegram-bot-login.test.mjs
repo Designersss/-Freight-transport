@@ -12,8 +12,8 @@ import {
 } from "../../packages/auth/dist/telegram-bot-login.js";
 import {
   claimTelegramBotRequest,
-  createTelegramBrowserCapability,
   confirmTelegramBotApproval,
+  createTelegramBrowserCapability,
   prepareTelegramBotApproval,
   readTelegramBotRequest,
   startTelegramBotRequest,
