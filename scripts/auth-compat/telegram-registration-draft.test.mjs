@@ -5,7 +5,8 @@ import pg from "pg";
 import {
   claimTelegramBotRequest,
   createTelegramBrowserCapability,
-  decideTelegramBotRequest,
+  confirmTelegramBotApproval,
+  prepareTelegramBotApproval,
   readTelegramBotRequest,
   saveTelegramBotContact,
   startTelegramBotRequest,
@@ -59,8 +60,10 @@ test("Web and bot share one versioned registration draft without creating accoun
       }),
       true,
     );
+    const returnProof = await prepareTelegramBotApproval(pool, id, actor);
+    assert.ok(returnProof);
     assert.equal(
-      await decideTelegramBotRequest(pool, id, actor, "approve"),
+      await confirmTelegramBotApproval(pool, browser, id, returnProof),
       true,
     );
     const competing = await Promise.all([begin(), begin()]);
@@ -169,8 +172,10 @@ test("Both registration channels finalize one account or roll back the draft", a
         }),
         true,
       );
+      const returnProof = await prepareTelegramBotApproval(pool, id, actor);
+      assert.ok(returnProof);
       assert.equal(
-        await decideTelegramBotRequest(pool, id, actor, "approve"),
+        await confirmTelegramBotApproval(pool, browser, id, returnProof),
         true,
       );
       assert.equal(
@@ -345,8 +350,10 @@ test("Bot-first draft can attach a freshly approved browser and revoke the old o
         await saveTelegramBotContact(pool, request.id, actor, contact),
         true,
       );
+      const returnProof = await prepareTelegramBotApproval(pool, request.id, actor);
+      assert.ok(returnProof);
       assert.equal(
-        await decideTelegramBotRequest(pool, request.id, actor, "approve"),
+        await confirmTelegramBotApproval(pool, browser, request.id, returnProof),
         true,
       );
       return request;
@@ -432,8 +439,10 @@ test("Cancel and complete compete without publishing a false completion", async 
       }),
       true,
     );
+    const returnProof = await prepareTelegramBotApproval(pool, id, actor);
+    assert.ok(returnProof);
     assert.equal(
-      await decideTelegramBotRequest(pool, id, actor, "approve"),
+      await confirmTelegramBotApproval(pool, browser, id, returnProof),
       true,
     );
     assert.equal(
