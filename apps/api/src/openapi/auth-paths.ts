@@ -435,19 +435,21 @@ export function addAuthPaths(document: OpenAPIObject): void {
       statuses: [400, 403],
     }),
   );
-  const draft = z.strictObject({
-    id: z.uuid(),
-    channel: z.enum(["web", "bot"]),
-    locale: z.enum(["ru", "en"]),
-    revision: z.number().int().nonnegative(),
-    expiresAt: z.iso.datetime(),
-    firstName: z.string().nullable(),
-    lastName: z.string().nullable(),
-    role: publicRole.nullable(),
-    birthDate: z.string().nullable(),
-    companyName: z.string().nullable(),
-    username: z.string().nullable(),
-  }).nullable();
+  const draft = z
+    .strictObject({
+      id: z.uuid(),
+      channel: z.enum(["web", "bot"]),
+      locale: z.enum(["ru", "en"]),
+      revision: z.number().int().nonnegative(),
+      expiresAt: z.iso.datetime(),
+      firstName: z.string().nullable(),
+      lastName: z.string().nullable(),
+      role: publicRole.nullable(),
+      birthDate: z.string().nullable(),
+      companyName: z.string().nullable(),
+      username: z.string().nullable(),
+    })
+    .nullable();
   add(
     "/telegram-bot/browser",
     "post",
@@ -462,15 +464,17 @@ export function addAuthPaths(document: OpenAPIObject): void {
           expiresAt: z.iso.datetime(),
         }),
         z.strictObject({
-          status: z.enum([
-            "pending",
-            "claimed",
-            "approved",
-            "rejected",
-            "cancelled",
-            "consumed",
-            "expired",
-          ]).nullable(),
+          status: z
+            .enum([
+              "pending",
+              "claimed",
+              "approved",
+              "rejected",
+              "cancelled",
+              "consumed",
+              "expired",
+            ])
+            .nullable(),
         }),
         z.strictObject({ success: z.boolean() }),
         z.strictObject({ outcome: z.literal("logged-in") }),

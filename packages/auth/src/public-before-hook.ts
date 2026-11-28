@@ -1,5 +1,9 @@
 import type { BetterAuthOptions } from "better-auth";
-import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
+import {
+  APIError,
+  createAuthMiddleware,
+  getSessionFromCtx,
+} from "better-auth/api";
 import type { Pool } from "pg";
 import {
   prepareCredentialLogin,

@@ -388,10 +388,7 @@ export function SignupWizard({ locale }: { locale: Locale }) {
     }
     inFlight.current = true;
     try {
-      const response = await post(
-        "registration/email/complete",
-        payload.data,
-      );
+      const response = await post("registration/email/complete", payload.data);
       const data: unknown = await response.json().catch(() => null);
       const error = errorResponse.safeParse(data);
       if (

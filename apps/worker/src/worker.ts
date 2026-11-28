@@ -55,8 +55,12 @@ export async function startWorker(
       select: { tokenHash: true, expiresAt: true },
     });
     await database.telegramBotRequest.findFirst({ select: { id: true } });
-    await database.telegramRegistrationDraft.findFirst({ select: { id: true } });
-    await database.telegramRegistrationCompletion.findFirst({ select: { id: true } });
+    await database.telegramRegistrationDraft.findFirst({
+      select: { id: true },
+    });
+    await database.telegramRegistrationCompletion.findFirst({
+      select: { id: true },
+    });
     await storage.checkReadiness();
     await boss.start();
     await boss.createQueue(OUTBOX_QUEUE, {

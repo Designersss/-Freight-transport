@@ -221,7 +221,10 @@ describe("Transactional outbox and pg-boss", () => {
     const expiry = (start: Date) => new Date(start.getTime() + 300_000);
     let worker: Awaited<ReturnType<typeof startWorker>> | undefined;
     try {
-      for (const [id, createdAt] of [[expired, old], [live, created]] as const) {
+      for (const [id, createdAt] of [
+        [expired, old],
+        [live, created],
+      ] as const) {
         const browserHash = hash();
         await database.telegramBotRequest.create({
           data: {
@@ -255,15 +258,24 @@ describe("Transactional outbox and pg-boss", () => {
       await vi.waitFor(
         async () => {
           const where = { id: { in: ids } };
-          expect(await database.telegramBotRequest.findMany({
-            where, select: { id: true },
-          })).toEqual([{ id: live }]);
-          expect(await database.telegramRegistrationDraft.findMany({
-            where, select: { id: true },
-          })).toEqual([{ id: live }]);
-          expect(await database.telegramRegistrationCompletion.findMany({
-            where, select: { id: true },
-          })).toEqual([{ id: live }]);
+          expect(
+            await database.telegramBotRequest.findMany({
+              where,
+              select: { id: true },
+            }),
+          ).toEqual([{ id: live }]);
+          expect(
+            await database.telegramRegistrationDraft.findMany({
+              where,
+              select: { id: true },
+            }),
+          ).toEqual([{ id: live }]);
+          expect(
+            await database.telegramRegistrationCompletion.findMany({
+              where,
+              select: { id: true },
+            }),
+          ).toEqual([{ id: live }]);
         },
         { timeout: 15000, interval: 100 },
       );

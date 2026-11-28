@@ -215,7 +215,10 @@ test("Native bot login consumes its browser grant with the session INSERT", asyn
     ]) {
       const adminSession = await admin.handler(
         new Request(`${adminOrigin}${base}/admin/get-session`, {
-          headers: { cookie: candidate, "x-movaro-client-ip": "198.51.100.220" },
+          headers: {
+            cookie: candidate,
+            "x-movaro-client-ip": "198.51.100.220",
+          },
         }),
       );
       assert.equal(adminSession.status, 200);

@@ -198,7 +198,9 @@ export const telegramDraftMutationInput = z.discriminatedUnion("action", [
 const requestId = z.uuid();
 const draftId = z.uuid();
 const revision = z.number().int().min(0).max(2_147_483_646);
-export const telegramBrowserCapability = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
+export const telegramBrowserCapability = z
+  .string()
+  .regex(/^[A-Za-z0-9_-]{43}$/);
 
 export const telegramBrowserCommandInput = z.discriminatedUnion("action", [
   telegramStartInput.extend({ action: z.literal("start") }),

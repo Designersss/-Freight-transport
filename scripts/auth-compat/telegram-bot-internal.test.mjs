@@ -24,7 +24,11 @@ test("Internal bot commands validate ownership and require browser confirmation"
   const rateLimitSecret = randomBytes(32).toString("hex");
 
   async function send(command, status = 200) {
-    const response = await handleTelegramBotCommand(pool, command, rateLimitSecret);
+    const response = await handleTelegramBotCommand(
+      pool,
+      command,
+      rateLimitSecret,
+    );
     assert.equal(response.status, status);
     assert.equal(response.headers.get("cache-control"), "no-store");
     assert.equal(response.headers.get("set-cookie"), null);
@@ -138,7 +142,11 @@ test("Chat-only continuation never attaches the unconfirmed browser", async () =
   const rateLimitSecret = randomBytes(32).toString("hex");
 
   async function send(command) {
-    const response = await handleTelegramBotCommand(pool, command, rateLimitSecret);
+    const response = await handleTelegramBotCommand(
+      pool,
+      command,
+      rateLimitSecret,
+    );
     assert.equal(response.status, 200);
     return (await response.json()).result;
   }
@@ -248,7 +256,10 @@ test("Only a claimed private actor may change intent; a bot actor has a bounded 
     assert.equal(await result({ ...command, intent: "login" }), null);
     // Five valid calls above were charged to this actor, including denied operations.
     for (let index = 0; index < 55; index++) {
-      assert.equal(await result({ action: "account-state", actor }), "unregistered");
+      assert.equal(
+        await result({ action: "account-state", actor }),
+        "unregistered",
+      );
     }
     const limited = await send({ action: "account-state", actor });
     assert.equal(limited.status, 429);

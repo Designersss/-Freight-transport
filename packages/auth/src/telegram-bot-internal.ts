@@ -116,7 +116,10 @@ async function execute(
       return claimed
         ? {
             ...claimed,
-            accountState: await readTelegramBotAccountState(pool, command.actor),
+            accountState: await readTelegramBotAccountState(
+              pool,
+              command.actor,
+            ),
           }
         : null;
     }
@@ -131,7 +134,10 @@ async function execute(
       return claimed
         ? {
             ...claimed,
-            accountState: await readTelegramBotAccountState(pool, command.actor),
+            accountState: await readTelegramBotAccountState(
+              pool,
+              command.actor,
+            ),
           }
         : null;
     }
@@ -183,11 +189,7 @@ async function execute(
         command.draftId,
         access,
       );
-      if (
-        current?.channel !== "bot" ||
-        !current.firstName ||
-        !current.lastName
-      )
+      if (current?.channel !== "bot" || !current.firstName || !current.lastName)
         return null;
       return suggestUsername(pool, current.firstName, current.lastName);
     }

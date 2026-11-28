@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import type { Pool } from "pg";
 import { z } from "zod";
 import {
-  publicRole,
+  type publicRole,
   registrationInput,
   telegramDraftChannel,
   telegramDraftMutationInput,

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Pool } from "pg";
-import { telegramBotCapabilityHash } from "./telegram-bot-requests.js";
 import type { PublicSessionIdentity } from "./public-principal.js";
+import { telegramBotCapabilityHash } from "./telegram-bot-requests.js";
 
 export type TelegramBotLinkResult = "linked" | "denied";
 

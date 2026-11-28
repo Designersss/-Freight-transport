@@ -16,7 +16,8 @@ const ru = {
   approve: "Подтвердить и вернуться на сайт",
   reject: "Отклонить",
   chat: "Продолжить регистрацию в чате",
-  webResume: "Чтобы продолжить на сайте, откройте регистрацию и подтвердите новый запрос Telegram. Команда /web доступна на любом шаге.",
+  webResume:
+    "Чтобы продолжить на сайте, откройте регистрацию и подтвердите новый запрос Telegram. Команда /web доступна на любом шаге.",
   login: "Вход",
   registration: "Регистрация",
   link: "Привязка Telegram",
@@ -71,7 +72,8 @@ const en: typeof ru = {
   approve: "Confirm and return to website",
   reject: "Reject",
   chat: "Continue registration in chat",
-  webResume: "To continue on the website, open registration and confirm a new Telegram request. Use /web at any step.",
+  webResume:
+    "To continue on the website, open registration and confirm a new Telegram request. Use /web at any step.",
   login: "Sign in",
   registration: "Registration",
   link: "Link Telegram",

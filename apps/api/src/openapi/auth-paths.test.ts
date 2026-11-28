@@ -60,7 +60,9 @@ describe("Auth OpenAPI contract", () => {
     expect(JSON.stringify(browser?.requestBody)).toContain("draft-state");
     expect(JSON.stringify(browser?.requestBody)).toContain("confirm");
     expect(JSON.stringify(browser?.requestBody)).not.toContain("browserHash");
-    expect(paths["/api/v1/auth/profile"]?.get?.responses[200]).not.toMatchObject({
+    expect(
+      paths["/api/v1/auth/profile"]?.get?.responses[200],
+    ).not.toMatchObject({
       content: { "application/json": { schema: { nullable: true } } },
     });
     expect(

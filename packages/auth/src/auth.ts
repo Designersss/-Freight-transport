@@ -207,13 +207,7 @@ export function createAuthOptions(
                 },
               };
             }
-            if (
-              !(await canUsePublicSession(
-                database,
-                session.userId,
-                false,
-              ))
-            )
+            if (!(await canUsePublicSession(database, session.userId, false)))
               return false;
             if (context?.path !== "/sign-in/email") return true;
             const proof = credentialLoginProof(context.context, session.userId);

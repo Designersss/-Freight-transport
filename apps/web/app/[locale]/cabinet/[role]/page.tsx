@@ -20,10 +20,5 @@ export default async function Page({
   if (access.kind === "anonymous") redirect(`/${locale}/login`);
   if (access.kind === "allowed")
     return <CabinetView locale={locale} profile={access.profile} />;
-  return (
-    <CabinetFailure
-      locale={locale}
-      denied={access.kind === "denied"}
-    />
-  );
+  return <CabinetFailure locale={locale} denied={access.kind === "denied"} />;
 }

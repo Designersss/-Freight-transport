@@ -1,7 +1,10 @@
 import type { Pool } from "pg";
 import { AUTH_BASE_PATH, type EmailAuth } from "./auth.js";
 import type { AuthConfig } from "./config.js";
-import { telegramBrowserCapability, telegramBrowserCommandInput } from "./contracts.js";
+import {
+  telegramBrowserCapability,
+  telegramBrowserCommandInput,
+} from "./contracts.js";
 import { reserveTelegramBrowserRequest } from "./mail-rate-limit.js";
 import { finishTelegramBotLink } from "./telegram-bot-link.js";
 import { TELEGRAM_BOT_BROWSER_COOKIE } from "./telegram-bot-login.js";
@@ -99,7 +102,9 @@ export async function handleTelegramBrowser(
       config.AUTH_SECRET,
       command.action === "start"
         ? "start"
-        : ["status", "draft-find", "draft-state", "draft-completion"].includes(command.action)
+        : ["status", "draft-find", "draft-state", "draft-completion"].includes(
+              command.action,
+            )
           ? "poll"
           : "write",
       request.headers.get("x-movaro-client-ip"),
@@ -259,8 +264,18 @@ export async function handleTelegramBrowser(
           draft: await findTelegramRegistrationDraft(pool, access),
         });
       case "draft-state": {
-        const draft = await readTelegramRegistrationDraft(pool, command.draftId, access);
-        const completed = !draft && await readTelegramRegistrationCompletion(pool, command.draftId, browser);
+        const draft = await readTelegramRegistrationDraft(
+          pool,
+          command.draftId,
+          access,
+        );
+        const completed =
+          !draft &&
+          (await readTelegramRegistrationCompletion(
+            pool,
+            command.draftId,
+            browser,
+          ));
         return json({ draft, completed });
       }
       case "draft-update":
