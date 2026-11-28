@@ -290,3 +290,14 @@ model TelegramRegistrationDraft {
   @@index([expiresAt], map: "telegram_registration_drafts_expiry_idx")
   @@map("telegram_registration_drafts")
 }
+
+// Short-lived notification only, never an identity or session grant.
+model TelegramRegistrationCompletion {
+  id          String   @id @db.Uuid
+  browserHash String   @map("browser_hash")
+  createdAt   DateTime @map("created_at") @db.Timestamptz(6)
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(6)
+
+  @@index([expiresAt], map: "telegram_registration_completions_expiry_idx")
+  @@map("telegram_registration_completions")
+}

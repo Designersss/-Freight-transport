@@ -13,9 +13,12 @@ import {
 import {
   beginBotOnlyRegistrationDraft,
   beginTelegramRegistrationDraft,
+  cancelTelegramRegistrationDraft,
   completeTelegramRegistrationDraft,
+  deleteExpiredTelegramRegistrationCompletions,
   deleteExpiredTelegramRegistrationDrafts,
   findTelegramRegistrationDraft,
+  readTelegramRegistrationCompletion,
   readTelegramRegistrationDraft,
   resumeTelegramRegistrationInBrowser,
   updateTelegramRegistrationDraft,
@@ -177,6 +180,10 @@ test("Both registration channels finalize one account or roll back the draft", a
       const finish = (owner, revision) =>
         completeTelegramRegistrationDraft(pool, id, owner, revision);
       assert.equal(await finish(access, 0), "invalid");
+      assert.equal(
+        await readTelegramRegistrationCompletion(pool, id, browser),
+        false,
+      );
       assert.ok(await readTelegramRegistrationDraft(pool, id, access));
       const taken = `tg_${randomBytes(8).toString("hex")}`;
       const occupied = randomUUID();
@@ -204,6 +211,10 @@ test("Both registration channels finalize one account or roll back the draft", a
       );
       assert.equal(await finish(access, 1), "username-taken");
       assert.equal(
+        await readTelegramRegistrationCompletion(pool, id, browser),
+        false,
+      );
+      assert.equal(
         (await readTelegramRegistrationDraft(pool, id, access))?.revision,
         1,
       );
@@ -220,6 +231,14 @@ test("Both registration channels finalize one account or roll back the draft", a
         finish(access, 2),
       ]);
       assert.deepEqual(completed.sort(), ["created", "denied"]);
+      assert.equal(
+        await readTelegramRegistrationCompletion(pool, id, browser),
+        true,
+      );
+      assert.equal(
+        await readTelegramRegistrationCompletion(pool, id, request.deepLink),
+        false,
+      );
       assert.equal(await readTelegramRegistrationDraft(pool, id, access), null);
       const rows = await pool.query(
         `SELECT u.username, u."emailVerified", p.role, p.company_name,
@@ -241,6 +260,22 @@ test("Both registration channels finalize one account or roll back the draft", a
         },
       ]);
       assert.equal(await finish(access, 2), "denied");
+      await pool.query(
+        `UPDATE telegram_registration_completions SET
+           created_at = created_at - interval '6 minutes',
+           expires_at = expires_at - interval '6 minutes' WHERE id = $1`,
+        [id],
+      );
+      assert.equal(
+        await readTelegramRegistrationCompletion(pool, id, browser),
+        false,
+      );
+      await deleteExpiredTelegramRegistrationCompletions(pool);
+      const receipt = await pool.query(
+        "SELECT id FROM telegram_registration_completions WHERE id = $1",
+        [id],
+      );
+      assert.equal(receipt.rowCount, 0);
     }
   } finally {
     await pool.end();
@@ -362,6 +397,72 @@ test("Bot-first draft can attach a freshly approved browser and revoke the old o
       ["telegram", `bot:${userId}`],
     );
     assert.equal(account.rowCount, 0);
+  } finally {
+    await pool.end();
+  }
+});
+
+test("Cancel and complete compete without publishing a false completion", async () => {
+  const databaseUrl = process.env.AUTH_COMPAT_DATABASE_URL;
+  assert.ok(databaseUrl);
+  const target = new URL(databaseUrl);
+  assert.equal(target.hostname, "127.0.0.1");
+  assert.equal(target.pathname, "/freight_auth_compat");
+  const pool = new pg.Pool({ connectionString: databaseUrl });
+  const userId = String(randomBytes(6).readUIntBE(0, 6) + 1);
+  const actor = { chatType: "private", chatId: userId, userId };
+  const bot = { channel: "bot", actor };
+  const browser = createTelegramBrowserCapability();
+  const web = { channel: "web", browserCapability: browser };
+  try {
+    const request = await startTelegramBotRequest(pool, browser, {
+      intent: "register",
+      locale: "en",
+    });
+    const { id } = request;
+    await claimTelegramBotRequest(pool, request.deepLink, actor, {
+      firstName: "Synthetic",
+      lastName: "Driver",
+    });
+    assert.equal(
+      await saveTelegramBotContact(pool, id, actor, {
+        userId,
+        phoneNumber: "+12025550123",
+        forwarded: false,
+      }),
+      true,
+    );
+    assert.equal(
+      await decideTelegramBotRequest(pool, id, actor, "approve"),
+      true,
+    );
+    assert.equal(
+      await beginTelegramRegistrationDraft(pool, id, actor, "bot"),
+      id,
+    );
+    const edited = await updateTelegramRegistrationDraft(pool, id, bot, {
+      action: "edit",
+      revision: 0,
+      role: "DRIVER",
+      birthDate: "1990-01-01",
+      username: `tg_${randomBytes(8).toString("hex")}`,
+    });
+    assert.equal(edited?.revision, 1);
+    assert.equal(await cancelTelegramRegistrationDraft(pool, id, web, 1), false);
+    assert.equal(await cancelTelegramRegistrationDraft(pool, id, bot, 0), false);
+    const [cancelled, completed] = await Promise.all([
+      cancelTelegramRegistrationDraft(pool, id, bot, 1),
+      completeTelegramRegistrationDraft(pool, id, bot, 1),
+    ]);
+    assert.ok(
+      (cancelled && completed === "denied") ||
+        (!cancelled && completed === "created"),
+    );
+    assert.equal(
+      await readTelegramRegistrationCompletion(pool, id, browser),
+      completed === "created",
+    );
+    assert.equal(await readTelegramRegistrationDraft(pool, id, web), null);
   } finally {
     await pool.end();
   }

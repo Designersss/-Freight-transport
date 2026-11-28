@@ -31,6 +31,7 @@ export const authMigrations = [
   "20261128100000_telegram_registration_drafts",
   "20261128110000_telegram_registration_contact",
   "20261128120000_telegram_bot_first_registration",
+  "20261128130000_telegram_registration_completion",
 ] as const;
 
 const columns = {
@@ -156,6 +157,12 @@ const columns = {
     "company_name",
     "username",
   ],
+  telegram_registration_completions: [
+    "id",
+    "browser_hash",
+    "created_at",
+    "expires_at",
+  ],
   auth_mail_rate_limits: ["key", "count", "expires_at"],
   profile_photo_cleanup: ["key", "owner_id", "available_at", "attempts"],
   profile_photo_scan: ["id", "revision", "continuation_token"],
@@ -234,6 +241,14 @@ const constraints = [
     "telegram_registration_drafts_identity_check",
   ],
   ["telegram_registration_drafts", "telegram_registration_drafts_state_check"],
+  [
+    "telegram_registration_completions",
+    "telegram_registration_completions_hash_check",
+  ],
+  [
+    "telegram_registration_completions",
+    "telegram_registration_completions_expiry_check",
+  ],
   [
     "telegram_registration_drafts",
     "telegram_registration_drafts_profile_check",

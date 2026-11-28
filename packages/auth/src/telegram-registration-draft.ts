@@ -342,6 +342,7 @@ export type TelegramDraftCompletion =
   | "identity-taken";
 
 interface CompletionRow extends DraftView {
+  browser_hash: string | null;
   telegram_user_id: string;
   phone_number: string;
 }
@@ -388,7 +389,7 @@ export async function completeTelegramRegistrationDraft(
     const consumed = await client.query<CompletionRow>(
       `DELETE FROM telegram_registration_drafts
        WHERE ${owned} AND revision = $4 AND channel = $5
-       RETURNING ${fields}, telegram_user_id, phone_number`,
+       RETURNING ${fields}, telegram_user_id, phone_number, browser_hash`,
       [id, owner.hash, owner.actorId, version.data, access.channel],
     );
     const row = consumed.rows[0];
@@ -441,6 +442,18 @@ export async function completeTelegramRegistrationDraft(
         row.phone_number,
       ],
     );
+    // The browser may be waiting while the bot completes the form. Publish
+    // only the fact of completion, within the account creation transaction.
+    if (row.browser_hash !== null) {
+      await client.query(
+        `INSERT INTO telegram_registration_completions (
+           id, browser_hash, created_at, expires_at
+         )
+         SELECT $1, $2, issued_at, issued_at + interval '5 minutes'
+         FROM (SELECT clock_timestamp() AS issued_at) AS issued`,
+        [row.id, row.browser_hash],
+      );
+    }
     await client.query("COMMIT");
     failed = false;
     return "created";
@@ -453,4 +466,61 @@ export async function completeTelegramRegistrationDraft(
   } finally {
     client.release(failed);
   }
+}
+
+// Polling must not infer successful registration merely from a missing draft:
+// it could have expired, been cancelled, or been moved to another browser.
+export async function readTelegramRegistrationCompletion(
+  pool: Pool,
+  id: string,
+  browserCapability: unknown,
+): Promise<boolean> {
+  const hash = telegramBotCapabilityHash(browserCapability);
+  if (!hash) return false;
+  const result = await pool.query(
+    `SELECT id FROM telegram_registration_completions
+     WHERE id::text = $1 AND browser_hash = $2
+       AND expires_at > clock_timestamp()`,
+    [id, hash],
+  );
+  return result.rowCount === 1;
+}
+
+// Cancellation and completion compete for the same draft row. An obsolete
+// channel or revision cannot cancel a newer form; no receipt is created.
+export async function cancelTelegramRegistrationDraft(
+  pool: Pool,
+  id: string,
+  access: DraftAccess,
+  revision: number,
+): Promise<boolean> {
+  const owner = ownership(access);
+  if (
+    !owner ||
+    !Number.isInteger(revision) ||
+    revision < 0 ||
+    revision >= 2_147_483_647
+  )
+    return false;
+  const result = await pool.query(
+    `DELETE FROM telegram_registration_drafts
+     WHERE ${owned} AND revision = $4 AND channel = $5`,
+    [id, owner.hash, owner.actorId, revision, access.channel],
+  );
+  return result.rowCount === 1;
+}
+
+export async function deleteExpiredTelegramRegistrationCompletions(
+  pool: Pool,
+): Promise<number> {
+  const result = await pool.query(
+    `WITH expired AS (
+       SELECT id FROM telegram_registration_completions
+       WHERE expires_at <= clock_timestamp()
+       ORDER BY expires_at LIMIT 500 FOR UPDATE SKIP LOCKED
+     )
+     DELETE FROM telegram_registration_completions c USING expired e
+     WHERE c.id = e.id AND c.expires_at <= clock_timestamp()`,
+  );
+  return result.rowCount ?? 0;
 }
