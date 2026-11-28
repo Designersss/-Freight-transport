@@ -1,7 +1,8 @@
 import type { Pool } from "pg";
-import { z } from "zod";
+import type { z } from "zod";
 import { AUTH_BASE_PATH, type EmailAuth } from "./auth.js";
 import { type AuthConfig, telegramEnabled } from "./config.js";
+import { telegramStartInput, telegramStartResponse } from "./contracts.js";
 import { reserveTelegramRequest } from "./mail-rate-limit.js";
 import {
   type TelegramLinkIdentity,
@@ -12,11 +13,6 @@ import { TELEGRAM_ISSUER } from "./telegram-provider.js";
 import { readTelegramSettings } from "./telegram-settings.js";
 import { readAuthSession } from "./verified-session.js";
 
-const startInput = z.strictObject({
-  intent: z.enum(["login", "register", "link"]),
-  locale: z.enum(["ru", "en"]),
-});
-const authorizeResult = z.object({ url: z.string().max(8192) });
 const callbackKeys = new Set([
   "code",
   "state",
@@ -90,7 +86,7 @@ export async function handleTelegramOAuth(
   };
 
   try {
-    let payload: z.infer<typeof startInput> | undefined;
+    let payload: z.infer<typeof telegramStartInput> | undefined;
     if (start) {
       if (request.headers.get("origin") !== config.AUTH_WEB_ORIGIN)
         return fail(403, "INVALID_ORIGIN");
@@ -100,7 +96,7 @@ export async function handleTelegramOAuth(
           "application/json"
       )
         return fail(400, "INVALID_REQUEST");
-      const parsed = startInput.safeParse(
+      const parsed = telegramStartInput.safeParse(
         await request.json().catch(() => null),
       );
       if (!parsed.success) return fail(400, "INVALID_REQUEST");
@@ -175,7 +171,7 @@ export async function handleTelegramOAuth(
           response.status === 429 ? 429 : 503,
           response.status === 429 ? "RATE_LIMITED" : "AUTH_REQUEST_FAILED",
         );
-      const result = authorizeResult.parse(await response.json());
+      const result = telegramStartResponse.parse(await response.json());
       if (!allowedAuthorizationUrl(result.url, config))
         return fail(503, "AUTH_REQUEST_FAILED");
       for (const cookie of response.headers.getSetCookie())

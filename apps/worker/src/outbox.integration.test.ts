@@ -151,9 +151,7 @@ describe("Transactional outbox and pg-boss", () => {
           deleteExpiredRegistrationProofs(database, 2),
         ]);
         expect(counts).toEqual([2, 2]);
-        expect(
-          await database.registrationEmailProof.count({ where }),
-        ).toBe(3);
+        expect(await database.registrationEmailProof.count({ where })).toBe(3);
         expect(
           await tx.registrationEmailProof.findUnique({
             where: { tokenHash: locked },

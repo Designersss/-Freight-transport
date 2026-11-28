@@ -1,5 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { addAuthPaths } from "./auth-paths.js";
 
 export function createOpenApiDocument(app: INestApplication) {
   const config = new DocumentBuilder()
@@ -7,7 +8,9 @@ export function createOpenApiDocument(app: INestApplication) {
     .setDescription("Versioned API of the equipment management platform")
     .setVersion("1.0.0")
     .build();
-  return SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, config);
+  addAuthPaths(document);
+  return document;
 }
 
 export function registerDevelopmentDocs(app: INestApplication): void {
