@@ -9,6 +9,8 @@ import { LogController } from "fastify";
 import { AppModule } from "./app.module.js";
 import { AuthService } from "./auth/auth.module.js";
 import { registerAuthRoutes } from "./auth/register-auth-routes.js";
+import { registerTelegramBotInternalRoute } from "./auth/register-telegram-bot-internal-route.js";
+import { parseTelegramBotInternalSecret } from "./auth/telegram-bot-internal-auth.js";
 import { HttpExceptionFilter } from "./common/http-exception.filter.js";
 import type { ApiConfig } from "./config/api-config.js";
 import { registerDevelopmentDocs } from "./openapi/document.js";
@@ -17,7 +19,20 @@ export async function createApp(
   config: ApiConfig,
   auth?: AuthConfig,
   storage?: StorageConfig,
+  telegramBotInternalSecret?: string,
 ): Promise<NestFastifyApplication> {
+  const botSecret = parseTelegramBotInternalSecret({
+    ...auth,
+    AUTH_TELEGRAM_BOT_INTERNAL_SECRET: telegramBotInternalSecret,
+  });
+  if (
+    botSecret !== undefined &&
+    (!auth ||
+      config.NODE_ENV === "production" ||
+      config.API_HOST !== "127.0.0.1")
+  ) {
+    throw new Error("Telegram bot internal API requires loopback staging auth");
+  }
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule.register(config, auth, storage),
     new FastifyAdapter({
@@ -48,6 +63,13 @@ export async function createApp(
       auth.AUTH_BASE_URL,
       auth.AUTH_PROXY_SECRET,
     );
+    if (botSecret !== undefined) {
+      registerTelegramBotInternalRoute(
+        app.getHttpAdapter().getInstance(),
+        app.get(AuthService),
+        botSecret,
+      );
+    }
   }
   app.setGlobalPrefix("api/v1");
   app.useGlobalFilters(new HttpExceptionFilter(app.get(HttpAdapterHost)));
