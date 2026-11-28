@@ -110,6 +110,14 @@ test("readiness rejects partial auth schema without changing liveness", async ()
         "ALTER INDEX readiness_missing_username_index RENAME TO user_username_uidx",
       ],
       [
+        "ALTER TABLE telegram_bot_requests RENAME COLUMN registration_draft_id TO readiness_missing_draft_id",
+        "ALTER TABLE telegram_bot_requests RENAME COLUMN readiness_missing_draft_id TO registration_draft_id",
+      ],
+      [
+        "ALTER TABLE telegram_bot_requests RENAME CONSTRAINT telegram_bot_requests_registration_recovery_check TO readiness_missing_recovery_check",
+        "ALTER TABLE telegram_bot_requests RENAME CONSTRAINT readiness_missing_recovery_check TO telegram_bot_requests_registration_recovery_check",
+      ],
+      [
         "ALTER TABLE user_profiles RENAME CONSTRAINT user_profiles_birth_date_check TO readiness_missing_birth_check",
         "ALTER TABLE user_profiles RENAME CONSTRAINT readiness_missing_birth_check TO user_profiles_birth_date_check",
       ],
