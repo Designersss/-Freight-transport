@@ -104,7 +104,9 @@ describe("Auth OpenAPI contract", () => {
     expect(
       paths["/api/v1/auth/telegram/callback"]?.get?.responses[303],
     ).toBeDefined();
-    expect(paths["/api/v1/auth/get-session"]?.get?.responses[200]).toMatchObject({
+    expect(
+      paths["/api/v1/auth/get-session"]?.get?.responses[200],
+    ).toMatchObject({
       content: { "application/json": { schema: { nullable: true } } },
     });
   });

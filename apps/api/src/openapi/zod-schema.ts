@@ -45,8 +45,10 @@ function convert(raw: JSONSchema._JSONSchema): SchemaObject {
   if (oneOf) schema.oneOf = oneOf.map(convert);
   if (allOf) schema.allOf = allOf.map(convert);
   if (not !== undefined) schema.not = convert(not);
-  if (exclusiveMinimum !== undefined) schema.exclusiveMinimum = exclusiveMinimum;
-  if (exclusiveMaximum !== undefined) schema.exclusiveMaximum = exclusiveMaximum;
+  if (exclusiveMinimum !== undefined)
+    schema.exclusiveMinimum = exclusiveMinimum;
+  if (exclusiveMaximum !== undefined)
+    schema.exclusiveMaximum = exclusiveMaximum;
   return schema;
 }
 
@@ -54,5 +56,7 @@ export function openApiSchema(schema: z.ZodType): SchemaObject {
   // Input mode retains email/username string validation before transforms.
   // Response DTOs use the same public wire shape; runtime refinements (UTC
   // date bounds, reserved names, role-dependent company) remain server-side.
-  return convert(z.toJSONSchema(schema, { target: "openapi-3.0", io: "input" }));
+  return convert(
+    z.toJSONSchema(schema, { target: "openapi-3.0", io: "input" }),
+  );
 }

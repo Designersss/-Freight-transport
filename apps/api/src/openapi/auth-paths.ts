@@ -461,11 +461,15 @@ export function addAuthPaths(document: OpenAPIObject): void {
   add(
     "/telegram/registration",
     "post",
-    operation("completeTelegramRegistration", "Complete Telegram registration", {
-      body: registrationInput,
-      access: "public",
-      statuses: [400, 401, 403, 404, 409, 503],
-    }),
+    operation(
+      "completeTelegramRegistration",
+      "Complete Telegram registration",
+      {
+        body: registrationInput,
+        access: "public",
+        statuses: [400, 401, 403, 404, 409, 503],
+      },
+    ),
   );
   add(
     "/telegram/settings",
