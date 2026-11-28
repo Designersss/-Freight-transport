@@ -14,6 +14,7 @@ import {
 import {
   beginBotOnlyRegistrationDraft,
   beginTelegramRegistrationDraft,
+  beginTelegramRegistrationInBot,
   cancelTelegramRegistrationDraft,
   completeTelegramRegistrationDraft,
   deleteExpiredTelegramRegistrationCompletions,
@@ -488,6 +489,142 @@ test("Cancel and complete compete without publishing a false completion", async 
       completed === "created",
     );
     assert.equal(await readTelegramRegistrationDraft(pool, id, web), null);
+  } finally {
+    await pool.end();
+  }
+});
+
+test("Expired draft conflicts do not block a new registration or browser attachment", async () => {
+  const databaseUrl = process.env.AUTH_COMPAT_DATABASE_URL;
+  assert.ok(databaseUrl);
+  const target = new URL(databaseUrl);
+  assert.equal(target.hostname, "127.0.0.1");
+  assert.equal(target.pathname, "/freight_auth_compat");
+  const pool = new pg.Pool({ connectionString: databaseUrl });
+  const userId = String(randomBytes(6).readUIntBE(0, 6) + 1);
+  const otherId = String(Number(userId) + 1);
+  const actor = { chatType: "private", chatId: userId, userId };
+  const other = { chatType: "private", chatId: otherId, userId: otherId };
+  const bot = { channel: "bot", actor };
+  const names = { firstName: "Synthetic", lastName: "Driver" };
+  const contact = (owner) => ({
+    userId: owner.userId,
+    phoneNumber: "+12025550123",
+    forwarded: false,
+  });
+  const browser = createTelegramBrowserCapability();
+  const web = { channel: "web", browserCapability: browser };
+
+  async function expire(id) {
+    await pool.query(
+      `UPDATE telegram_registration_drafts SET
+         created_at = clock_timestamp() - interval '1 hour',
+         expires_at = clock_timestamp() - interval '1 minute'
+       WHERE id = $1`,
+      [id],
+    );
+  }
+
+  async function claim(owner) {
+    const request = await startTelegramBotRequest(pool, browser, {
+      intent: "register",
+      locale: "ru",
+    });
+    assert.ok(
+      await claimTelegramBotRequest(pool, request.deepLink, owner, names),
+    );
+    assert.equal(
+      await saveTelegramBotContact(pool, request.id, owner, contact(owner)),
+      true,
+    );
+    return request;
+  }
+
+  async function approve(request, owner) {
+    const proof = await prepareTelegramBotApproval(pool, request.id, owner);
+    assert.ok(proof);
+    assert.equal(
+      await confirmTelegramBotApproval(pool, browser, request.id, proof),
+      true,
+    );
+  }
+
+  try {
+    const begin = () =>
+      beginBotOnlyRegistrationDraft(pool, actor, contact(actor), names, "ru");
+    const initial = await begin();
+    assert.ok(initial);
+    assert.ok(
+      await updateTelegramRegistrationDraft(pool, initial, bot, {
+        action: "edit",
+        revision: 0,
+        firstName: "Expired name",
+      }),
+    );
+    await expire(initial);
+    const starts = await Promise.all([begin(), begin()]);
+    assert.equal(starts.filter(Boolean).length, 1);
+    const fresh = starts.find(Boolean);
+    assert.ok(fresh);
+    assert.notEqual(fresh, initial);
+    assert.equal(await readTelegramRegistrationDraft(pool, initial, bot), null);
+    assert.equal((await findTelegramRegistrationDraft(pool, bot))?.revision, 0);
+    assert.equal(
+      (await findTelegramRegistrationDraft(pool, bot))?.firstName,
+      names.firstName,
+    );
+    assert.equal(await begin(), null);
+
+    // A live draft for another Telegram actor cannot be removed or replaced
+    // just because a new request was approved in the same browser.
+    const otherRequest = await claim(other);
+    await approve(otherRequest, other);
+    const otherDraft = await beginTelegramRegistrationDraft(
+      pool,
+      otherRequest.id,
+      other,
+      "web",
+    );
+    assert.ok(otherDraft);
+    const attachment = await claim(actor);
+    await approve(attachment, actor);
+    const resume = () =>
+      resumeTelegramRegistrationInBrowser(pool, fresh, attachment.id, actor, 0);
+    assert.equal(await resume(), null);
+    assert.equal((await findTelegramRegistrationDraft(pool, web))?.id, otherDraft);
+    assert.equal(
+      await readTelegramBotRequest(pool, browser, attachment.id),
+      "approved",
+    );
+    await expire(otherDraft);
+    assert.equal(await resume(), fresh);
+    assert.equal((await findTelegramRegistrationDraft(pool, web))?.id, fresh);
+    assert.equal((await findTelegramRegistrationDraft(pool, web))?.revision, 1);
+
+    // Web can start over immediately after its own draft expires.
+    await expire(fresh);
+    const webRequest = await claim(actor);
+    await approve(webRequest, actor);
+    const webDraft = await beginTelegramRegistrationDraft(
+      pool,
+      webRequest.id,
+      actor,
+      "web",
+    );
+    assert.equal(webDraft, webRequest.id);
+    assert.equal((await findTelegramRegistrationDraft(pool, web))?.revision, 0);
+
+    // Choosing chat after expiry must also create a fresh, unbound draft.
+    await expire(webDraft);
+    const chatRequest = await claim(actor);
+    const chatDraft = await beginTelegramRegistrationInBot(
+      pool,
+      chatRequest.id,
+      actor,
+    );
+    assert.equal(chatDraft, chatRequest.id);
+    assert.equal((await findTelegramRegistrationDraft(pool, bot))?.channel, "bot");
+    assert.equal(await findTelegramRegistrationDraft(pool, web), null);
   } finally {
     await pool.end();
   }

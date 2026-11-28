@@ -52,8 +52,35 @@ function ownership(access: DraftAccess) {
     : null;
 }
 
-// Internal only. The future authenticated bot API must establish the actor,
-// obtain an explicit channel choice and close the relay risk before mounting.
+// Expired drafts cannot be resumed, but still occupy the unique actor and
+// browser indexes until the worker removes them. Release only expired
+// conflicts before a new start or attachment, without relying on the worker.
+// Separate statements avoid holding a draft lock while acquiring a grant lock.
+async function removeExpiredDraftConflicts(
+  pool: Pool,
+  actorId: string,
+  requestId?: string,
+): Promise<void> {
+  await pool.query(
+    `DELETE FROM telegram_registration_drafts
+     WHERE telegram_user_id = $1 AND expires_at <= clock_timestamp()`,
+    [actorId],
+  );
+  if (requestId === undefined) return;
+  await pool.query(
+    `DELETE FROM telegram_registration_drafts
+     WHERE expires_at <= clock_timestamp() AND browser_hash = (
+       SELECT browser_hash FROM telegram_bot_requests
+       WHERE id::text = $2 AND telegram_user_id = $1
+         AND intent = 'register' AND status = 'approved'
+         AND expires_at > clock_timestamp()
+     )`,
+    [actorId, requestId],
+  );
+}
+
+// Internal only: the authenticated bot or browser boundary establishes the
+// actor and obtains an explicit channel choice.
 export async function beginTelegramRegistrationDraft(
   pool: Pool,
   requestId: string,
@@ -62,6 +89,7 @@ export async function beginTelegramRegistrationDraft(
 ): Promise<string | null> {
   const selected = telegramDraftChannel.safeParse(channel);
   if (!selected.success || !privateTelegramActor(actor)) return null;
+  await removeExpiredDraftConflicts(pool, actor.userId, requestId);
   const result = await pool.query<{ id: string }>(
     `WITH approved_grant AS (
        SELECT r.id, r.browser_hash, r.telegram_user_id, r.locale,
@@ -103,6 +131,7 @@ export async function beginTelegramRegistrationInBot(
   actor: TelegramBotActor,
 ): Promise<string | null> {
   if (!privateTelegramActor(actor)) return null;
+  await removeExpiredDraftConflicts(pool, actor.userId);
   const result = await pool.query<{ id: string }>(
     `WITH claimed_request AS (
        SELECT r.id, r.telegram_user_id, r.locale, r.phone_number,
@@ -161,6 +190,7 @@ export async function beginBotOnlyRegistrationDraft(
   const language = z.enum(["ru", "en"]).safeParse(locale);
   const phone = verifiedTelegramContact(actor, contact);
   if (!language.success || !phone) return null;
+  await removeExpiredDraftConflicts(pool, actor.userId);
   const result = await pool.query<{ id: string }>(
     `INSERT INTO telegram_registration_drafts (
        id, telegram_user_id, locale, channel, phone_number, first_name,
@@ -204,6 +234,7 @@ export async function resumeTelegramRegistrationInBrowser(
     revision >= 2_147_483_647
   )
     return null;
+  await removeExpiredDraftConflicts(pool, actor.userId, requestId);
   try {
     const result = await pool.query<{ id: string }>(
       `WITH approved_grant AS (
