@@ -11,7 +11,7 @@ export const telegramWaitSchema = z.strictObject({
         !url.username &&
         !url.password &&
         !url.hash &&
-        /^\/[A-Za-z][A-Za-z0-9_]{3,28}[Bb][Oo][Tt]$/.test(url.pathname) &&
+        /^\/[A-Za-z][A-Za-z0-9_]{1,28}[Bb][Oo][Tt]$/.test(url.pathname) &&
         [...url.searchParams.keys()].length === 1 &&
         /^[A-Za-z0-9_-]{43}$/.test(url.searchParams.get("start") ?? "")
       );
