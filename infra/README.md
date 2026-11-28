@@ -17,7 +17,7 @@ pnpm dev:api
 ```
 
 Liveness: GET http://127.0.0.1:4000/api/v1/health.
-Readiness: GET http://127.0.0.1:4000/api/v1/health/ready — 200 только при доступности мигрированной БД, иначе 503.
+Readiness: GET http://127.0.0.1:4000/api/v1/health/ready — 200 только при доступности базовых таблиц/полей outbox, publications и user event streams. При AUTH_ENABLED=true дополнительно проверяются миграции auth, необходимые таблицы/поля, права runtime, ключевые индексы/constraints и включённые защитные триггеры в public; при настроенном S3 проверяется приватный bucket. Неполная схема или недоступная зависимость — 503 без внутренних деталей. Liveness остаётся независимым. Readiness не применяет миграции и не читает пользовательские записи; проверка не заменяет db:status, интеграционные тесты, SMTP/Telegram smoke и полный schema/security review.
 
 PostgreSQL доступен только через loopback. Том сохраняет данные. Не используйте docker compose down -v без осознанного удаления данных. Образ dev закреплён по major; production digest и резервирование — RD-18.
 

@@ -34,6 +34,7 @@ try {
     [
       "--test",
       "--test-concurrency=1",
+      fileURLToPath(new URL("./schema-readiness.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./auth-schema.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./compat.test.mjs", import.meta.url)),
       fileURLToPath(new URL("./email-auth-http.test.mjs", import.meta.url)),

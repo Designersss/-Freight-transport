@@ -382,7 +382,10 @@ test("MOVARO email HTTP routes deliver SMTP messages and revoke reset sessions",
       post("/profile", profile, { cookie }),
       post("/profile", { ...profile, role: "DISPATCHER" }, { cookie }),
     ]);
-    assert.deepEqual(concurrent.map(({ statusCode }) => statusCode), [405, 405]);
+    assert.deepEqual(
+      concurrent.map(({ statusCode }) => statusCode),
+      [405, 405],
+    );
     assert.deepEqual((await get(profilePath, cookie)).json(), saved);
     const personal = {
       firstName: " Updated ",

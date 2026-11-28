@@ -377,7 +377,9 @@ for (const variant of [
     ).toBeVisible();
     expect(posts).toBe(0);
     await birthDate.fill(variant.typedDate);
-    const trigger = settings.getByRole("button", { name: variant.openCalendar });
+    const trigger = settings.getByRole("button", {
+      name: variant.openCalendar,
+    });
     await trigger.click();
     const calendar = page.getByRole("dialog", { name: variant.openCalendar });
     await expect(

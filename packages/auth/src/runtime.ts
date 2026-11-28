@@ -12,6 +12,7 @@ import { reserveMailRequest } from "./mail-rate-limit.js";
 import { handleProfile, handleProfileSettings } from "./profile.js";
 import { handleProfilePhoto } from "./profile-photo.js";
 import { handleEmailRegistration } from "./registration-email-http.js";
+import { checkAuthSchema } from "./schema-readiness.js";
 import { handleSessionSettings } from "./session-settings.js";
 import { createSmtpMailer } from "./smtp-mailer.js";
 import { handleTelegramOAuth } from "./telegram-oauth-http.js";
@@ -300,6 +301,7 @@ export function createAuthHttpRuntime(
       }
     },
     async checkReadiness() {
+      await checkAuthSchema(pool);
       if (storage) await storage.checkReadiness();
     },
     async close() {
