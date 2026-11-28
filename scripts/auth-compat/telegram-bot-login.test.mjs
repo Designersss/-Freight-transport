@@ -116,7 +116,12 @@ test("Native bot login consumes its browser grant with the session INSERT", asyn
       [accountId, userId, "telegram", subject],
     );
     const request = await approve();
-    const wrong = await finish(auth, request, request.deepLink, "198.51.100.40");
+    const wrong = await finish(
+      auth,
+      request,
+      request.deepLink,
+      "198.51.100.40",
+    );
     assert.equal(wrong.status, 403);
     const cross = await finish(
       auth,

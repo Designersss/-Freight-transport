@@ -1,6 +1,10 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { BetterAuthPlugin } from "better-auth";
-import { APIError, createAuthEndpoint, getSessionFromCtx } from "better-auth/api";
+import {
+  APIError,
+  createAuthEndpoint,
+  getSessionFromCtx,
+} from "better-auth/api";
 import { setSessionCookie } from "better-auth/cookies";
 import type { Pool } from "pg";
 import { z } from "zod";
