@@ -5,10 +5,12 @@ import pg from "pg";
 import {
   cancelTelegramBotRequest,
   claimTelegramBotRequest,
+  confirmTelegramBotApproval,
   createTelegramBrowserCapability,
-  decideTelegramBotRequest,
   deleteExpiredTelegramBotRequests,
+  prepareTelegramBotApproval,
   readTelegramBotRequest,
+  rejectTelegramBotRequest,
   saveTelegramBotContact,
   startTelegramBotRequest,
 } from "../../packages/auth/dist/telegram-bot-requests.js";
@@ -182,8 +184,8 @@ test("Only the claiming private Telegram user can submit contact and decide", as
       null,
     );
     assert.equal(
-      await decideTelegramBotRequest(pool, request.id, actor, "approve"),
-      false,
+      await prepareTelegramBotApproval(pool, request.id, actor),
+      null,
     );
     for (const invalid of [
       { ...contact, userId: other.userId },
@@ -223,14 +225,62 @@ test("Only the claiming private Telegram user can submit contact and decide", as
     );
     assert.equal(reopened?.needsContact, false);
     assert.equal(
-      await decideTelegramBotRequest(pool, request.id, other, "approve"),
-      false,
+      await prepareTelegramBotApproval(pool, request.id, other),
+      null,
     );
+    const previousProof = await prepareTelegramBotApproval(
+      pool,
+      request.id,
+      actor,
+    );
+    assert.ok(previousProof);
+    const proof = await prepareTelegramBotApproval(pool, request.id, actor);
+    assert.ok(proof);
+    assert.notEqual(proof, previousProof);
+    assert.match(proof, /^[A-Za-z0-9_-]{43}$/);
+    assert.equal(
+      await readTelegramBotRequest(pool, browser, request.id),
+      "claimed",
+    );
+    const hashed = await pool.query(
+      "SELECT return_hash FROM telegram_bot_requests WHERE id = $1",
+      [request.id],
+    );
+    assert.equal(
+      hashed.rows[0].return_hash,
+      createHash("sha256").update(proof).digest("hex"),
+    );
+    for (const [capability, candidate] of [
+      [createTelegramBrowserCapability(), proof],
+      [browser, request.deepLink],
+      [browser, request.displayCode],
+      [browser, previousProof],
+      [browser, undefined],
+    ]) {
+      assert.equal(
+        await confirmTelegramBotApproval(
+          pool,
+          capability,
+          request.id,
+          candidate,
+        ),
+        false,
+      );
+    }
     const approvals = await Promise.all([
-      decideTelegramBotRequest(pool, request.id, actor, "approve"),
-      decideTelegramBotRequest(pool, request.id, actor, "approve"),
+      confirmTelegramBotApproval(pool, browser, request.id, proof),
+      confirmTelegramBotApproval(pool, browser, request.id, proof),
     ]);
     assert.deepEqual(approvals.sort(), [false, true]);
+    assert.equal(
+      await prepareTelegramBotApproval(pool, request.id, actor),
+      null,
+    );
+    const erasedProof = await pool.query(
+      "SELECT return_hash FROM telegram_bot_requests WHERE id = $1",
+      [request.id],
+    );
+    assert.equal(erasedProof.rows[0].return_hash, null);
     assert.equal(
       await readTelegramBotRequest(pool, browser, request.id),
       "approved",
@@ -255,7 +305,7 @@ test("Only the claiming private Telegram user can submit contact and decide", as
     await claimTelegramBotRequest(pool, rejected.deepLink, actor, names);
     await saveTelegramBotContact(pool, rejected.id, actor, contact);
     assert.equal(
-      await decideTelegramBotRequest(pool, rejected.id, actor, "reject"),
+      await rejectTelegramBotRequest(pool, rejected.id, actor),
       true,
     );
     assert.equal(
@@ -290,13 +340,21 @@ test("Only the claiming private Telegram user can submit contact and decide", as
       await saveTelegramBotContact(pool, login.id, actor, contact),
       false,
     );
+    const loginProof = await prepareTelegramBotApproval(pool, login.id, actor);
+    assert.ok(loginProof);
     assert.equal(
-      await decideTelegramBotRequest(pool, login.id, actor, "approve"),
+      await confirmTelegramBotApproval(pool, browser, login.id, loginProof),
       true,
     );
     const expired = await start();
     await claimTelegramBotRequest(pool, expired.deepLink, actor, names);
     await saveTelegramBotContact(pool, expired.id, actor, contact);
+    const expiredProof = await prepareTelegramBotApproval(
+      pool,
+      expired.id,
+      actor,
+    );
+    assert.ok(expiredProof);
     await pool.query(
       `UPDATE telegram_bot_requests SET
          created_at = created_at - interval '6 minutes',
@@ -305,7 +363,12 @@ test("Only the claiming private Telegram user can submit contact and decide", as
       [expired.id],
     );
     assert.equal(
-      await decideTelegramBotRequest(pool, expired.id, actor, "approve"),
+      await confirmTelegramBotApproval(
+        pool,
+        browser,
+        expired.id,
+        expiredProof,
+      ),
       false,
     );
     assert.equal(
