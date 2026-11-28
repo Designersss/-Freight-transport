@@ -115,6 +115,47 @@ export async function beginTelegramRegistrationDraft(
   return result.rows[0]?.id ?? null;
 }
 
+// Explicitly continue a claimed registration in the private chat without
+// granting access to the browser. A later fresh browser approval can attach
+// the draft. The original request is consumed with the draft creation.
+export async function beginTelegramRegistrationInBot(
+  pool: Pool,
+  requestId: string,
+  actor: TelegramBotActor,
+): Promise<string | null> {
+  if (!privateTelegramActor(actor)) return null;
+  const result = await pool.query<{ id: string }>(
+    `WITH claimed_request AS (
+       SELECT r.id, r.telegram_user_id, r.locale, r.phone_number,
+         r.first_name, r.last_name
+       FROM telegram_bot_requests r
+       WHERE r.id::text = $1 AND r.telegram_user_id = $2
+         AND r.intent = 'register' AND r.status = 'claimed'
+         AND r.expires_at > clock_timestamp() AND r.phone_number IS NOT NULL
+         AND NOT EXISTS (
+           SELECT 1 FROM "account" a WHERE a."providerId" = 'telegram'
+             AND a."accountId" = 'bot:' || r.telegram_user_id
+         )
+       FOR UPDATE OF r
+     ), inserted AS (
+       INSERT INTO telegram_registration_drafts (
+         id, telegram_user_id, locale, channel, phone_number,
+         first_name, last_name, created_at, expires_at
+       )
+       SELECT id, telegram_user_id, locale, 'bot', phone_number,
+         first_name, last_name, statement_timestamp(),
+         statement_timestamp() + interval '30 minutes'
+       FROM claimed_request ON CONFLICT DO NOTHING RETURNING id
+     )
+     UPDATE telegram_bot_requests r SET status = 'consumed',
+       return_hash = NULL, telegram_user_id = NULL, first_name = NULL,
+       last_name = NULL, phone_number = NULL
+     FROM inserted i WHERE r.id = i.id RETURNING r.id`,
+    [requestId, actor.userId],
+  );
+  return result.rows[0]?.id ?? null;
+}
+
 // Bot-first start requires an explicit registration choice and the contact
 // from that live prompt. No browser credential is generated for a chat.
 export async function beginBotOnlyRegistrationDraft(
