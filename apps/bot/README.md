@@ -13,7 +13,7 @@
 
 ## Конфигурация и проверки
 
-В закрытом dev/test окружении после согласованной активации используются отдельные TELEGRAM_BOT_TOKEN, AUTH_TELEGRAM_BOT_INTERNAL_SECRET, TELEGRAM_BOT_API_ORIGIN (loopback HTTP) и AUTH_WEB_ORIGIN (HTTPS). Не передавать Bot API token в Web/Admin или публичную сборку. Приватный маршрут /internal/telegram-bot запрещён на внешнем ingress.
+API получает AUTH_TELEGRAM_BOT_USERNAME без @. В закрытом dev/test окружении после согласованной активации используются отдельные TELEGRAM_BOT_TOKEN, AUTH_TELEGRAM_BOT_INTERNAL_SECRET, TELEGRAM_BOT_API_ORIGIN (loopback HTTP) и AUTH_WEB_ORIGIN (HTTPS). Не передавать Bot API token в Web/Admin или публичную сборку. Приватный маршрут /internal/telegram-bot запрещён на внешнем ingress.
 
 Команды целевой проверки после обновления lockfile и установки:
 
@@ -32,11 +32,11 @@ pnpm licenses:check
 
 ## Открытые пункты
 
-- Реальный frozen install, форматирование Biome, strict typecheck, unit/HTTP/DB проверки, обновление лицензионного отчёта, проверка advisories. Lockfile подготовлен по точному upstream package-lock, но не регенерирован pnpm в доступном окружении.
-- Неизвестный Telegram при login должен получить явный выбор регистрации, а существующий при register — вход; полноценная проверка состояния аккаунта в боте ещё не подключена.
+- Frozen install проходил в Quick Checks на предыдущих коммитах; подтвердить актуальный head, Biome, strict typecheck, unit/HTTP/DB проверки, обновление лицензионного отчёта и advisories.
+- Реализован выбор регистрации при неизвестном login и входа при существующем register; необходима сквозная проверка.
 - Web-return, исходная вкладка и общая форма черновика реализованы в следующем срезе; требуется сквозная проверка, включая открытие ссылки в другом браузере. Кнопка URL не гарантирует принудительный переход или выбор исходного браузера. После создания аккаунта требуется свежий login grant; отдельная автоматическая сессия регистрации не выдаётся.
-- Rate limits, устойчивое восстановление polling, очистка временных записей, постоянный контейнер, конфигурация ingress и закрытого staging, отказоустойчивость после сбоя.
-- Старый Telegram OIDC ещё не удалён. До окончательного review и ручной приёмки production activation запрещена.
+- Лимиты и очистка временных записей подключены; проверить устойчивость polling, постоянный контейнер, конфигурацию ingress и закрытого staging, отказоустойчивость после сбоя.
+- Старый Telegram OIDC удалён из runtime и Web. Открыты регенерация API, проверка DB identity fences и старых тестовых записей, общая регрессия. До окончательного review и ручной приёмки production activation запрещена.
 
 ## Источники
 
