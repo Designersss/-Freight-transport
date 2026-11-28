@@ -1,5 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { type APIRequestContext, expect, test } from "@playwright/test";
+import { ingressHeaders } from "./ingress-headers";
+
+test.use({ extraHTTPHeaders: ingressHeaders("198.51.100.10") });
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -65,6 +68,7 @@ async function verificationLink(request: APIRequestContext, email: string) {
 test("real signup, email ownership, login and session revocation", async ({
   browser,
   page,
+  playwright,
   request,
 }) => {
   const email = `${randomBytes(12).toString("hex")}@example.test`;
@@ -83,7 +87,9 @@ test("real signup, email ownership, login and session revocation", async ({
   });
   expect(available.status()).toBe(200);
   expect(await available.json()).toEqual({ available: true });
-  const requester = await browser.newContext();
+  const requester = await browser.newContext({
+    extraHTTPHeaders: ingressHeaders("198.51.100.30"),
+  });
   try {
     const other = await requester.newPage();
     await other.goto("http://127.0.0.1:3110/ru/signup");
@@ -110,7 +116,14 @@ test("real signup, email ownership, login and session revocation", async ({
   } finally {
     await requester.close();
   }
-  const link = await verificationLink(request, email);
+  const mail = await playwright.request.newContext({ extraHTTPHeaders: {} });
+  const link = await (async () => {
+    try {
+      return await verificationLink(mail, email);
+    } finally {
+      await mail.dispose();
+    }
+  })();
   await page.goto("/ru/login");
   try {
     await page.goto(link.href);

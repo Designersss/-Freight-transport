@@ -5,8 +5,11 @@ import { defineConfig, devices } from "@playwright/test";
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const databaseUrl = process.env.AUTH_BROWSER_DATABASE_URL;
 const smtpPort = process.env.AUTH_BROWSER_SMTP_PORT;
-if (!databaseUrl || !smtpPort)
+const proxySecret = process.env.AUTH_BROWSER_PROXY_SECRET;
+if (!databaseUrl || !smtpPort || !proxySecret)
   throw new Error("Run browser auth tests through Testcontainers");
+if (!/^[0-9a-f]{64}$/.test(proxySecret))
+  throw new Error("Invalid isolated browser proxy secret");
 const database = new URL(databaseUrl);
 if (
   database.hostname !== "127.0.0.1" ||
@@ -50,6 +53,7 @@ export default defineConfig({
         AUTH_BASE_URL: api,
         AUTH_WEB_ORIGIN: web,
         AUTH_SECRET: randomBytes(32).toString("hex"),
+        AUTH_PROXY_SECRET: proxySecret,
         AUTH_ADMIN_ORIGIN: admin,
         AUTH_ADMIN_SECRET: randomBytes(32).toString("hex"),
         SMTP_HOST: "127.0.0.1",
@@ -69,6 +73,7 @@ export default defineConfig({
         AUTH_BASE_URL: api,
         AUTH_WEB_ORIGIN: web,
         MOVARO_AUTH_PREVIEW: "true",
+        AUTH_PROXY_SECRET: proxySecret,
       },
     },
     {
@@ -81,6 +86,7 @@ export default defineConfig({
       env: {
         AUTH_BASE_URL: api,
         AUTH_ADMIN_ORIGIN: admin,
+        AUTH_PROXY_SECRET: proxySecret,
       },
     },
   ],

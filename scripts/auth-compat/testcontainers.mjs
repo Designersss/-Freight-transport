@@ -136,6 +136,7 @@ try {
       env: {
         ...browserEnv,
         AUTH_BROWSER_DATABASE_URL: browserUrl.href,
+        AUTH_BROWSER_PROXY_SECRET: randomBytes(32).toString("hex"),
         AUTH_BROWSER_SMTP_PORT: String(mailpit.getMappedPort(1025)),
         AUTH_BROWSER_MAILPIT_PORT: String(mailpit.getMappedPort(8025)),
       },

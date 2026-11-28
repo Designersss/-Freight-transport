@@ -2,6 +2,9 @@ import { execFileSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
+import { ingressHeaders } from "./ingress-headers";
+
+test.use({ extraHTTPHeaders: ingressHeaders("198.51.100.20") });
 
 test("administrator uses the isolated admin application and can sign out", async ({
   page,
