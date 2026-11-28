@@ -51,6 +51,8 @@ export const telegramBrowserCommandInput = z.discriminatedUnion("action", [
   z.strictObject({ action: z.literal("draft-completion"), draftId }),
 ]);
 
+export type TelegramBrowserCommand = z.infer<typeof telegramBrowserCommandInput>;
+
 // Only a single, well-formed host cookie may serve as a browser proof.
 // No query parameter, Authorization header or JSON body can substitute.
 export function readTelegramBrowserCookie(headers: Headers): string | null {
@@ -179,6 +181,11 @@ export async function handleTelegramBrowser(
     }
     if (!browser) return fail(403);
     const access = { channel: "web" as const, browserCapability: browser };
+    if (command.action.startsWith("draft-")) {
+      const current = await readAuthSession(request, config, auth, headers);
+      if (!(current instanceof Response)) return fail(409);
+      if (current.status !== 401) return current;
+    }
     switch (command.action) {
       case "status":
         return json({
