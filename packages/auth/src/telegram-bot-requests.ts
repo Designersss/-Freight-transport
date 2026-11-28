@@ -21,7 +21,7 @@ type RequestStatus =
   | "consumed"
   | "expired";
 
-function capabilityHash(value: unknown): string | null {
+export function telegramBotCapabilityHash(value: unknown): string | null {
   if (typeof value !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(value))
     return null;
   return createHash("sha256").update(value).digest("hex");
@@ -38,7 +38,7 @@ export async function startTelegramBotRequest(
   browserCapability: string,
   input: StartInput,
 ) {
-  const browserHash = capabilityHash(browserCapability);
+  const browserHash = telegramBotCapabilityHash(browserCapability);
   if (!browserHash) throw new Error("Invalid browser capability");
   const deepLink = randomBytes(32).toString("base64url");
   const deepLinkHash = createHash("sha256").update(deepLink).digest("hex");
@@ -84,7 +84,7 @@ export async function readTelegramBotRequest(
   browserCapability: unknown,
   requestId: string,
 ): Promise<RequestStatus | null> {
-  const browserHash = capabilityHash(browserCapability);
+  const browserHash = telegramBotCapabilityHash(browserCapability);
   if (!browserHash) return null;
   const result = await pool.query<{ status: RequestStatus }>(
     `SELECT CASE
@@ -102,7 +102,7 @@ export async function cancelTelegramBotRequest(
   browserCapability: unknown,
   requestId: string,
 ): Promise<boolean> {
-  const browserHash = capabilityHash(browserCapability);
+  const browserHash = telegramBotCapabilityHash(browserCapability);
   if (!browserHash) return false;
   const result = await pool.query(
     `UPDATE telegram_bot_requests SET status = 'cancelled',
@@ -161,7 +161,7 @@ export async function claimTelegramBotRequest(
   actor: TelegramBotActor,
   names: { firstName?: unknown; lastName?: unknown },
 ) {
-  const hash = capabilityHash(deepLink);
+  const hash = telegramBotCapabilityHash(deepLink);
   if (!hash || !privateActor(actor)) return null;
   const result = await pool.query<ClaimedRequest>(
     `UPDATE telegram_bot_requests SET
