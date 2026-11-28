@@ -79,12 +79,12 @@ export const telegramBotCommandInput = z.discriminatedUnion("action", [
   z.strictObject({ action: z.literal("draft-cancel"), ...draft, revision }),
 ]);
 
-type Command = z.infer<typeof telegramBotCommandInput>;
+export type TelegramBotCommand = z.infer<typeof telegramBotCommandInput>;
 
 // Only the authenticated internal transport may invoke these commands.
 // Actor and contact evidence must come from genuine Telegram updates;
 // the bot must match contacts and callbacks to a live private prompt.
-async function execute(pool: Pool, command: Command): Promise<unknown> {
+async function execute(pool: Pool, command: TelegramBotCommand): Promise<unknown> {
   const access = { channel: "bot" as const, actor: command.actor };
   switch (command.action) {
     case "claim":
