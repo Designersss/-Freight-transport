@@ -5,9 +5,12 @@ import { publicRole } from "./contracts.js";
 
 export type PublicRole = z.infer<typeof publicRole>;
 
-export interface PublicPrincipal {
+export interface PublicSessionIdentity {
   userId: string;
   sessionId: string;
+}
+
+export interface PublicPrincipal extends PublicSessionIdentity {
   role: PublicRole;
 }
 
@@ -15,7 +18,7 @@ export interface PublicPrincipal {
 // Read the role and active session together, never from browser input.
 export async function readPublicPrincipal(
   database: Pool | PoolClient,
-  identity: { userId: string; sessionId: string },
+  identity: PublicSessionIdentity,
   allowTelegram: boolean,
 ): Promise<PublicPrincipal | null> {
   const result = await database.query<{ role: unknown }>(

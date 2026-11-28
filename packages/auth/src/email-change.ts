@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
 import { eligibleAccount } from "./active-account.js";
 import { emailChangeInput, emailChangeTokenInput } from "./contracts.js";
-import type { TelegramSessionIdentity } from "./telegram-registration.js";
+import type { PublicSessionIdentity } from "./public-principal.js";
 
 export const EMAIL_CHANGE_TTL_SECONDS = 15 * 60;
 
@@ -59,7 +59,7 @@ async function transaction(
 
 async function lockOwner(
   client: PoolClient,
-  identity: TelegramSessionIdentity,
+  identity: PublicSessionIdentity,
   fresh: boolean,
 ) {
   // Lock the owner before the profile/session to serialize starts and confirms.
@@ -85,7 +85,7 @@ async function lockOwner(
 // Returned tokens are mail-delivery material, never a public response.
 export async function beginEmailChange(
   pool: Pool,
-  identity: TelegramSessionIdentity,
+  identity: PublicSessionIdentity,
   input: unknown,
 ): Promise<Result> {
   const parsed = emailChangeInput.safeParse(input);

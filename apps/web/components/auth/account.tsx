@@ -14,18 +14,15 @@ import { PasswordSettings } from "./password-settings";
 import { ProfilePhotoSettings } from "./profile-photo-settings";
 import { ProfileSettings } from "./profile-settings";
 import { SessionSettings } from "./session-settings";
-import { SignupWizard } from "./signup-wizard";
 import { TelegramSettings } from "./telegram-settings";
 import { UsernameSettings } from "./username-settings";
 
 export function Account({
   locale,
   telegramLinkError = false,
-  enterCabinet = false,
 }: {
   locale: Locale;
   telegramLinkError?: boolean;
-  enterCabinet?: boolean;
 }) {
   const t = messages[locale].auth;
   const router = useRouter();
@@ -73,14 +70,7 @@ export function Account({
         if (!result.ok) throw new Error("Profile unavailable");
         const saved: unknown = await result.json();
         if (controller.signal.aborted) return;
-        if (saved === null && current.user.email !== null)
-          throw new Error("Email profile missing");
-        const stored = saved === null ? null : publicProfile.parse(saved);
-        if (enterCabinet && stored) {
-          router.replace(cabinetPaths[stored.role], { locale });
-          return;
-        }
-        setProfile(stored);
+        setProfile(publicProfile.parse(saved));
         setProfileLoaded(true);
       } catch {
         if (!controller.signal.aborted) setError(true);
@@ -90,7 +80,7 @@ export function Account({
     }
     void load();
     return () => controller.abort();
-  }, [enterCabinet, locale, router]);
+  }, [locale, router]);
   async function logout() {
     setBusy(true);
     setError(false);
@@ -111,23 +101,10 @@ export function Account({
       setBusy(false);
     }
   }
-  const needsProfile = session && profileLoaded && !profile;
   const telegramOnly = session?.user.email === null;
   const canManagePhoto = Boolean(
     session?.user.email && session.user.emailVerified,
   );
-  if (needsProfile && telegramOnly) {
-    return (
-      <SignupWizard
-        locale={locale}
-        telegram
-        enterCabinet={enterCabinet}
-        onLogout={logout}
-        logoutBusy={busy}
-        logoutError={error}
-      />
-    );
-  }
   return (
     <AuthPanel title={t.accountTitle} description="">
       {loading && <Skeleton className="h-20 w-full" />}

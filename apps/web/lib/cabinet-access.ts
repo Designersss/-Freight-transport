@@ -12,7 +12,7 @@ type Role = Profile["role"];
 
 type CabinetAccess =
   | { kind: "allowed"; profile: Profile }
-  | { kind: "anonymous" | "onboarding" | "denied" | "unavailable" };
+  | { kind: "anonymous" | "denied" | "unavailable" };
 
 async function read(path: string) {
   const incoming = await headers();
@@ -51,7 +51,7 @@ export async function readCabinetAccess(
     const result = await read("profile");
     if (!result.ok) return failure(result.status);
     const raw: unknown = await result.json();
-    if (raw === null) return { kind: required ? "denied" : "onboarding" };
+    if (raw === null) return { kind: "denied" };
     const profile = publicProfile.parse(raw);
     if (required && profile.role !== required) return { kind: "denied" };
     return { kind: "allowed", profile };

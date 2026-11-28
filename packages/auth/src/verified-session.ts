@@ -1,12 +1,10 @@
 import type { Pool } from "pg";
 import { z } from "zod";
-import { canUsePublicSession } from "./active-account.js";
 import { AUTH_BASE_PATH, type EmailAuth } from "./auth.js";
 import { type AuthConfig, telegramEnabled } from "./config.js";
 import { publicSession } from "./contracts.js";
 import { isDeliverableEmail } from "./email.js";
 import { readPublicPrincipal } from "./public-principal.js";
-import { readTelegramAccess } from "./telegram-registration.js";
 
 export const internalSession = publicSession.extend({
   user: publicSession.shape.user.extend({ email: z.string() }),
@@ -14,24 +12,22 @@ export const internalSession = publicSession.extend({
 });
 
 type InternalSession = z.infer<typeof internalSession>;
-type SessionAccess = "email" | "onboarding" | "active" | "denied";
+type SessionAccess = "email" | "active" | "denied";
 
 export async function sessionAccess(
   pool: Pool,
   config: AuthConfig,
   session: InternalSession,
 ): Promise<SessionAccess> {
-  if (
-    session.user.emailVerified &&
-    isDeliverableEmail(session.user.email) &&
-    (await canUsePublicSession(pool, session.user.id))
-  )
+  const principal = await readPublicPrincipal(
+    pool,
+    { userId: session.user.id, sessionId: session.session.id },
+    telegramEnabled(config),
+  );
+  if (!principal) return "denied";
+  if (session.user.emailVerified && isDeliverableEmail(session.user.email))
     return "email";
-  if (!telegramEnabled(config)) return "denied";
-  return readTelegramAccess(pool, {
-    userId: session.user.id,
-    sessionId: session.session.id,
-  });
+  return telegramEnabled(config) ? "active" : "denied";
 }
 
 export function toPublicSession(
@@ -93,29 +89,14 @@ export async function readVerifiedSession(
   auth: EmailAuth,
   headers: Headers,
   pool: Pool,
-  allowOnboarding = false,
 ) {
   const session = await readAuthSession(request, config, auth, headers);
   if (session instanceof Response) return session;
   const access = await sessionAccess(pool, config, session);
-  if (access === "denied" || (access === "onboarding" && !allowOnboarding))
+  if (access === "denied")
     return Response.json(
       { code: "AUTH_REQUEST_FAILED" },
       { status: 403, headers },
     );
-  // Onboarding handlers explicitly opt in; all other operations require
-  // a complete active profile and a live session at the database boundary.
-  if (!allowOnboarding) {
-    const principal = await readPublicPrincipal(
-      pool,
-      { userId: session.user.id, sessionId: session.session.id },
-      telegramEnabled(config),
-    );
-    if (!principal)
-      return Response.json(
-        { code: "AUTH_REQUEST_FAILED" },
-        { status: 403, headers },
-      );
-  }
   return { ...session, access };
 }

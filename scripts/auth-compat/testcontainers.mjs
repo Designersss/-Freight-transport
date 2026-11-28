@@ -74,9 +74,6 @@ try {
         new URL("./username-session-http.test.mjs", import.meta.url),
       ),
       fileURLToPath(
-        new URL("./telegram-bot-session.test.mjs", import.meta.url),
-      ),
-      fileURLToPath(
         new URL("./telegram-bot-requests.test.mjs", import.meta.url),
       ),
       fileURLToPath(new URL("./telegram-bot-link.test.mjs", import.meta.url)),
@@ -103,9 +100,6 @@ try {
       ),
       fileURLToPath(
         new URL("./registration-email-proof.test.mjs", import.meta.url),
-      ),
-      fileURLToPath(
-        new URL("./telegram-registration.test.mjs", import.meta.url),
       ),
       fileURLToPath(
         new URL("./profile-photo-record.test.mjs", import.meta.url),

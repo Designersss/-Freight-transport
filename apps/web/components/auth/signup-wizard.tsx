@@ -8,7 +8,6 @@ import {
   registrationEmailComplete,
   registrationEmailRead,
   registrationEmailStart,
-  registrationInput,
   usernameInput,
 } from "@freight/auth/contracts";
 import { type Locale, messages } from "@freight/i18n";
@@ -61,7 +60,6 @@ const registrationOrder: Step[] = [
   "confirmation",
   ...emailSteps,
 ];
-const telegramSteps: Step[] = ["role", "profile", "username"];
 const suggestionResponse = z.object({ username: usernameInput });
 const availabilityResponse = z.object({ available: z.boolean() });
 const successResponse = z.object({ success: z.literal(true) });
@@ -81,22 +79,12 @@ function post(path: string, data: unknown, signal?: AbortSignal) {
 
 export function SignupWizard({
   locale,
-  telegram = false,
-  enterCabinet = false,
-  onLogout,
-  logoutBusy = false,
-  logoutError = false,
 }: {
   locale: Locale;
-  telegram?: boolean;
-  enterCabinet?: boolean;
-  onLogout?: () => void;
-  logoutBusy?: boolean;
-  logoutError?: boolean;
 }) {
   const t = messages[locale].auth;
   const router = useRouter();
-  const [step, setStep] = useState<Step>(telegram ? "role" : "method");
+  const [step, setStep] = useState<Step>("method");
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
   const [telegramPending, setTelegramPending] = useState(false);
   const [confirmationBusy, setConfirmationBusy] = useState(false);
@@ -104,7 +92,7 @@ export function SignupWizard({
   const proof = useRef("");
   const initialized = useRef(false);
   const confirmed = useRef(false);
-  const steps = telegram ? telegramSteps : emailSteps;
+  const steps = emailSteps;
   const [failure, setFailure] = useState("");
   const [availability, setAvailability] = useState<Availability | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -131,8 +119,7 @@ export function SignupWizard({
     profile.formState.isSubmitting ||
     names.formState.isSubmitting ||
     telegramPending ||
-    confirmationBusy ||
-    logoutBusy;
+    confirmationBusy;
   const status =
     canonical && availability?.username === canonical
       ? availability.status
@@ -162,7 +149,7 @@ export function SignupWizard({
   }[step];
 
   useEffect(() => {
-    if (telegram || initialized.current) return;
+    if (initialized.current) return;
     initialized.current = true;
     const hash = window.location.hash;
     if (!hash) return;
@@ -181,10 +168,9 @@ export function SignupWizard({
     } else {
       setFailure(t.invalidLink);
     }
-  }, [telegram, t.invalidLink]);
+  }, [t.invalidLink]);
 
   useEffect(() => {
-    if (telegram) return;
     // A mail link can navigate the already open signup page by fragment only.
     // Reload for a new proof so an earlier password/profile cannot carry over.
     function reopenProof() {
@@ -192,7 +178,7 @@ export function SignupWizard({
     }
     window.addEventListener("hashchange", reopenProof);
     return () => window.removeEventListener("hashchange", reopenProof);
-  }, [telegram]);
+  }, []);
 
   useEffect(() => {
     const element = heading.current;
@@ -390,20 +376,16 @@ export function SignupWizard({
       return;
     }
     const registration = { profile: details, username: name.data };
-    const account = telegram
-      ? null
-      : validateCredentials(credentials.getValues());
-    if (!telegram && !account) {
+    const account = validateCredentials(credentials.getValues());
+    if (!account) {
       go("credentials");
       return;
     }
-    const payload = telegram
-      ? registrationInput.safeParse(registration)
-      : registrationEmailComplete.safeParse({
-          token: confirmed.current ? proof.current : "",
-          password: account?.password,
-          registration,
-        });
+    const payload = registrationEmailComplete.safeParse({
+      token: confirmed.current ? proof.current : "",
+      password: account.password,
+      registration,
+    });
     if (!payload.success) {
       setFailure(t.error);
       return;
@@ -411,7 +393,7 @@ export function SignupWizard({
     inFlight.current = true;
     try {
       const response = await post(
-        telegram ? "telegram/registration" : "registration/email/complete",
+        "registration/email/complete",
         payload.data,
       );
       const data: unknown = await response.json().catch(() => null);
@@ -430,11 +412,7 @@ export function SignupWizard({
         return;
       }
       if (!response.ok || !successResponse.safeParse(data).success) {
-        if (telegram && response.status === 401) {
-          router.replace("/login", { locale });
-          return;
-        }
-        if (!telegram && (response.status === 400 || response.status === 409)) {
+        if (response.status === 400 || response.status === 409) {
           restartEmail();
           setFailure(
             response.status === 409 ? t.registrationExisting : t.invalidLink,
@@ -448,11 +426,6 @@ export function SignupWizard({
               ? t.unavailable
               : t.error,
         );
-        return;
-      }
-      if (telegram) {
-        if (enterCabinet) router.replace("/cabinet", { locale });
-        else window.location.reload();
         return;
       }
       credentials.resetField("password");
@@ -472,7 +445,7 @@ export function SignupWizard({
   function back() {
     if (step === "username") go("profile");
     else if (step === "profile") go("role");
-    else if (step === "role" && !telegram) go("credentials");
+    else if (step === "role") go("credentials");
     else if (step === "confirmation" || step === "credentials") restartEmail();
     else if (step === "email") go("method");
   }
@@ -705,11 +678,7 @@ export function SignupWizard({
               <FieldError id="username-error">{usernameError}</FieldError>
             </Field>
             <Button type="submit" size="lg" disabled={busy}>
-              {busy
-                ? t.submitting
-                : telegram
-                  ? t.completeProfile
-                  : t.signupAction}
+              {busy ? t.submitting : t.signupAction}
             </Button>
           </form>
         )}
@@ -719,7 +688,7 @@ export function SignupWizard({
           <AlertDescription>{failure}</AlertDescription>
         </Alert>
       )}
-      {(telegram ? stepIndex > 1 : step !== "method") && (
+      {step !== "method" && (
         <Button
           className="mt-3 w-full"
           variant="ghost"
@@ -729,18 +698,6 @@ export function SignupWizard({
           {t.back}
         </Button>
       )}
-      {telegram ? (
-        <div className="mt-5 flex flex-col gap-2">
-          {logoutError && (
-            <Alert variant="destructive">
-              <AlertDescription>{t.unavailable}</AlertDescription>
-            </Alert>
-          )}
-          <Button variant="outline" disabled={busy} onClick={onLogout}>
-            {t.logout}
-          </Button>
-        </div>
-      ) : (
         <div className="mt-5 text-center">
           <Link
             className="font-semibold text-primary hover:underline"
@@ -749,7 +706,6 @@ export function SignupWizard({
             {t.backLogin}
           </Link>
         </div>
-      )}
     </AuthPanel>
   );
 }

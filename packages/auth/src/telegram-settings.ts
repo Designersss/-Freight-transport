@@ -1,6 +1,6 @@
 import type { Pool } from "pg";
 import { eligibleAccount } from "./active-account.js";
-import type { TelegramSessionIdentity } from "./telegram-registration.js";
+import type { PublicSessionIdentity } from "./public-principal.js";
 
 export const TELEGRAM_SETTINGS_FRESH_SECONDS = 10 * 60;
 
@@ -25,13 +25,13 @@ const settingsQuery = `SELECT
   u."telegramLinkRevision" AS revision
   ${eligibleAccount}`;
 
-function settingsValues(identity: TelegramSessionIdentity) {
+function settingsValues(identity: PublicSessionIdentity) {
   return [identity.userId, identity.sessionId, TELEGRAM_SETTINGS_FRESH_SECONDS];
 }
 
 export async function readTelegramSettings(
   pool: Pool,
-  identity: TelegramSessionIdentity,
+  identity: PublicSessionIdentity,
 ) {
   const result = await pool.query<SettingsRow>(
     settingsQuery,

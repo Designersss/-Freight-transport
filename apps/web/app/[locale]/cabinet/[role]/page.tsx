@@ -23,7 +23,7 @@ export default async function Page({
   return (
     <CabinetFailure
       locale={locale}
-      denied={access.kind === "denied" || access.kind === "onboarding"}
+      denied={access.kind === "denied"}
     />
   );
 }

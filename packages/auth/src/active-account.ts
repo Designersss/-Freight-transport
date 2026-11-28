@@ -1,6 +1,6 @@
 import type { Pool } from "pg";
 
-// Use the same identity predicate in session issuance, onboarding and guards.
+// Use the same identity predicate in session issuance and guards.
 // A reserved address is never treated as proof of email ownership.
 export const telegramAccountCondition = `NOT u."emailVerified"
   AND EXISTS (
@@ -45,8 +45,7 @@ export async function canUsePublicSession(
        AND (
          (${emailAccountCondition})
          OR ($2::boolean AND ${telegramAccountCondition}
-           AND ((p.user_id IS NULL AND u.username IS NULL)
-             OR (p.user_id IS NOT NULL AND u.username IS NOT NULL)))
+           AND p.user_id IS NOT NULL AND u.username IS NOT NULL)
        )`,
     [userId, allowTelegram],
   );

@@ -34,12 +34,8 @@ export async function handleProfile(
       auth,
       headers,
       pool,
-      true,
     );
     if (session instanceof Response) return session;
-    // Only the verified Telegram identity has an incomplete-profile state.
-    if (session.access === "onboarding")
-      return Response.json(null, { headers });
 
     const result = await pool.query(
       `SELECT ${columns} ${eligibleAccount}

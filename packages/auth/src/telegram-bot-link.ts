@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Pool } from "pg";
 import { telegramBotCapabilityHash } from "./telegram-bot-requests.js";
-import type { TelegramSessionIdentity } from "./telegram-registration.js";
+import type { PublicSessionIdentity } from "./public-principal.js";
 
 export type TelegramBotLinkResult = "linked" | "denied";
 
@@ -33,7 +33,7 @@ export async function finishTelegramBotLink(
   pool: Pool,
   browserCapability: unknown,
   requestId: string,
-  identity: TelegramSessionIdentity,
+  identity: PublicSessionIdentity,
 ): Promise<TelegramBotLinkResult> {
   const hash = telegramBotCapabilityHash(browserCapability);
   if (!hash) return "denied";

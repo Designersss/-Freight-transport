@@ -38,7 +38,6 @@ describe("Telegram bot internal authentication", () => {
     "AUTH_SECRET",
     "AUTH_ADMIN_SECRET",
     "AUTH_PROXY_SECRET",
-    "AUTH_TELEGRAM_CLIENT_SECRET",
     "TELEGRAM_BOT_TOKEN",
   ])("rejects secret reuse from %s", (key) => {
     expect(() =>
@@ -70,7 +69,7 @@ describe("Telegram bot internal authentication", () => {
   it.each([
     { raw: [] },
     { raw: ["Authorization", `Bearer ${"b".repeat(64)}`] },
-    { raw: [...headers, "authorization", headers[1] as string] },
+    { raw: [...headers, "authorization", `Bearer ${secret}`] },
     { raw: ["Authorization"] },
     { raw: ["Authorization", `Bearer ${secret},Bearer ${secret}`] },
   ])("rejects missing, invalid or ambiguous credentials", ({ raw }) => {
