@@ -2,7 +2,9 @@ import type { SchemaObject } from "@nestjs/swagger";
 import { z } from "zod";
 import type { JSONSchema } from "zod/v4/core";
 
-function hasOpenApiType(schema: { type?: unknown }): schema is { type?: string } {
+function hasOpenApiType(schema: {
+  type?: unknown;
+}): schema is { type?: string } {
   return (
     schema.type === undefined ||
     (typeof schema.type === "string" && schema.type !== "null")
