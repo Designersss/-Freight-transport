@@ -56,6 +56,10 @@ export const telegramDraftResponse = z.strictObject({
   draft: telegramDraftSchema.nullable(),
 });
 
+export const telegramDraftStateResponse = telegramDraftResponse.extend({
+  completed: z.boolean(),
+});
+
 export async function telegramBrowserRequest<T>(
   command: TelegramBrowserCommand,
   schema: z.ZodType<T>,

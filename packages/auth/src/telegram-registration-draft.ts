@@ -137,6 +137,16 @@ export async function beginTelegramRegistrationInBot(
              AND a."accountId" = 'bot:' || r.telegram_user_id
          )
        FOR UPDATE OF r
+     ), resumed AS (
+       UPDATE telegram_registration_drafts d SET channel = 'bot',
+         revision = d.revision + 1,
+         expires_at = LEAST(d.created_at + interval '2 hours',
+           clock_timestamp() + interval '30 minutes')
+       FROM claimed_request r
+       WHERE d.telegram_user_id = r.telegram_user_id
+         AND d.phone_number = r.phone_number
+         AND d.expires_at > clock_timestamp()
+       RETURNING d.id
      ), inserted AS (
        INSERT INTO telegram_registration_drafts (
          id, telegram_user_id, locale, channel, phone_number,
@@ -145,12 +155,16 @@ export async function beginTelegramRegistrationInBot(
        SELECT id, telegram_user_id, locale, 'bot', phone_number,
          first_name, last_name, statement_timestamp(),
          statement_timestamp() + interval '30 minutes'
-       FROM claimed_request ON CONFLICT DO NOTHING RETURNING id
+       FROM claimed_request
+       WHERE NOT EXISTS (SELECT 1 FROM resumed)
+       ON CONFLICT DO NOTHING RETURNING id
+     ), selected AS (
+       SELECT id FROM resumed UNION ALL SELECT id FROM inserted
      )
      UPDATE telegram_bot_requests r SET status = 'consumed',
        return_hash = NULL, telegram_user_id = NULL, first_name = NULL,
        last_name = NULL, phone_number = NULL
-     FROM inserted i WHERE r.id = i.id RETURNING r.id`,
+     FROM selected s WHERE r.id::text = $1 RETURNING s.id`,
     [requestId, actor.userId],
   );
   return result.rows[0]?.id ?? null;

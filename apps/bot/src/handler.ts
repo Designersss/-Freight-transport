@@ -375,6 +375,16 @@ export function createBotHandler(
     );
   }
 
+  async function sendWebRegistration(actor: Actor, locale: Locale) {
+    const m = messages[locale];
+    await telegram.sendMessage(actor.chatId, m.webResume, {
+      inline_keyboard: [[{
+        text: m.website,
+        url: new URL(`/${locale}/signup`, config.AUTH_WEB_ORIGIN).href,
+      }]],
+    });
+  }
+
   async function welcome(actor: Actor, locale: Locale) {
     const m = messages[locale];
     const state = await api.send({ action: "account-state", actor }, accountStateResult);
@@ -435,8 +445,10 @@ export function createBotHandler(
             draftIdResult,
           );
           const draft = id ? await read(actor, id) : await find(actor);
-          if (draft) await showDraft(actor, draft);
-          else await say(actor, m.unavailable);
+          if (draft) {
+            await sendWebRegistration(actor, draft.locale);
+            await showDraft(actor, draft);
+          } else await say(actor, m.unavailable);
         },
       });
     }
@@ -562,9 +574,13 @@ export function createBotHandler(
     const locale: Locale = user.language_code?.startsWith("ru") ? "ru" : "en";
     const text = message.text;
     const start = /^\/start(?: ([A-Za-z0-9_-]{43}))?$/.exec(text ?? "");
-    if (start || text === "/register" || text === "/cancel") {
+    if (start || text === "/register" || text === "/cancel" || text === "/web") {
       prompts.delete(actor.userId);
-      if (text === "/cancel") {
+      if (text === "/web") {
+        const draft = await find(actor);
+        if (draft) await sendWebRegistration(actor, draft.locale);
+        else await resume(actor, locale);
+      } else if (text === "/cancel") {
         const draft = await find(actor);
         if (draft?.channel === "bot") await cancel(actor, draft);
         else await say(actor, messages[locale].unavailable);

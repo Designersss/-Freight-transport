@@ -20,6 +20,7 @@ import {
   completeTelegramRegistrationDraft,
   findTelegramRegistrationDraft,
   readTelegramRegistrationCompletion,
+  readTelegramRegistrationDraft,
   resumeTelegramRegistrationInBrowser,
   telegramDraftMutationInput,
   updateTelegramRegistrationDraft,
@@ -40,6 +41,7 @@ export const telegramBrowserCommandInput = z.discriminatedUnion("action", [
   z.strictObject({ action: z.literal("confirm"), requestId, proof: capability }),
   z.strictObject({ action: z.literal("finish"), requestId }),
   z.strictObject({ action: z.literal("draft-find") }),
+  z.strictObject({ action: z.literal("draft-state"), draftId }),
   z.strictObject({
     action: z.literal("draft-update"),
     draftId,
@@ -129,7 +131,7 @@ export async function handleTelegramBrowser(
       config.AUTH_SECRET,
       command.action === "start"
         ? "start"
-        : ["status", "draft-find", "draft-completion"].includes(command.action)
+        : ["status", "draft-find", "draft-state", "draft-completion"].includes(command.action)
           ? "poll"
           : "write",
       request.headers.get("x-movaro-client-ip"),
@@ -271,6 +273,11 @@ export async function handleTelegramBrowser(
       }
       case "draft-find":
         return json({ draft: await findTelegramRegistrationDraft(pool, access) });
+      case "draft-state": {
+        const draft = await readTelegramRegistrationDraft(pool, command.draftId, access);
+        const completed = !draft && await readTelegramRegistrationCompletion(pool, command.draftId, browser);
+        return json({ draft, completed });
+      }
       case "draft-update":
         return json({
           draft: await updateTelegramRegistrationDraft(

@@ -20,6 +20,7 @@ import { z } from "zod";
 import {
   telegramBrowserRequest,
   telegramDraftResponse,
+  telegramDraftStateResponse,
   type telegramDraftSchema,
 } from "../../lib/telegram-browser";
 import { AuthPanel } from "./auth-panel";
@@ -55,20 +56,49 @@ export function TelegramRegistration({ locale }: { locale: Locale }) {
   const [draftFailure, setDraftFailure] = useState("");
   const [state, setState] = useState<"loading" | "ready" | "error" | "created">("loading");
 
+  const knownDraftId = useRef<string | null>(null);
+  const mutating = useRef(false);
+  const [busy, setBusy] = useState(false);
+
   const load = useCallback(async (signal?: AbortSignal) => {
     try {
-      const result = await telegramBrowserRequest(
-        { action: "draft-find" },
-        telegramDraftResponse,
-        signal,
-      );
-      if (!signal?.aborted) {
-        setDraft(result.draft);
-        setDraftFailure("");
-        setState("ready");
+      if (mutating.current) return;
+      const id = knownDraftId.current;
+      const result = id
+        ? await telegramBrowserRequest(
+            { action: "draft-state", draftId: id },
+            telegramDraftStateResponse,
+            signal,
+          )
+        : {
+            ...(await telegramBrowserRequest(
+              { action: "draft-find" },
+              telegramDraftResponse,
+              signal,
+            )),
+            completed: false,
+          };
+      if (signal?.aborted || mutating.current) return;
+      if (result.completed) {
+        setDraft(null);
+        setState("created");
+        return;
       }
+      if (result.draft) {
+        knownDraftId.current = result.draft.id;
+        setDraft((current) =>
+          current?.id === result.draft?.id &&
+          current.revision === result.draft.revision
+            ? current
+            : result.draft,
+        );
+      } else {
+        setDraft(null);
+      }
+      setState("ready");
     } catch {
-      if (!signal?.aborted) setState("error");
+      if (!signal?.aborted && !mutating.current && !knownDraftId.current)
+        setState("error");
     }
   }, []);
 
@@ -78,6 +108,24 @@ export function TelegramRegistration({ locale }: { locale: Locale }) {
     return () => controller.abort();
   }, [load]);
 
+  useEffect(() => {
+    if (state !== "ready" || !draft || busy) return;
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout>;
+    async function check() {
+      if (controller.signal.aborted) return;
+      if (document.visibilityState === "visible")
+        await load(controller.signal);
+      if (!controller.signal.aborted)
+        timer = setTimeout(() => void check(), 5000);
+    }
+    timer = setTimeout(() => void check(), 5000);
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [state, draft, busy, load]);
+
   if (state === "ready" && draft)
     return (
       <TelegramDraftForm
@@ -85,9 +133,14 @@ export function TelegramRegistration({ locale }: { locale: Locale }) {
         locale={locale}
         draft={draft}
         initialFailure={draftFailure}
+        onBusyChange={(value) => {
+          mutating.current = value;
+          setBusy(value);
+        }}
         onChanged={(next, failure = "") => {
           setDraft(next);
           setDraftFailure(failure);
+          if (next) knownDraftId.current = next.id;
         }}
         onRefresh={() => void load()}
         onCreated={() => {
@@ -128,6 +181,7 @@ function TelegramDraftForm({
   locale,
   draft,
   initialFailure,
+  onBusyChange,
   onChanged,
   onRefresh,
   onCreated,
@@ -135,6 +189,7 @@ function TelegramDraftForm({
   locale: Locale;
   draft: Draft;
   initialFailure: string;
+  onBusyChange: (busy: boolean) => void;
   onChanged: (draft: Draft | null, failure?: string) => void;
   onRefresh: () => void;
   onCreated: () => void;
@@ -196,6 +251,7 @@ function TelegramDraftForm({
   async function act(run: () => Promise<void>) {
     if (inFlight.current) return;
     inFlight.current = true;
+    onBusyChange(true);
     setBusy(true);
     setFailure("");
     try {
@@ -204,6 +260,7 @@ function TelegramDraftForm({
       setFailure(t.error);
     } finally {
       inFlight.current = false;
+      onBusyChange(false);
       setBusy(false);
     }
   }
