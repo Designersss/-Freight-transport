@@ -30,7 +30,7 @@ export async function createApp(
   }
   if (
     botSecret !== undefined &&
-    (!auth ||
+    (!auth?.AUTH_TELEGRAM_BOT_USERNAME ||
       config.NODE_ENV === "production" ||
       config.API_HOST !== "127.0.0.1")
   ) {
