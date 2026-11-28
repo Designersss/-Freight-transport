@@ -14,5 +14,11 @@ if (status.trim()) {
     "OpenAPI or generated client is outdated. Run pnpm api:generate and commit the result.",
   );
   console.error(status);
+  console.error(
+    execFileSync("git", ["diff", "--no-ext-diff", "--", ...paths], {
+      encoding: "utf8",
+      maxBuffer: 8 * 1024 * 1024,
+    }),
+  );
   process.exitCode = 1;
 }

@@ -47,9 +47,22 @@ describe("Auth OpenAPI contract", () => {
     expect(paths["/api/v1/auth/profile/photo"]?.post?.tags).toEqual([
       "AuthBrowser",
     ]);
-    expect(
-      paths["/api/v1/auth/telegram/callback"]?.get?.responses[303],
-    ).toBeDefined();
+    for (const path of [
+      "/telegram/start",
+      "/telegram/callback",
+      "/telegram/registration",
+      "/telegram-bot/finish-login",
+    ]) {
+      expect(paths[`/api/v1/auth${path}`]).toBeUndefined();
+    }
+    const browser = paths["/api/v1/auth/telegram-bot/browser"]?.post;
+    expect(browser?.tags).toEqual(["AuthBrowser"]);
+    expect(JSON.stringify(browser?.requestBody)).toContain("draft-state");
+    expect(JSON.stringify(browser?.requestBody)).toContain("confirm");
+    expect(JSON.stringify(browser?.requestBody)).not.toContain("browserHash");
+    expect(paths["/api/v1/auth/profile"]?.get?.responses[200]).not.toMatchObject({
+      content: { "application/json": { schema: { nullable: true } } },
+    });
     expect(
       paths["/api/v1/auth/get-session"]?.get?.responses[200],
     ).toMatchObject({

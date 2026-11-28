@@ -10,6 +10,7 @@ import {
   publicActiveSessions,
   publicCabinet,
   publicProfile,
+  publicRole,
   publicSession,
   publicTelegramSettings,
   publicUsernameSettings,
@@ -17,14 +18,12 @@ import {
   registrationEmailComplete,
   registrationEmailRead,
   registrationEmailStart,
-  registrationInput,
   sessionAction,
-  telegramStartInput,
-  telegramStartResponse,
   usernameChangeInput,
   usernameInput,
   usernameRequest,
 } from "@freight/auth/contracts";
+import { telegramBrowserCommandInput } from "@freight/auth/telegram-browser-http";
 import type {
   OpenAPIObject,
   OperationObject,
@@ -188,7 +187,7 @@ export function addAuthPaths(document: OpenAPIObject): void {
     {
       name: "AuthBrowser",
       description:
-        "Binary transfers and browser redirects. Use the existing Web bridge; these operations are documented but excluded from the generated JSON client.",
+        "Binary transfers, browser redirects and browser-bound Telegram commands. Use the existing Web bridge; these operations are documented but excluded from the generated JSON client.",
     },
   );
   const prefix = "/api/v1/auth";
@@ -296,10 +295,10 @@ export function addAuthPaths(document: OpenAPIObject): void {
     "/profile",
     "get",
     operation("getAuthProfile", "Read public profile", {
-      output: publicProfile.nullable(),
+      output: publicProfile,
       access: "public",
       statuses: [400, 401, 403, 500],
-      description: "Null only for incomplete Telegram registration.",
+      description: "Complete active public profile required.",
     }),
   );
   add(
@@ -436,40 +435,68 @@ export function addAuthPaths(document: OpenAPIObject): void {
       statuses: [400, 403],
     }),
   );
+  const draft = z.strictObject({
+    id: z.uuid(),
+    channel: z.enum(["web", "bot"]),
+    locale: z.enum(["ru", "en"]),
+    revision: z.number().int().nonnegative(),
+    expiresAt: z.iso.datetime(),
+    firstName: z.string().nullable(),
+    lastName: z.string().nullable(),
+    role: publicRole.nullable(),
+    birthDate: z.string().nullable(),
+    companyName: z.string().nullable(),
+    username: z.string().nullable(),
+  }).nullable();
   add(
-    "/telegram/start",
+    "/telegram-bot/browser",
     "post",
-    operation("startTelegram", "Start Telegram authorization", {
-      body: telegramStartInput,
-      output: telegramStartResponse,
-      statuses: [400, 401, 403, 404, 409, 429, 503],
+    operation("telegramBrowserCommand", "Telegram bot browser command", {
+      body: telegramBrowserCommandInput,
+      browser: true,
+      output: z.union([
+        z.strictObject({
+          requestId: z.uuid(),
+          url: z.string().max(512),
+          displayCode: z.string().regex(/^[0-9]{6}$/),
+          expiresAt: z.iso.datetime(),
+        }),
+        z.strictObject({
+          status: z.enum([
+            "pending",
+            "claimed",
+            "approved",
+            "rejected",
+            "cancelled",
+            "consumed",
+            "expired",
+          ]).nullable(),
+        }),
+        z.strictObject({ success: z.boolean() }),
+        z.strictObject({ outcome: z.literal("logged-in") }),
+        z.strictObject({ outcome: z.literal("linked") }),
+        z.strictObject({
+          outcome: z.literal("registration"),
+          draftId: z.uuid(),
+        }),
+        z.strictObject({ draft }),
+        z.strictObject({ draft, completed: z.boolean() }),
+        z.strictObject({ username: usernameInput.nullable() }),
+        z.strictObject({
+          outcome: z.enum([
+            "created",
+            "invalid",
+            "denied",
+            "username-taken",
+            "identity-taken",
+          ]),
+        }),
+        z.strictObject({ completed: z.boolean() }),
+      ]),
+      statuses: [400, 401, 403, 404, 405, 409, 429, 503],
       description:
-        "Link intent requires a fresh credential session. Navigate to the returned provider URL.",
+        "Start issues a browser-bound request. Subsequent commands require the matching HttpOnly browser cookie; confirm additionally requires the one-time return proof. Link requires a fresh credential session. Registration completion does not issue a session.",
     }),
-  );
-  add(
-    "/telegram/callback",
-    "get",
-    redirect("telegramCallback", "Telegram provider callback", 303, [
-      parameter("state", "query", true),
-      parameter("code", "query", false),
-      parameter("iss", "query", false),
-      parameter("error", "query", false),
-      parameter("error_description", "query", false),
-    ]),
-  );
-  add(
-    "/telegram/registration",
-    "post",
-    operation(
-      "completeTelegramRegistration",
-      "Complete Telegram registration",
-      {
-        body: registrationInput,
-        access: "public",
-        statuses: [400, 401, 403, 404, 409, 503],
-      },
-    ),
   );
   add(
     "/telegram/settings",
