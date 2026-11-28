@@ -6,8 +6,8 @@ import { finishTelegramBotLink } from "../../packages/auth/dist/telegram-bot-lin
 import {
   cancelTelegramBotRequest,
   claimTelegramBotRequest,
-  createTelegramBrowserCapability,
   confirmTelegramBotApproval,
+  createTelegramBrowserCapability,
   prepareTelegramBotApproval,
   readTelegramBotRequest,
   startTelegramBotRequest,
