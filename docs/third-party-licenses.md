@@ -103,9 +103,15 @@ https://github.com/nodemailer/nodemailer/blob/v10.6.1/LICENSE
 - @types/node-fetch 2.6.13 — MIT, только для разработки и сборки.
   Манифест и контрольная сумма сверены с npm registry:
   https://registry.npmjs.org/@types%2fnode-fetch/2.6.13.
-  Его граф из 18 новых записей lockfile (включая form-data 4.0.5)
+  Его граф из 18 новых записей lockfile (включая form-data 4.0.6)
   сверён по точным версиям и опубликованным SHA-512; метаданные всех
   18 пакетов указывают MIT. Это не проверка содержимого tarball.
+  form-data обновлён с 4.0.5 до 4.0.6 из-за CVE-2026-12143
+  (High, GHSA-hmw2-7cc7-3qxx):
+  https://github.com/advisories/GHSA-hmw2-7cc7-3qxx.
+  Манифест 4.0.6 проверен: https://registry.npmjs.org/form-data/4.0.6.
+  Существующие разрешённые версии пяти зависимостей удовлетворяют новым
+  диапазонам; дополнительных пакетов и исключений политики нет.
 - Сохранить применимые LICENSE и copyright в поставке; фактические
   frozen install, pnpm audit и licenses:check на актуальном head
   остаются обязательными. Политика допуска не изменялась.
