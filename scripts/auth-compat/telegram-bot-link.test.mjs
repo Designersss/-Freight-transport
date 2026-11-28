@@ -65,7 +65,11 @@ test("Bot binding consumes its grant atomically without creating a session", asy
       link: { ...identity, revision },
     });
     assert.ok(await claimTelegramBotRequest(pool, request.deepLink, actor, {}));
-    const returnProof = await prepareTelegramBotApproval(pool, request.id, actor);
+    const returnProof = await prepareTelegramBotApproval(
+      pool,
+      request.id,
+      actor,
+    );
     assert.ok(returnProof);
     assert.equal(
       await confirmTelegramBotApproval(pool, browser, request.id, returnProof),
