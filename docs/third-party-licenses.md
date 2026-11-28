@@ -92,3 +92,20 @@ Nodemailer 10.6.1 — MIT-0, разрешительная лицензия,
 
 Источник:
 https://github.com/nodemailer/nodemailer/blob/v10.6.1/LICENSE
+
+## RD-04 — Telegram bot и декларации типов
+
+- grammY 1.45.1 и abort-controller 3.0.0 — MIT. Проверены исходные
+  манифесты и тексты лицензий: https://github.com/grammyjs/grammY/blob/v1.45.1/LICENSE
+  и https://github.com/mysticatea/abort-controller/blob/v3.0.0/LICENSE.
+  abort-controller уже используется grammY; прямая зависимость бота
+  фиксирует эту же версию для адаптера нативного AbortSignal.
+- @types/node-fetch 2.6.13 — MIT, только для разработки и сборки.
+  Манифест и контрольная сумма сверены с npm registry:
+  https://registry.npmjs.org/@types%2fnode-fetch/2.6.13.
+  Его граф из 18 новых записей lockfile (включая form-data 4.0.5)
+  сверён по точным версиям и опубликованным SHA-512; метаданные всех
+  18 пакетов указывают MIT. Это не проверка содержимого tarball.
+- Сохранить применимые LICENSE и copyright в поставке; фактические
+  frozen install, pnpm audit и licenses:check на актуальном head
+  остаются обязательными. Политика допуска не изменялась.

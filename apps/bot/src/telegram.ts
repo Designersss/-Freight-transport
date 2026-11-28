@@ -1,5 +1,6 @@
 import { Api, GrammyError } from "grammy";
 import { z } from "zod";
+import { withTelegramSignal } from "./telegram-signal.js";
 
 const id = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
 const user = z.object({
@@ -134,14 +135,18 @@ export function createTelegramTransport(token: string): TelegramTransport {
   return {
     async getUpdates(offset, signal) {
       try {
-        const updates = await api.getUpdates(
-          {
-            ...(offset === undefined ? {} : { offset }),
-            timeout: 25,
-            limit: 50,
-            allowed_updates: ["message", "callback_query"],
-          },
+        const updates = await withTelegramSignal(
           AbortSignal.any([signal, AbortSignal.timeout(35000)]),
+          (requestSignal) =>
+            api.getUpdates(
+              {
+                ...(offset === undefined ? {} : { offset }),
+                timeout: 25,
+                limit: 50,
+                allowed_updates: ["message", "callback_query"],
+              },
+              requestSignal,
+            ),
         );
         return z.array(update).parse(updates);
       } catch (error) {
@@ -157,15 +162,19 @@ export function createTelegramTransport(token: string): TelegramTransport {
     },
     async sendMessage(chatId, text, markup) {
       try {
-        const sent = await api.sendMessage(
-          chatId,
-          text,
-          {
-            ...(markup === undefined ? {} : { reply_markup: markup }),
-            link_preview_options: { is_disabled: true },
-            protect_content: true,
-          },
+        const sent = await withTelegramSignal(
           AbortSignal.timeout(10000),
+          (requestSignal) =>
+            api.sendMessage(
+              chatId,
+              text,
+              {
+                ...(markup === undefined ? {} : { reply_markup: markup }),
+                link_preview_options: { is_disabled: true },
+                protect_content: true,
+              },
+              requestSignal,
+            ),
         );
         return id.parse(sent.message_id);
       } catch {
@@ -174,7 +183,9 @@ export function createTelegramTransport(token: string): TelegramTransport {
     },
     async answerCallback(id) {
       try {
-        await api.answerCallbackQuery(id, {}, AbortSignal.timeout(5000));
+        await withTelegramSignal(AbortSignal.timeout(5000), (requestSignal) =>
+          api.answerCallbackQuery(id, {}, requestSignal),
+        );
       } catch {
         throw new Error("Telegram transport unavailable");
       }
