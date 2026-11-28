@@ -3,6 +3,7 @@ import {
   parseRuntimeAuthConfig,
   parseStorageConfig,
 } from "@freight/auth/runtime";
+import { parseTelegramBotInternalSecret } from "./auth/telegram-bot-internal-auth.js";
 import { parseApiConfig } from "./config/api-config.js";
 import { createApp } from "./create-app.js";
 
@@ -13,6 +14,7 @@ async function bootstrap(): Promise<void> {
     config,
     auth,
     auth ? parseStorageConfig(process.env) : undefined,
+    parseTelegramBotInternalSecret(process.env),
   );
   app.enableShutdownHooks();
   await app.listen(config.API_PORT, config.API_HOST);
