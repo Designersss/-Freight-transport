@@ -17,7 +17,13 @@ export default async function Page({
       mode="login"
       locale={locale}
       invalid={Boolean(query.error)}
-      completed={query.verified === "done"}
+      completed={
+        query.reset === "done"
+          ? "reset"
+          : query.verified === "done"
+            ? "registration"
+            : false
+      }
       telegramError={query.telegram === "error"}
     />
   );

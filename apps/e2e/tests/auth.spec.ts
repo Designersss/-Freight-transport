@@ -74,6 +74,84 @@ test("registration, recovery and invalid reset link are navigable", async ({
   await expectAccessible(page);
 });
 
+for (const language of [
+  {
+    locale: "ru",
+    password: "Новый пароль",
+    submit: "Сохранить пароль",
+    done: "Пароль изменён. Войдите с новым паролем.",
+    registered: "Аккаунт создан. Теперь вы можете войти.",
+    error: "Не удалось выполнить запрос. Проверьте данные и повторите попытку.",
+    light: "Светлая тема",
+  },
+  {
+    locale: "en",
+    password: "New password",
+    submit: "Save password",
+    done: "Password changed. Sign in with your new password.",
+    registered: "Your account is ready. You can now sign in.",
+    error: "Request failed. Check your details and try again.",
+    light: "Light theme",
+  },
+]) {
+  for (const theme of ["dark", "light"]) {
+    test(`password reset feedback: ${language.locale}, ${theme}`, async ({
+      page,
+    }) => {
+      let attempts = 0;
+      await page.route("**/api/auth/reset-password", (route) => {
+        expect(route.request().postDataJSON()).toEqual({
+          token: "test-reset-token",
+          newPassword: "test-password",
+        });
+        attempts++;
+        return route.fulfill(
+          attempts === 1
+            ? { status: 400, json: { code: "INVALID_TOKEN" } }
+            : { json: { success: true } },
+        );
+      });
+      const login = `/${language.locale}/login`;
+      const reset = `/${language.locale}/reset-password?token=test-reset-token`;
+      await page.goto(login);
+      await expect(page.getByText(language.done, { exact: true })).toHaveCount(0);
+      if (theme === "light") {
+        await page.getByRole("button", { name: language.light }).click();
+      }
+      await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+      await page.goto(reset);
+      const password = page.getByLabel(language.password, { exact: true });
+      const submit = page.getByRole("button", { name: language.submit });
+      await password.fill("test-password");
+      await submit.click();
+      await expect(page.getByRole("main").getByRole("alert")).toHaveText(
+        language.error,
+      );
+      await expect(page).toHaveURL(reset);
+      await expect(page.getByText(language.done, { exact: true })).toHaveCount(0);
+      await expect(password).toHaveValue("");
+      await password.fill("test-password");
+      await submit.click();
+      await expect(page).toHaveURL(`${login}?reset=done`);
+      await expect(page.getByRole("main").getByRole("status")).toHaveText(
+        language.done,
+      );
+      await expect(
+        page.getByText(language.registered, { exact: true }),
+      ).toHaveCount(0);
+      await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+      expect(attempts).toBe(2);
+      await expectNoHorizontalOverflow(page);
+      await expectAccessible(page);
+      await page.goto(`${login}?verified=done`);
+      await expect(page.getByRole("main").getByRole("status")).toHaveText(
+        language.registered,
+      );
+      await expect(page.getByText(language.done, { exact: true })).toHaveCount(0);
+    });
+  }
+}
+
 test("login preserves email and clears password after invalid credentials", async ({
   page,
 }) => {

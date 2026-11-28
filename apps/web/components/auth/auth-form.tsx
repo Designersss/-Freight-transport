@@ -46,7 +46,7 @@ export function AuthForm({
   locale: Locale;
   token?: string;
   invalid?: boolean;
-  completed?: boolean;
+  completed?: false | "registration" | "reset";
   telegramError?: boolean;
 }) {
   const t = messages[locale].auth;
@@ -198,7 +198,7 @@ export function AuthForm({
       )}
       {completed && mode === "login" && (
         <p role="status" className="mb-4 text-primary">
-          {t.verifiedDone}
+          {completed === "reset" ? t.resetDone : t.verifiedDone}
         </p>
       )}
       {unavailable ? (
