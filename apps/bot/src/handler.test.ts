@@ -29,11 +29,14 @@ const message = () => ({
   from: user,
 });
 
-function fixture() {
+function fixture(failApproval = false) {
   const commands: TelegramBotCommand[] = [];
   const api: BotInternalApi = {
     async send(command, schema) {
       commands.push(command);
+      if (failApproval && command.action === "approve") {
+        throw new Error("Synthetic internal failure");
+      }
       const result =
         command.action === "claim"
           ? {
@@ -147,5 +150,36 @@ describe("Telegram private chat handler", () => {
       },
     });
     expect(commands).toHaveLength(0);
+  });
+
+  it("reports an uncertain failure without repeating the mutation", async () => {
+    const { handle, commands, sent, telegram } = fixture(true);
+    await handle({
+      update_id: 1,
+      message: { ...message(), text: `/start ${deepLink}` },
+    });
+    const prompt = sent[0];
+    const markup = prompt?.markup;
+    if (!prompt || !markup || !("inline_keyboard" in markup))
+      throw new Error("Expected approval prompt");
+    const button = markup.inline_keyboard[0]?.[0];
+    if (!button || !("callback_data" in button))
+      throw new Error("Expected approval callback");
+    const click = {
+      id: "callback",
+      from: user,
+      message: { ...message(), message_id: prompt.id },
+      data: button.callback_data,
+    };
+    await expect(
+      handle({ update_id: 2, callback_query: click }),
+    ).rejects.toThrow("Synthetic internal failure");
+    await handle({ update_id: 3, callback_query: click });
+    const approvals = commands.filter((command) => command.action === "approve");
+    expect(approvals).toHaveLength(1);
+    expect(telegram.sendMessage).toHaveBeenLastCalledWith(
+      actor.chatId,
+      "Request failed. Try /start.",
+    );
   });
 });

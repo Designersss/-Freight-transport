@@ -574,7 +574,7 @@ export function createBotHandler(
     });
   }
 
-  return async (update: TelegramUpdate): Promise<void> => {
+  async function handle(update: TelegramUpdate): Promise<void> {
     const clicked = privateCallback(update.callback_query);
     if (clicked) {
       await telegram.answerCallback(clicked.callback.id).catch(() => undefined);
@@ -637,6 +637,25 @@ export function createBotHandler(
     ) {
       prompts.delete(actor.userId);
       await prompt.run(text);
+    }
+  }
+
+  return async (update: TelegramUpdate): Promise<void> => {
+    try {
+      await handle(update);
+    } catch (error) {
+      // A mutation may already have committed. Discard its prompt and let
+      // /start recover authoritative state rather than retrying the command.
+      const incoming =
+        privateMessage(update.message) ?? privateCallback(update.callback_query);
+      if (incoming) {
+        const { actor } = incoming;
+        prompts.delete(actor.userId);
+        const user = "user" in incoming ? incoming.user : incoming.callback.from;
+        const locale = user.language_code?.startsWith("ru") ? "ru" : "en";
+        await say(actor, messages[locale].error).catch(() => undefined);
+      }
+      throw error;
     }
   };
 }

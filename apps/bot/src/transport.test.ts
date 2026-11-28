@@ -101,4 +101,38 @@ describe("long polling", () => {
     expect(offsets).toEqual([undefined, 4]);
     expect(report).toHaveBeenCalledExactlyOnceWith("update-failed");
   });
+
+  it("releases an acknowledged offset after an empty response", async () => {
+    const shutdown = new AbortController();
+    const seen: number[] = [];
+    const offsets: (number | undefined)[] = [];
+    const telegram: TelegramTransport = {
+      async getUpdates(offset) {
+        offsets.push(offset);
+        switch (offsets.length) {
+          case 1:
+            return [{ update_id: 900 }];
+          case 2:
+            return [];
+          case 3:
+            return [{ update_id: 10 }];
+          default:
+            shutdown.abort();
+            return [];
+        }
+      },
+      sendMessage: vi.fn(async () => 1),
+      answerCallback: vi.fn(async () => undefined),
+    };
+    await pollTelegram(
+      telegram,
+      async ({ update_id }) => {
+        seen.push(update_id);
+      },
+      shutdown.signal,
+      vi.fn(),
+    );
+    expect(seen).toEqual([900, 10]);
+    expect(offsets).toEqual([undefined, 901, undefined, 11]);
+  });
 });

@@ -591,7 +591,10 @@ test("Expired draft conflicts do not block a new registration or browser attachm
     const resume = () =>
       resumeTelegramRegistrationInBrowser(pool, fresh, attachment.id, actor, 0);
     assert.equal(await resume(), null);
-    assert.equal((await findTelegramRegistrationDraft(pool, web))?.id, otherDraft);
+    assert.equal(
+      (await findTelegramRegistrationDraft(pool, web))?.id,
+      otherDraft,
+    );
     assert.equal(
       await readTelegramBotRequest(pool, browser, attachment.id),
       "approved",
@@ -623,7 +626,10 @@ test("Expired draft conflicts do not block a new registration or browser attachm
       actor,
     );
     assert.equal(chatDraft, chatRequest.id);
-    assert.equal((await findTelegramRegistrationDraft(pool, bot))?.channel, "bot");
+    assert.equal(
+      (await findTelegramRegistrationDraft(pool, bot))?.channel,
+      "bot",
+    );
     assert.equal(await findTelegramRegistrationDraft(pool, web), null);
   } finally {
     await pool.end();

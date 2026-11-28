@@ -18,6 +18,9 @@ export async function pollTelegram(
     try {
       updates = await telegram.getUpdates(offset, signal);
       delay = 1000;
+      // An empty successful response acknowledges the previous offset. Do
+      // not keep it across idle periods: Telegram can reset update IDs.
+      if (updates.length === 0) offset = undefined;
     } catch (error) {
       if (signal.aborted) break;
       report("poll-failed");
