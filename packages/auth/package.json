@@ -23,6 +23,10 @@
     "./telegram-bot-internal": {
       "types": "./dist/telegram-bot-internal.d.ts",
       "import": "./dist/telegram-bot-internal.js"
+    },
+    "./telegram-browser-http": {
+      "types": "./dist/telegram-browser-http.d.ts",
+      "import": "./dist/telegram-browser-http.js"
     }
   },
   "scripts": {
