@@ -1,11 +1,14 @@
+import { createHash, randomUUID } from "node:crypto";
 import type { Pool } from "pg";
 import { z } from "zod";
 import {
   birthDateInput,
   profileSettingsInput,
   publicRole,
+  registrationInput,
   usernameInput,
 } from "./contracts.js";
+import { telegramBotAccountId } from "./telegram-bot-link.js";
 import {
   privateTelegramActor,
   type TelegramBotActor,
@@ -151,7 +154,8 @@ export async function updateTelegramRegistrationDraft(
     );
     return result.rows[0] ?? null;
   }
-  const { firstName, lastName, role, birthDate, companyName, username } = change;
+  const { firstName, lastName, role, birthDate, companyName, username } =
+    change;
   if (
     firstName === undefined &&
     lastName === undefined &&
@@ -207,4 +211,120 @@ export async function deleteExpiredTelegramRegistrationDrafts(
      WHERE d.id = e.id AND d.expires_at <= clock_timestamp()`,
   );
   return result.rowCount ?? 0;
+}
+
+export type TelegramDraftCompletion =
+  | "created"
+  | "invalid"
+  | "denied"
+  | "username-taken"
+  | "identity-taken";
+
+interface CompletionRow extends DraftView {
+  telegram_user_id: string;
+  phone_number: string;
+}
+
+function registrationConflict(error: unknown): TelegramDraftCompletion | null {
+  if (
+    !(error instanceof Error) ||
+    !("code" in error) ||
+    error.code !== "23505" ||
+    !("constraint" in error)
+  )
+    return null;
+  if (error.constraint === "user_username_uidx") return "username-taken";
+  if (
+    error.constraint === "user_email_uidx" ||
+    error.constraint === "account_providerId_accountId_uidx" ||
+    error.constraint === "account_telegram_user_uidx"
+  )
+    return "identity-taken";
+  return null;
+}
+
+// A successful completion consumes the draft and creates all account records
+// together. The HTTP boundary must authenticate the selected channel; a draft
+// is never a browser login grant. No session is created here.
+export async function completeTelegramRegistrationDraft(
+  pool: Pool,
+  id: string,
+  access: DraftAccess,
+  revision: unknown,
+): Promise<TelegramDraftCompletion> {
+  const owner = ownership(access);
+  const version = z.number().int().min(0).max(2_147_483_646).safeParse(revision);
+  if (!owner || !version.success) return "denied";
+  const client = await pool.connect();
+  let failed = true;
+  try {
+    await client.query("BEGIN");
+    const consumed = await client.query<CompletionRow>(
+      `DELETE FROM telegram_registration_drafts
+       WHERE ${owned} AND revision = $4 AND channel = $5
+       RETURNING ${fields}, telegram_user_id, phone_number`,
+      [id, owner.hash, owner.actorId, version.data, access.channel],
+    );
+    const row = consumed.rows[0];
+    if (!row) {
+      await client.query("ROLLBACK");
+      failed = false;
+      return "denied";
+    }
+    const parsed = registrationInput.safeParse({
+      profile: {
+        firstName: row.firstName,
+        lastName: row.lastName,
+        role: row.role,
+        birthDate: row.birthDate,
+        ...(row.companyName === null ? {} : { companyName: row.companyName }),
+      },
+      username: row.username,
+    });
+    if (!parsed.success) {
+      await client.query("ROLLBACK");
+      failed = false;
+      return "invalid";
+    }
+    const subject = telegramBotAccountId(row.telegram_user_id);
+    const email = `${createHash("sha256").update(subject).digest("hex")}@telegram.invalid`;
+    const userId = randomUUID();
+    const { profile, username } = parsed.data;
+    await client.query(
+      `INSERT INTO "user" (id, name, email, "emailVerified", username)
+       VALUES ($1, $2, $3, false, $4)`,
+      [userId, `${profile.firstName} ${profile.lastName}`, email, username],
+    );
+    await client.query(
+      `INSERT INTO "account" (id, "userId", "providerId", "accountId")
+       VALUES ($1, $2, 'telegram', $3)`,
+      [randomUUID(), userId, subject],
+    );
+    await client.query(
+      `INSERT INTO user_profiles (
+         user_id, first_name, last_name, role, birth_date, company_name,
+         telegram_phone_number
+       ) VALUES ($1, $2, $3, $4, $5::date, $6, $7)`,
+      [
+        userId,
+        profile.firstName,
+        profile.lastName,
+        profile.role,
+        profile.birthDate,
+        profile.companyName ?? null,
+        row.phone_number,
+      ],
+    );
+    await client.query("COMMIT");
+    failed = false;
+    return "created";
+  } catch (error) {
+    await client.query("ROLLBACK");
+    failed = false;
+    const conflict = registrationConflict(error);
+    if (conflict) return conflict;
+    throw error;
+  } finally {
+    client.release(failed);
+  }
 }

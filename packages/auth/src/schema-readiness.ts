@@ -29,6 +29,7 @@ export const authMigrations = [
   "20261128080000_telegram_bot_requests",
   "20261128090000_telegram_bot_session_fence",
   "20261128100000_telegram_registration_drafts",
+  "20261128110000_telegram_registration_contact",
 ] as const;
 
 const columns = {
@@ -103,6 +104,7 @@ const columns = {
     "status",
     "birth_date",
     "company_name",
+    "telegram_phone_number",
     "photo_key",
     "created_at",
     "updated_at",
@@ -219,15 +221,22 @@ const constraints = [
   ["session", "session_telegram_bot_proof_consumed"],
   ["user_profiles", "user_profiles_birth_date_check"],
   ["user_profiles", "user_profiles_company_name_check"],
+  ["user_profiles", "user_profiles_telegram_phone_check"],
   ["telegram_bot_requests", "telegram_bot_requests_hash_check"],
   ["telegram_bot_requests", "telegram_bot_requests_intent_check"],
   ["telegram_bot_requests", "telegram_bot_requests_expiry_check"],
   ["telegram_bot_requests", "telegram_bot_requests_display_check"],
   ["telegram_bot_requests", "telegram_bot_requests_link_check"],
   ["telegram_bot_requests", "telegram_bot_requests_state_check"],
-  ["telegram_registration_drafts", "telegram_registration_drafts_identity_check"],
+  [
+    "telegram_registration_drafts",
+    "telegram_registration_drafts_identity_check",
+  ],
   ["telegram_registration_drafts", "telegram_registration_drafts_state_check"],
-  ["telegram_registration_drafts", "telegram_registration_drafts_profile_check"],
+  [
+    "telegram_registration_drafts",
+    "telegram_registration_drafts_profile_check",
+  ],
 ];
 
 // Read only metadata and migration history. Do not repair schema, invoke

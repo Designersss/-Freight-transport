@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { test } from "node:test";
 import pg from "pg";
 import {
@@ -12,6 +12,7 @@ import {
 } from "../../packages/auth/dist/telegram-bot-requests.js";
 import {
   beginTelegramRegistrationDraft,
+  completeTelegramRegistrationDraft,
   deleteExpiredTelegramRegistrationDrafts,
   readTelegramRegistrationDraft,
   updateTelegramRegistrationDraft,
@@ -63,7 +64,10 @@ test("Web and bot share one versioned registration draft without creating accoun
     assert.ok(initial);
     assert.equal(initial.firstName, "Synthetic");
     assert.equal(initial.revision, 0);
-    assert.deepEqual(await readTelegramRegistrationDraft(pool, id, web), initial);
+    assert.deepEqual(
+      await readTelegramRegistrationDraft(pool, id, web),
+      initial,
+    );
     assert.equal(
       await readTelegramRegistrationDraft(pool, id, {
         channel: "web",
@@ -117,6 +121,124 @@ test("Web and bot share one versioned registration draft without creating accoun
     assert.equal(await readTelegramRegistrationDraft(pool, id, web), null);
     assert.equal(await edit(web, 3, { firstName: "Expired" }), null);
     assert.ok((await deleteExpiredTelegramRegistrationDrafts(pool)) >= 1);
+  } finally {
+    await pool.end();
+  }
+});
+
+test("Both registration channels finalize one account or roll back the draft", async () => {
+  const databaseUrl = process.env.AUTH_COMPAT_DATABASE_URL;
+  assert.ok(databaseUrl);
+  const target = new URL(databaseUrl);
+  assert.equal(target.hostname, "127.0.0.1");
+  assert.equal(target.pathname, "/freight_auth_compat");
+  const pool = new pg.Pool({ connectionString: databaseUrl });
+  try {
+    for (const channel of ["web", "bot"]) {
+      const telegramId = String(randomBytes(6).readUIntBE(0, 6) + 1);
+      const actor = {
+        chatType: "private",
+        chatId: telegramId,
+        userId: telegramId,
+      };
+      const browser = createTelegramBrowserCapability();
+      const bot = { channel: "bot", actor };
+      const web = { channel: "web", browserCapability: browser };
+      const access = channel === "web" ? web : bot;
+      const inactive = channel === "web" ? bot : web;
+      const request = await startTelegramBotRequest(pool, browser, {
+        intent: "register",
+        locale: "en",
+      });
+      const { id } = request;
+      await claimTelegramBotRequest(pool, request.deepLink, actor, {
+        firstName: "Synthetic",
+        lastName: "Owner",
+      });
+      assert.equal(
+        await saveTelegramBotContact(pool, id, actor, {
+          userId: telegramId,
+          phoneNumber: "+12025550123",
+          forwarded: false,
+        }),
+        true,
+      );
+      assert.equal(
+        await decideTelegramBotRequest(pool, id, actor, "approve"),
+        true,
+      );
+      assert.equal(
+        await beginTelegramRegistrationDraft(pool, id, actor, channel),
+        id,
+      );
+      const finish = (owner, revision) =>
+        completeTelegramRegistrationDraft(pool, id, owner, revision);
+      assert.equal(await finish(access, 0), "invalid");
+      assert.ok(await readTelegramRegistrationDraft(pool, id, access));
+      const taken = `tg_${randomBytes(8).toString("hex")}`;
+      const occupied = randomUUID();
+      await pool.query(
+        'INSERT INTO "user" (id, name, email, username) VALUES ($1, $2, $3, $4)',
+        [occupied, "Synthetic", `${occupied}@example.test`, taken],
+      );
+      const saved = await updateTelegramRegistrationDraft(pool, id, access, {
+        action: "edit",
+        revision: 0,
+        role: "COMPANY_OWNER",
+        birthDate: "1990-01-01",
+        companyName: "Synthetic Company",
+        username: taken,
+      });
+      assert.equal(saved?.revision, 1);
+      assert.equal(await finish(inactive, 1), "denied");
+      assert.equal(await finish(access, 0), "denied");
+      assert.equal(
+        await finish(
+          { channel: "web", browserCapability: request.deepLink },
+          1,
+        ),
+        "denied",
+      );
+      assert.equal(await finish(access, 1), "username-taken");
+      assert.equal(
+        (await readTelegramRegistrationDraft(pool, id, access))?.revision,
+        1,
+      );
+      const username = `tg_${randomBytes(8).toString("hex")}`;
+      const corrected = await updateTelegramRegistrationDraft(
+        pool,
+        id,
+        access,
+        { action: "edit", revision: 1, username },
+      );
+      assert.equal(corrected?.revision, 2);
+      const completed = await Promise.all([
+        finish(access, 2),
+        finish(access, 2),
+      ]);
+      assert.deepEqual(completed.sort(), ["created", "denied"]);
+      assert.equal(await readTelegramRegistrationDraft(pool, id, access), null);
+      const rows = await pool.query(
+        `SELECT u.username, u."emailVerified", p.role, p.company_name,
+           p.telegram_phone_number,
+           (SELECT count(*)::int FROM "session" s WHERE s."userId" = u.id) AS sessions
+         FROM "account" a JOIN "user" u ON u.id = a."userId"
+         JOIN user_profiles p ON p.user_id = u.id
+         WHERE a."providerId" = 'telegram' AND a."accountId" = $1`,
+        [`bot:${telegramId}`],
+      );
+      assert.deepEqual(rows.rows, [
+        {
+          username,
+          emailVerified: false,
+          role: "COMPANY_OWNER",
+          company_name: "Synthetic Company",
+          telegram_phone_number: "+12025550123",
+          sessions: 0,
+        },
+      ]);
+      assert.equal(await finish(access, 2), "denied");
+    }
   } finally {
     await pool.end();
   }

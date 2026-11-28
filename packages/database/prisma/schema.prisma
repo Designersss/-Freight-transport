@@ -207,6 +207,7 @@ model UserProfile {
   status      UserStatus @default(ACTIVE)
   birthDate   DateTime   @map("birth_date") @db.Date
   companyName String?    @map("company_name")
+  telegramPhoneNumber String? @map("telegram_phone_number")
   photoKey    String?    @unique(map: "user_profiles_photo_key_uidx") @map("photo_key")
   createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)

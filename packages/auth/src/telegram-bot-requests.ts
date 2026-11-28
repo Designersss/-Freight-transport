@@ -236,7 +236,10 @@ export async function decideTelegramBotRequest(
   actor: TelegramBotActor,
   decision: "approve" | "reject",
 ): Promise<boolean> {
-  if (!privateTelegramActor(actor) || (decision !== "approve" && decision !== "reject"))
+  if (
+    !privateTelegramActor(actor) ||
+    (decision !== "approve" && decision !== "reject")
+  )
     return false;
   const result = await pool.query(
     `UPDATE telegram_bot_requests SET
